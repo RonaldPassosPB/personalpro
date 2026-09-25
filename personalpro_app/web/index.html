@@ -29,24 +29,10 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>PersonalPro — Sistema Multi-Tenant SaaS</title>
+  <title>personalpro_app</title>
   <link rel="manifest" href="manifest.json">
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (let registration of registrations) {
-          registration.unregister();
-        }
-      });
-    }
-    if ('caches' in window) {
-      caches.keys().then(function(names) {
-        for (let name of names) caches.delete(name);
-      });
-    }
-  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js?v=2" async></script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

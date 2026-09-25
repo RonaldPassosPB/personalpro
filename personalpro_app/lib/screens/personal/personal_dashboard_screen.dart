@@ -5,6 +5,7 @@ import '../../services/ficha_pdf_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../../widgets/evolucao_charts_widget.dart';
+import '../../widgets/exercicio_animado_dieta_agenda_widget.dart';
 import '../../widgets/notificacoes_sheet.dart';
 import '../../widgets/pix_modal.dart';
 import '../auth/login_screen.dart';
@@ -948,6 +949,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 _buildAbaVisaoGeralFrequencia(),
                 _buildAbaGestaoAlunos(),
                 _buildAbaCriadorFichas(),
+                PainelDietaPersonalWidget(
+                  alunos: _alunos,
+                  nomePersonal: _personal['nomeProfissional']?.toString() ?? 'Personal',
+                ),
+                PainelAgendaPersonalWidget(alunos: _alunos),
                 _buildAbaFinanceiroPersonal(),
               ],
             ),
@@ -960,7 +966,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard, color: AppTheme.neonGreen),
-            label: 'Frequência & Alertas',
+            label: 'Frequência',
           ),
           NavigationDestination(
             icon: Icon(Icons.people_outline),
@@ -970,12 +976,22 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),
             selectedIcon: Icon(Icons.fitness_center, color: AppTheme.neonGreen),
-            label: 'Fichas de Treino',
+            label: 'Treinos (GIF)',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.restaurant_menu_outlined),
+            selectedIcon: Icon(Icons.restaurant_menu, color: AppTheme.neonGreen),
+            label: 'Dieta & Macros',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month, color: AppTheme.neonGreen),
+            label: 'Agenda & Aulas',
           ),
           NavigationDestination(
             icon: Icon(Icons.pix_outlined),
             selectedIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
-            label: 'Financeiro & PIX',
+            label: 'Financeiro PIX',
           ),
         ],
       ),
@@ -1278,6 +1294,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                         label: const Text('📊 Gráficos, Carga & Antes/Depois'),
                       ),
                       OutlinedButton.icon(
+                        onPressed: () => setState(() => _abaAtual = 3),
+                        icon: const Icon(Icons.restaurant_menu, size: 16, color: AppTheme.neonGreen),
+                        label: const Text('🥗 Dieta & Macros'),
+                      ),
+                      OutlinedButton.icon(
                         onPressed: () => _trocarFotoRapidaDoAluno(a),
                         icon: const Icon(Icons.camera_alt, size: 16, color: AppTheme.neonGreen),
                         label: const Text('📷 Foto Perfil'),
@@ -1540,35 +1561,44 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   ],
                   const Divider(color: Colors.white12, height: 22),
                   ...exercicios.map((ex) {
+                    final exMap = Map<String, dynamic>.from(ex as Map);
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
+                      margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: AppTheme.bgDark,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white10),
                       ),
                       child: Row(
                         children: [
+                          ExercicioAnimadoThumbnail(
+                            nomeExercicio: (exMap['nomeExercicio'] ?? '').toString(),
+                            grupoMuscular: (exMap['grupoMuscular'] ?? '').toString(),
+                            videoUrl: exMap['videoUrl']?.toString(),
+                            onTap: () => ExercicioExecucaoModal.abrir(context, exMap),
+                          ),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${ex['nomeExercicio']} (${ex['grupoMuscular']})',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  '${exMap['nomeExercicio']} (${exMap['grupoMuscular']})',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
                                 ),
-                                const SizedBox(height: 3),
+                                const SizedBox(height: 4),
                                 Text(
-                                  '🎯 ${ex['series']} séries x ${ex['repeticoes']} reps  |  🏋️ ${ex['cargaKg']} kg  |  ⏱️ ${ex['descansoSegundos']}s descanso',
+                                  '🎯 ${exMap['series']} séries x ${exMap['repeticoes']} reps  |  🏋️ ${exMap['cargaKg']} kg  |  ⏱️ ${exMap['descansoSegundos']}s descanso',
                                   style: const TextStyle(
                                     color: AppTheme.neonGreen,
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                if ((ex['observacaoTecnica']?.toString() ?? '').isNotEmpty)
+                                if ((exMap['observacaoTecnica']?.toString() ?? '').isNotEmpty)
                                   Text(
-                                    '💡 Técnica: ${ex['observacaoTecnica']}',
+                                    '💡 Técnica: ${exMap['observacaoTecnica']}',
                                     style: const TextStyle(
                                       color: AppTheme.textSecondary,
                                       fontSize: 12,
@@ -1577,12 +1607,18 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                               ],
                             ),
                           ),
+                          OutlinedButton.icon(
+                            onPressed: () => ExercicioExecucaoModal.abrir(context, exMap),
+                            icon: const Icon(Icons.play_circle_fill, size: 16, color: AppTheme.neonGreen),
+                            label: const Text('🎬 Ver Execução'),
+                          ),
+                          const SizedBox(width: 4),
                           IconButton(
                             icon: const Icon(Icons.close, size: 18, color: Colors.white54),
                             onPressed: () async {
                               await ApiService()
                                   .dio
-                                  .delete('/api/treinos/exercicios/${ex['id']}');
+                                  .delete('/api/treinos/exercicios/${exMap['id']}');
                               _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
                             },
                           ),

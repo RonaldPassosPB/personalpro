@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 import '../../services/ficha_pdf_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../../widgets/evolucao_charts_widget.dart';
+import '../../widgets/exercicio_animado_dieta_agenda_widget.dart';
 import '../../widgets/notificacoes_sheet.dart';
 import '../../widgets/pix_modal.dart';
 import '../auth/login_screen.dart';
@@ -34,6 +34,10 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
   List<dynamic> _historicoTreinos = [];
   List<dynamic> _progressaoCargas = [];
 
+  Map<String, dynamic>? _meuPlanoDieta;
+  List<dynamic> _minhasRefeicoes = [];
+  List<dynamic> _minhasAulasAgenda = [];
+
   List<dynamic> _pagamentos = [];
   String _chavePixPersonal = '';
   String _nomePersonal = '';
@@ -51,11 +55,15 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         ApiService().dio.get('/api/aluno/home'),
         ApiService().dio.get('/api/aluno/evolucao'),
         ApiService().dio.get('/api/aluno/financeiro'),
+        ApiService().dio.get('/api/dieta/minha-dieta'),
+        ApiService().dio.get('/api/agenda/minhas-aulas'),
       ]);
 
       final homeData = results[0].data;
       final evoData = results[1].data;
       final finData = results[2].data;
+      final dietaData = results[3].data;
+      final agendaData = results[4].data as List<dynamic>? ?? [];
 
       if (!mounted) return;
       setState(() {
@@ -66,6 +74,11 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         _avaliacoes = evoData['avaliacoes'] ?? [];
         _historicoTreinos = evoData['historicoTreinos'] ?? [];
         _progressaoCargas = evoData['progressaoCargas'] ?? [];
+        _meuPlanoDieta = dietaData['plano'] != null
+            ? Map<String, dynamic>.from(dietaData['plano'])
+            : null;
+        _minhasRefeicoes = dietaData['refeicoes'] ?? [];
+        _minhasAulasAgenda = agendaData;
         _pagamentos = finData['pagamentos'] ?? [];
         _chavePixPersonal = finData['chavePixPersonal']?.toString() ?? '';
         _nomePersonal = finData['nomePersonal']?.toString() ?? 'PersonalPro';
@@ -155,6 +168,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
               index: _abaAtual,
               children: [
                 _buildAbaMeusTreinos(),
+                _buildAbaMinhaDietaAluno(),
                 _buildAbaMinhaEvolucao(),
                 _buildAbaFinanceiroAluno(),
               ],
@@ -168,7 +182,12 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
           NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),
             selectedIcon: Icon(Icons.fitness_center, color: AppTheme.neonGreen),
-            label: 'Meus Treinos',
+            label: 'Treinos (GIF)',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.restaurant_menu_outlined),
+            selectedIcon: Icon(Icons.restaurant_menu, color: AppTheme.neonGreen),
+            label: 'Minha Dieta',
           ),
           NavigationDestination(
             icon: Icon(Icons.insights_outlined),
@@ -178,14 +197,14 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
           NavigationDestination(
             icon: Icon(Icons.pix_outlined),
             selectedIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
-            label: 'Financeiro & PIX',
+            label: 'Financeiro PIX',
           ),
         ],
       ),
     );
   }
 
-  // ─── ABA 1: MEUS TREINOS (DIVISÕES A, B, C...) ───────────────────────────────
+  // ─── ABA 1: MEUS TREINOS (DIVISÕES A, B, C...) + AGENDA + EXECUÇÃO ANIMADA ────
   Widget _buildAbaMeusTreinos() {
     return RefreshIndicator(
       onRefresh: _carregarDadosAluno,
@@ -222,7 +241,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         ),
                       ),
                       Text(
-                        'Total acumulado: $_treinosTotal treinos • Escolha sua divisão abaixo e inicie o treino!',
+                        'Total acumulado: $_treinosTotal treinos • Toque em qualquer exercício para ver o GIF/Vídeo de execução!',
                         style: const TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
                       ),
                     ],
@@ -243,9 +262,53 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
               ],
             ),
           ),
+
+          if (_minhasAulasAgenda.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF141B24),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.35)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.calendar_month, color: Colors.cyanAccent, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        '📅 SUAS PRÓXIMAS AULAS / AVALIAÇÕES AGENDADAS COM O PERSONAL',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.cyanAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ..._minhasAulasAgenda.take(2).map((ag) {
+                    final dt = DateTime.tryParse((ag['dataHoraInicio'] ?? '').toString()) ?? DateTime.now();
+                    final fmt = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '• $fmt — ${ag['tituloTreino']} (${ag['status']})',
+                        style: const TextStyle(fontSize: 12.5, color: Colors.white),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 20),
           const Text(
-            '🏋️ SUAS DIVISÕES DE TREINO ATIVAS',
+            '🏋️ SUAS DIVISÕES DE TREINO ATIVAS (COM DEMONSTRAÇÃO ANIMADA DE EXECUÇÃO)',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
@@ -283,7 +346,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                           ),
                           const Spacer(),
                           Text(
-                            '${exercicios.length} exercícios',
+                            '${exercicios.length} exercícios com GIF/Animação',
                             style: const TextStyle(
                               color: AppTheme.neonGreen,
                               fontWeight: FontWeight.bold,
@@ -299,13 +362,33 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                           style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                         ),
                       ],
+                      if (exercicios.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 86,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: exercicios.length,
+                            separatorBuilder: (_, _) => const SizedBox(width: 10),
+                            itemBuilder: (ctx, i) {
+                              final exMap = Map<String, dynamic>.from(exercicios[i] as Map);
+                              return ExercicioAnimadoThumbnail(
+                                nomeExercicio: (exMap['nomeExercicio'] ?? '').toString(),
+                                grupoMuscular: (exMap['grupoMuscular'] ?? '').toString(),
+                                videoUrl: exMap['videoUrl']?.toString(),
+                                onTap: () => ExercicioExecucaoModal.abrir(context, exMap),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () => _abrirModoExecucaoTreino(fichaMap),
                           icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('ABRIR MODO EXECUÇÃO NA ACADEMIA'),
+                          label: const Text('ABRIR MODO EXECUÇÃO NA ACADEMIA (COM GIFS & CRONÔMETRO)'),
                         ),
                       ),
                     ],
@@ -316,6 +399,143 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
           }),
         ],
       ),
+    );
+  }
+
+  // ─── ABA 2: MINHA DIETA & MACROS (TMB / GET / REFEIÇÕES) ─────────────────────
+  Widget _buildAbaMinhaDietaAluno() {
+    final plano = _meuPlanoDieta;
+    if (plano == null) {
+      return const Center(
+        child: Text('Seu Personal Trainer ainda está configurando seu Plano Alimentar.'),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppTheme.neonGreen.withValues(alpha: 0.4)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '🥗 ${plano['titulo'] ?? 'Meu Plano Alimentar'}',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.neonGreen,
+                          ),
+                        ),
+                        Text(
+                          'Objetivo: ${plano['objetivo']} • Prescrito por $_nomePersonal',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => DietaPdfService.exportarPlanoAlimentarPdf(
+                      nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
+                      nomePersonal: _nomePersonal,
+                      plano: plano,
+                      refeicoes: _minhasRefeicoes,
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf, size: 16),
+                    label: const Text('Baixar Dieta PDF'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _statPill('META CALÓRICA', '${plano['metaKcal']} kcal', AppTheme.neonGreen),
+                  _statPill('PROTEÍNAS', '${plano['proteinaG']}g', const Color(0xFFFF5252)),
+                  _statPill('CARBOIDRATOS', '${plano['carboidratoG']}g', Colors.amberAccent),
+                  _statPill('GORDURAS', '${plano['gorduraG']}g', Colors.orangeAccent),
+                  _statPill('META DE ÁGUA', '${plano['aguaLitros']} Litros', Colors.cyanAccent),
+                ],
+              ),
+              if ((plano['observacoes'] ?? '').toString().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '💡 Recomendação do Personal: ${plano['observacoes']}',
+                  style: const TextStyle(fontSize: 12.5, color: Colors.amberAccent),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          '🍽️ SUAS REFEIÇÕES DO DIA E OPÇÕES DE SUBSTITUIÇÃO',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 12),
+        ..._minhasRefeicoes.map((r) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '⏰ ${r['horario']} — ${r['nomeRefeicao']}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                          color: AppTheme.neonGreen,
+                        ),
+                      ),
+                      Text(
+                        '${r['kcalEstimada']} kcal (P:${r['proteinaG']}g | C:${r['carboG']}g | G:${r['gorduraG']}g)',
+                        style: const TextStyle(fontSize: 12, color: Colors.cyanAccent),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    (r['alimentosDescricao'] ?? '').toString(),
+                    style: const TextStyle(fontSize: 13.5, height: 1.45),
+                  ),
+                  if ((r['substituicoes'] ?? '').toString().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.neonGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '🔄 Opções de Substituição: ${r['substituicoes']}',
+                        style: const TextStyle(fontSize: 12, color: AppTheme.neonGreen),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -807,6 +1027,15 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                                 });
                               },
                             ),
+                            ExercicioAnimadoThumbnail(
+                              nomeExercicio: (ex['nomeExercicio'] ?? '').toString(),
+                              grupoMuscular: (ex['grupoMuscular'] ?? '').toString(),
+                              videoUrl: ex['videoUrl']?.toString(),
+                              width: 86,
+                              height: 74,
+                              onTap: () => ExercicioExecucaoModal.abrir(context, ex),
+                            ),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -831,19 +1060,15 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                                 ],
                               ),
                             ),
-                            if ((ex['videoUrl']?.toString() ?? '').isNotEmpty)
-                              IconButton(
-                                tooltip: 'Ver Vídeo de Execução',
-                                icon: const Icon(
-                                  Icons.play_circle_fill,
-                                  color: AppTheme.electricBlue,
-                                  size: 28,
-                                ),
-                                onPressed: () => launchUrl(
-                                  Uri.parse(ex['videoUrl'].toString()),
-                                  mode: LaunchMode.externalApplication,
-                                ),
+                            OutlinedButton.icon(
+                              onPressed: () => ExercicioExecucaoModal.abrir(context, ex),
+                              icon: const Icon(
+                                Icons.play_circle_fill,
+                                color: AppTheme.neonGreen,
+                                size: 18,
                               ),
+                              label: const Text('🎬 Execução'),
+                            ),
                           ],
                         ),
                         if ((ex['observacaoTecnica']?.toString() ?? '').isNotEmpty) ...[
