@@ -16,3 +16,4 @@ build/
 # Backups SQL
 database/backups/*.bak
 database/backups/*.log
+

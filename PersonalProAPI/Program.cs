@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using PersonalProAPI.Data;
 using PersonalProAPI.Middlewares;
@@ -6,6 +7,9 @@ using PersonalProAPI.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Escuta simultaneamente nas portas 5250 e 5255!
+builder.WebHost.UseUrls("http://0.0.0.0:5250", "http://0.0.0.0:5255");
 
 // Serviços Singleton e Scoped (Padrão FightCenter)
 builder.Services.AddSingleton<DbConnection>();
@@ -55,9 +59,34 @@ await DatabaseSeeder.GarantirHashesDemoAsync(dbConn);
 // Middleware Global de Captura de Erros em Arquivo Diário
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
+// Redirecionamento amigável caso digite /swagge
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Path.Equals("/swagge", StringComparison.OrdinalIgnoreCase))
+    {
+        ctx.Response.Redirect("/swagger/index.html");
+        return;
+    }
+    await next();
+});
+
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("PersonalProCors");
+
+// Serve o Painel/App Flutter Web compilado diretamente em http://localhost:5250 e http://localhost:5255
+var flutterWebBuildDir = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "personalpro_app", "build", "web"));
+if (Directory.Exists(flutterWebBuildDir))
+{
+    var fileProvider = new PhysicalFileProvider(flutterWebBuildDir);
+    app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = fileProvider });
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = fileProvider,
+        ServeUnknownFileTypes = true
+    });
+}
+
 app.UseAuthentication();
 
 // Middleware de Kill-Switch SaaS Multi-Tenant
