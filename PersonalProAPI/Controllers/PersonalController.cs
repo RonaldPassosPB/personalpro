@@ -31,7 +31,7 @@ namespace PersonalProAPI.Controllers
             var mesAtual = DateTime.Now.ToString("yyyy-MM");
 
             var personal = await con.QueryFirstOrDefaultAsync<dynamic>(
-                "SELECT ID AS Id, NOME_PROFISSIONAL AS NomeProfissional, CREF AS Cref, TELEFONE AS Telefone, CHAVE_PIX AS ChavePix, PLANO AS Plano FROM PERSONAIS WHERE ID = @PersonalId",
+                "SELECT ID AS Id, NOME_PROFISSIONAL AS NomeProfissional, CREF AS Cref, TELEFONE AS Telefone, CHAVE_PIX AS ChavePix, PLANO AS Plano, LOGO_URL AS LogoUrl FROM PERSONAIS WHERE ID = @PersonalId",
                 new { PersonalId = personalId }
             );
 
@@ -77,13 +77,13 @@ namespace PersonalProAPI.Controllers
                 new { PersonalId = personalId, MesAtual = mesAtual }
             );
 
-            // Alerta de "Alunos Sumidos" (+7 dias sem registrar treino concluído)
             var alunosSumidos = (await con.QueryAsync<dynamic>(@"
                 SELECT
                     A.ID AS AlunoId,
                     U.NOME AS Nome,
                     A.TELEFONE AS Telefone,
                     A.OBJETIVO AS Objetivo,
+                    A.FOTO_URL AS FotoUrl,
                     MAX(H.DATA_HORA) AS UltimoTreino,
                     ISNULL(DATEDIFF(DAY, MAX(H.DATA_HORA), GETDATE()), DATEDIFF(DAY, A.DATA_CADASTRO, GETDATE())) AS DiasSemTreinar
                 FROM ALUNOS A
@@ -91,13 +91,12 @@ namespace PersonalProAPI.Controllers
                 LEFT JOIN HISTORICO_TREINOS H ON H.ALUNO_ID = A.ID
                 WHERE A.PERSONAL_ID = @PersonalId
                   AND U.STATUS = 1
-                GROUP BY A.ID, U.NOME, A.TELEFONE, A.OBJETIVO, A.DATA_CADASTRO
+                GROUP BY A.ID, U.NOME, A.TELEFONE, A.OBJETIVO, A.FOTO_URL, A.DATA_CADASTRO
                 HAVING ISNULL(DATEDIFF(DAY, MAX(H.DATA_HORA), GETDATE()), DATEDIFF(DAY, A.DATA_CADASTRO, GETDATE())) >= 7
                 ORDER BY DiasSemTreinar DESC",
                 new { PersonalId = personalId }
             )).ToList();
 
-            // Últimos treinos concluídos pelos alunos
             var ultimosTreinos = (await con.QueryAsync<dynamic>(@"
                 SELECT TOP 15
                     H.ID AS Id,
@@ -139,7 +138,7 @@ namespace PersonalProAPI.Controllers
             var personalId = UsuarioContexto.GetPersonalId(User);
             using var con = _db.CriarConexao();
             var p = await con.QueryFirstOrDefaultAsync<dynamic>(
-                "SELECT ID AS Id, NOME_PROFISSIONAL AS NomeProfissional, CREF AS Cref, CPF_CNPJ AS CpfCnpj, EMAIL AS Email, TELEFONE AS Telefone, CHAVE_PIX AS ChavePix, PLANO AS Plano, VALOR_ASSINATURA AS ValorAssinatura, DIA_VENCIMENTO AS DiaVencimento FROM PERSONAIS WHERE ID = @Id",
+                "SELECT ID AS Id, NOME_PROFISSIONAL AS NomeProfissional, CREF AS Cref, CPF_CNPJ AS CpfCnpj, EMAIL AS Email, TELEFONE AS Telefone, CHAVE_PIX AS ChavePix, PLANO AS Plano, VALOR_ASSINATURA AS ValorAssinatura, DIA_VENCIMENTO AS DiaVencimento, LOGO_URL AS LogoUrl FROM PERSONAIS WHERE ID = @Id",
                 new { Id = personalId }
             );
             return Ok(p);
@@ -157,7 +156,8 @@ namespace PersonalProAPI.Controllers
                 SET NOME_PROFISSIONAL = @NomeProfissional,
                     CREF = @Cref,
                     TELEFONE = @Telefone,
-                    CHAVE_PIX = @ChavePix
+                    CHAVE_PIX = @ChavePix,
+                    LOGO_URL = ISNULL(@LogoUrl, LOGO_URL)
                 WHERE ID = @PersonalId;
 
                 UPDATE USUARIOS
@@ -170,11 +170,12 @@ namespace PersonalProAPI.Controllers
                     dto.NomeProfissional,
                     dto.Cref,
                     dto.Telefone,
-                    dto.ChavePix
+                    dto.ChavePix,
+                    dto.LogoUrl
                 }
             );
 
-            return Ok(new { mensagem = "Configurações e Chave PIX salvas com sucesso!" });
+            return Ok(new { mensagem = "Configurações, Logo e Chave PIX salvas com sucesso!" });
         }
 
         [HttpGet("alunos")]
@@ -263,11 +264,11 @@ namespace PersonalProAPI.Controllers
                 var alunoId = await con.ExecuteScalarAsync<int>(@"
                     INSERT INTO ALUNOS (
                         USUARIO_ID, PERSONAL_ID, CPF, TELEFONE, DATA_NASCIMENTO,
-                        OBJETIVO, VALOR_MENSALIDADE, DIA_VENCIMENTO, DATA_CADASTRO
+                        OBJETIVO, FOTO_URL, VALOR_MENSALIDADE, DIA_VENCIMENTO, DATA_CADASTRO
                     )
                     VALUES (
                         @UsuarioId, @PersonalId, @Cpf, @Telefone, @DataNascimento,
-                        @Objetivo, @ValorMensalidade, @DiaVencimento, GETDATE()
+                        @Objetivo, @FotoUrl, @ValorMensalidade, @DiaVencimento, GETDATE()
                     );
                     SELECT CAST(SCOPE_IDENTITY() AS INT);",
                     new
@@ -278,13 +279,13 @@ namespace PersonalProAPI.Controllers
                         dto.Telefone,
                         DataNascimento = string.IsNullOrWhiteSpace(dto.DataNascimento) ? (DateTime?)null : DateTime.Parse(dto.DataNascimento),
                         Objetivo = string.IsNullOrWhiteSpace(dto.Objetivo) ? "Hipertrofia" : dto.Objetivo,
+                        dto.FotoUrl,
                         ValorMensalidade = dto.ValorMensalidade > 0 ? dto.ValorMensalidade : 150.00m,
                         DiaVencimento = dto.DiaVencimento > 0 ? dto.DiaVencimento : 10
                     },
                     trans
                 );
 
-                // Já gera a cobrança do mês atual com PIX Copia e Cola
                 var mesAtual = DateTime.Now.ToString("yyyy-MM");
                 var valor = dto.ValorMensalidade > 0 ? dto.ValorMensalidade : 150.00m;
                 var diaVenc = Math.Clamp(dto.DiaVencimento > 0 ? dto.DiaVencimento : 10, 1, 28);
@@ -340,6 +341,7 @@ namespace PersonalProAPI.Controllers
                     TELEFONE = @Telefone,
                     DATA_NASCIMENTO = @DataNascimento,
                     OBJETIVO = @Objetivo,
+                    FOTO_URL = ISNULL(@FotoUrl, FOTO_URL),
                     VALOR_MENSALIDADE = @ValorMensalidade,
                     DIA_VENCIMENTO = @DiaVencimento
                 WHERE ID = @Id AND PERSONAL_ID = @PersonalId;
@@ -360,6 +362,7 @@ namespace PersonalProAPI.Controllers
                     dto.Telefone,
                     DataNascimento = string.IsNullOrWhiteSpace(dto.DataNascimento) ? (DateTime?)null : DateTime.Parse(dto.DataNascimento),
                     dto.Objetivo,
+                    dto.FotoUrl,
                     dto.ValorMensalidade,
                     dto.DiaVencimento,
                     dto.Status
@@ -375,10 +378,10 @@ namespace PersonalProAPI.Controllers
                 );
             }
 
-            return Ok(new { mensagem = "Dados do aluno atualizados com sucesso!" });
+            return Ok(new { mensagem = "Dados e foto do aluno atualizados com sucesso!" });
         }
 
-        // ─── AVALIAÇÕES FÍSICAS & MEDIDAS (ANAMNESE) ──────────────────────────────────
+        // ─── AVALIAÇÕES FÍSICAS, MEDIDAS E FOTOS ANTES x DEPOIS ───────────────────────
         [HttpGet("alunos/{alunoId}/avaliacoes")]
         public async Task<IActionResult> ListarAvaliacoes(int alunoId)
         {
@@ -395,14 +398,33 @@ namespace PersonalProAPI.Controllers
                     PERCENTUAL_GORDURA AS PercentualGordura,
                     MEDIDAS_JSON AS MedidasJson,
                     RESTRICOES_LESOES AS RestricoesLesoes,
-                    OBSERVACOES AS Observacoes
+                    OBSERVACOES AS Observacoes,
+                    FOTO_FRENTE_URL AS FotoFrenteUrl,
+                    FOTO_LADO_COSTAS_URL AS FotoLadoCostasUrl
                 FROM AVALIACOES_FISICAS
                 WHERE ALUNO_ID = @AlunoId AND PERSONAL_ID = @PersonalId
                 ORDER BY DATA_AVALIACAO DESC, ID DESC",
                 new { AlunoId = alunoId, PersonalId = personalId }
             );
 
-            return Ok(avaliacoes);
+            var progressaoCargas = await con.QueryAsync<dynamic>(@"
+                SELECT
+                    ID AS Id,
+                    NOME_EXERCICIO AS NomeExercicio,
+                    GRUPO_MUSCULAR AS GrupoMuscular,
+                    CARGA_KG AS CargaKg,
+                    DATA_REGISTRO AS DataRegistro
+                FROM PROGRESSAO_CARGAS
+                WHERE ALUNO_ID = @AlunoId AND PERSONAL_ID = @PersonalId
+                ORDER BY DATA_REGISTRO ASC",
+                new { AlunoId = alunoId, PersonalId = personalId }
+            );
+
+            return Ok(new
+            {
+                avaliacoes,
+                progressaoCargas
+            });
         }
 
         [HttpPost("alunos/{alunoId}/avaliacoes")]
@@ -420,11 +442,13 @@ namespace PersonalProAPI.Controllers
             var id = await con.ExecuteScalarAsync<int>(@"
                 INSERT INTO AVALIACOES_FISICAS (
                     ALUNO_ID, PERSONAL_ID, DATA_AVALIACAO, PESO, ALTURA,
-                    PERCENTUAL_GORDURA, MEDIDAS_JSON, RESTRICOES_LESOES, OBSERVACOES
+                    PERCENTUAL_GORDURA, MEDIDAS_JSON, RESTRICOES_LESOES, OBSERVACOES,
+                    FOTO_FRENTE_URL, FOTO_LADO_COSTAS_URL
                 )
                 VALUES (
                     @AlunoId, @PersonalId, GETDATE(), @Peso, @Altura,
-                    @PercentualGordura, @MedidasJson, @RestricoesLesoes, @Observacoes
+                    @PercentualGordura, @MedidasJson, @RestricoesLesoes, @Observacoes,
+                    @FotoFrenteUrl, @FotoLadoCostasUrl
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);",
                 new
@@ -436,19 +460,21 @@ namespace PersonalProAPI.Controllers
                     dto.PercentualGordura,
                     dto.MedidasJson,
                     dto.RestricoesLesoes,
-                    dto.Observacoes
+                    dto.Observacoes,
+                    dto.FotoFrenteUrl,
+                    dto.FotoLadoCostasUrl
                 }
             );
 
             await _notificacao.EnviarNotificacaoAsync(
                 personalId,
                 (int)aluno.UsuarioId,
-                "📏 Nova Avaliação Física Registrada!",
-                $"Seu Personal registrou sua nova avaliação física (Peso: {dto.Peso}kg | % Gordura: {dto.PercentualGordura ?? 0}%). Confira na aba Evolução!",
+                "📏 Nova Avaliação Física + Fotos Registradas!",
+                $"Seu Personal registrou sua nova avaliação física (Peso: {dto.Peso}kg | % Gordura: {dto.PercentualGordura ?? 0}%). Confira seus gráficos e fotos na aba Evolução!",
                 "AVALIACAO"
             );
 
-            return Ok(new { mensagem = "Avaliação física salva com sucesso!", id });
+            return Ok(new { mensagem = "Avaliação física e fotos salvas com sucesso!", id });
         }
 
         [HttpDelete("avaliacoes/{id}")]
@@ -469,6 +495,7 @@ namespace PersonalProAPI.Controllers
             public string? Cref { get; set; }
             public string? Telefone { get; set; }
             public string? ChavePix { get; set; }
+            public string? LogoUrl { get; set; }
         }
 
         public class NovoAlunoDto
@@ -480,6 +507,7 @@ namespace PersonalProAPI.Controllers
             public string? Telefone { get; set; }
             public string? DataNascimento { get; set; }
             public string Objetivo { get; set; } = "Hipertrofia";
+            public string? FotoUrl { get; set; }
             public decimal ValorMensalidade { get; set; } = 200.00m;
             public int DiaVencimento { get; set; } = 10;
         }
@@ -492,6 +520,7 @@ namespace PersonalProAPI.Controllers
             public string? Telefone { get; set; }
             public string? DataNascimento { get; set; }
             public string Objetivo { get; set; } = "Hipertrofia";
+            public string? FotoUrl { get; set; }
             public decimal ValorMensalidade { get; set; } = 200.00m;
             public int DiaVencimento { get; set; } = 10;
             public bool Status { get; set; } = true;
@@ -506,6 +535,8 @@ namespace PersonalProAPI.Controllers
             public string? MedidasJson { get; set; }
             public string? RestricoesLesoes { get; set; }
             public string? Observacoes { get; set; }
+            public string? FotoFrenteUrl { get; set; }
+            public string? FotoLadoCostasUrl { get; set; }
         }
     }
 }

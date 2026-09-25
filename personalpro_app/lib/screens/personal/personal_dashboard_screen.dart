@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../services/ficha_pdf_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
+import '../../widgets/evolucao_charts_widget.dart';
 import '../../widgets/notificacoes_sheet.dart';
 import '../../widgets/pix_modal.dart';
 import '../auth/login_screen.dart';
@@ -129,6 +130,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         ? (alunoExistente['objetivo']?.toString() ?? 'Hipertrofia')
         : 'Hipertrofia';
     bool statusAtivo = editando ? (alunoExistente['status'] == true) : true;
+    String? fotoUrlAluno = editando ? alunoExistente['fotoUrl']?.toString() : null;
 
     showDialog(
       context: context,
@@ -143,6 +145,27 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Row(
+                    children: [
+                      ImageHelper.renderAvatarOrImage(
+                        fotoUrlAluno,
+                        radius: 28,
+                        fallbackText: nomeCtrl.text.isNotEmpty ? nomeCtrl.text : 'A',
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final b64 = await ImageHelper.selecionarImagemBase64();
+                          if (b64 != null) {
+                            setModalState(() => fotoUrlAluno = b64);
+                          }
+                        },
+                        icon: const Icon(Icons.camera_alt, size: 18, color: AppTheme.neonGreen),
+                        label: const Text('Foto de Perfil do Aluno'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: nomeCtrl,
                     decoration: const InputDecoration(labelText: 'Nome Completo do Aluno *'),
@@ -242,6 +265,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   'cpf': cpfCtrl.text.trim(),
                   'telefone': whatsCtrl.text.trim(),
                   'objetivo': objetivo,
+                  'fotoUrl': fotoUrlAluno,
                   'valorMensalidade':
                       double.tryParse(valorCtrl.text.replaceAll(',', '.')) ?? 200.0,
                   'diaVencimento': int.tryParse(diaCtrl.text) ?? 10,
@@ -267,174 +291,212 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     );
   }
 
-  // ─── MODAL AVALIAÇÃO FÍSICA & MEDIDAS (ANAMNESE) ─────────────────────────────
+  // ─── MODAL AVALIAÇÃO FÍSICA, GRÁFICOS & FOTOS ANTES x DEPOIS ─────────────────
   Future<void> _abrirModalAvaliacaoFisica(dynamic aluno) async {
     final resp = await ApiService().dio.get('/api/personal/alunos/${aluno['id']}/avaliacoes');
-    final avaliacoes = resp.data as List<dynamic>;
+    final dataResp = resp.data;
+    final List<dynamic> avaliacoes = dataResp is Map
+        ? (dataResp['avaliacoes'] ?? [])
+        : (dataResp as List<dynamic>);
+    final List<dynamic> progressaoCargas = dataResp is Map
+        ? (dataResp['progressaoCargas'] ?? [])
+        : [];
 
-    final pesoCtrl = TextEditingController(text: '78.0');
-    final alturaCtrl = TextEditingController(text: '1.75');
-    final bfCtrl = TextEditingController(text: '15.0');
-    final bracoCtrl = TextEditingController(text: '38.0');
-    final peitoCtrl = TextEditingController(text: '104.0');
-    final cinturaCtrl = TextEditingController(text: '80.0');
-    final coxaCtrl = TextEditingController(text: '59.0');
+    final pesoCtrl = TextEditingController(text: '81.5');
+    final alturaCtrl = TextEditingController(text: '1.78');
+    final bfCtrl = TextEditingController(text: '13.8');
+    final bracoCtrl = TextEditingController(text: '39.5');
+    final peitoCtrl = TextEditingController(text: '107.0');
+    final cinturaCtrl = TextEditingController(text: '79.0');
+    final coxaCtrl = TextEditingController(text: '61.0');
     final lesoesCtrl = TextEditingController(text: 'Sem restrições articulares.');
-    final obsCtrl = TextEditingController(text: 'Boa simetria muscular.');
+    final obsCtrl = TextEditingController(text: 'Ótima evolução estética e ganho de força.');
+    String? fotoFrenteB64;
+    String? fotoCostasB64;
 
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surfaceCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('📏 Avaliação Física & Medidas — ${aluno['nome']}'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Registrar Nova Avaliação / Anamnese:',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neonGreen),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: pesoCtrl,
-                        decoration: const InputDecoration(labelText: 'Peso (kg)'),
-                      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          backgroundColor: AppTheme.surfaceCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('📏 Avaliação Física, Gráficos & Fotos — ${aluno['nome']}'),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Painel de Gráficos Visuais + Comparativo Antes x Depois
+                  if (avaliacoes.isNotEmpty || progressaoCargas.isNotEmpty) ...[
+                    EvolucaoCompletaPanel(
+                      avaliacoes: avaliacoes,
+                      progressaoCargas: progressaoCargas,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: alturaCtrl,
-                        decoration: const InputDecoration(labelText: 'Altura (m)'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: bfCtrl,
-                        decoration: const InputDecoration(labelText: '% Gordura'),
-                      ),
-                    ),
+                    const Divider(color: Colors.white24, height: 28),
                   ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: bracoCtrl,
-                        decoration: const InputDecoration(labelText: 'Braço (cm)'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: peitoCtrl,
-                        decoration: const InputDecoration(labelText: 'Peitoral (cm)'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: cinturaCtrl,
-                        decoration: const InputDecoration(labelText: 'Cintura (cm)'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: coxaCtrl,
-                        decoration: const InputDecoration(labelText: 'Coxa (cm)'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: lesoesCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Restrições Articulares / Lesões (Anamnese)',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: obsCtrl,
-                  decoration: const InputDecoration(labelText: 'Observações da Evolução'),
-                ),
-                const SizedBox(height: 16),
-                if (avaliacoes.isNotEmpty) ...[
-                  const Divider(color: Colors.white12),
+
                   const Text(
-                    'Histórico de Avaliações Anteriores:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    '➕ REGISTRAR NOVA AVALIAÇÃO FÍSICA + FOTOS ANTES/DEPOIS:',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neonGreen),
                   ),
-                  const SizedBox(height: 8),
-                  ...avaliacoes.take(4).map((av) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.bgDark,
-                        borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: pesoCtrl,
+                          decoration: const InputDecoration(labelText: 'Peso (kg)'),
+                        ),
                       ),
-                      child: Text(
-                        '📅 ${av['dataAvaliacao'].toString().split('T').first} — Peso: ${av['peso']}kg | BF: ${av['percentualGordura'] ?? '-'}% | Lesões: ${av['restricoesLesoes'] ?? 'Nenhuma'}',
-                        style: const TextStyle(fontSize: 12),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: alturaCtrl,
+                          decoration: const InputDecoration(labelText: 'Altura (m)'),
+                        ),
                       ),
-                    );
-                  }),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: bfCtrl,
+                          decoration: const InputDecoration(labelText: '% Gordura'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: bracoCtrl,
+                          decoration: const InputDecoration(labelText: 'Braço (cm)'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: peitoCtrl,
+                          decoration: const InputDecoration(labelText: 'Peitoral (cm)'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: cinturaCtrl,
+                          decoration: const InputDecoration(labelText: 'Cintura (cm)'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: coxaCtrl,
+                          decoration: const InputDecoration(labelText: 'Coxa (cm)'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final img = await ImageHelper.selecionarImagemBase64();
+                            if (img != null) setModalState(() => fotoFrenteB64 = img);
+                          },
+                          icon: Icon(
+                            fotoFrenteB64 != null ? Icons.check_circle : Icons.add_a_photo,
+                            color: AppTheme.neonGreen,
+                          ),
+                          label: Text(
+                            fotoFrenteB64 != null
+                                ? 'Foto Frente Anexada ✅'
+                                : '📸 Anexar Foto Frente (Antes/Depois)',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final img = await ImageHelper.selecionarImagemBase64();
+                            if (img != null) setModalState(() => fotoCostasB64 = img);
+                          },
+                          icon: Icon(
+                            fotoCostasB64 != null ? Icons.check_circle : Icons.add_a_photo,
+                            color: AppTheme.electricBlue,
+                          ),
+                          label: Text(
+                            fotoCostasB64 != null
+                                ? 'Foto Costas Anexada ✅'
+                                : '📸 Anexar Foto Costas/Perfil',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: lesoesCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Restrições Articulares / Lesões (Anamnese)',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: obsCtrl,
+                    decoration: const InputDecoration(labelText: 'Observações da Evolução'),
+                  ),
                 ],
-              ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar')),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final medidasJson = jsonEncode({
-                'bracoDireito': double.tryParse(bracoCtrl.text) ?? 38.0,
-                'peitoral': double.tryParse(peitoCtrl.text) ?? 102.0,
-                'cintura': double.tryParse(cinturaCtrl.text) ?? 80.0,
-                'coxaDireita': double.tryParse(coxaCtrl.text) ?? 58.0,
-              });
-              await ApiService().dio.post(
-                '/api/personal/alunos/${aluno['id']}/avaliacoes',
-                data: {
-                  'peso': double.tryParse(pesoCtrl.text.replaceAll(',', '.')) ?? 78.0,
-                  'altura': double.tryParse(alturaCtrl.text.replaceAll(',', '.')) ?? 1.75,
-                  'percentualGordura':
-                      double.tryParse(bfCtrl.text.replaceAll(',', '.')) ?? 15.0,
-                  'medidasJson': medidasJson,
-                  'restricoesLesoes': lesoesCtrl.text.trim(),
-                  'observacoes': obsCtrl.text.trim(),
-                },
-              );
-              if (!ctx.mounted) return;
-              Navigator.pop(ctx);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  backgroundColor: AppTheme.neonGreen,
-                  content: Text(
-                    '📏 Avaliação física salva e aluno notificado!',
-                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar')),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final medidasJson = jsonEncode({
+                  'bracoDireito': double.tryParse(bracoCtrl.text) ?? 38.0,
+                  'peitoral': double.tryParse(peitoCtrl.text) ?? 102.0,
+                  'cintura': double.tryParse(cinturaCtrl.text) ?? 80.0,
+                  'coxaDireita': double.tryParse(coxaCtrl.text) ?? 58.0,
+                });
+                await ApiService().dio.post(
+                  '/api/personal/alunos/${aluno['id']}/avaliacoes',
+                  data: {
+                    'peso': double.tryParse(pesoCtrl.text.replaceAll(',', '.')) ?? 78.0,
+                    'altura': double.tryParse(alturaCtrl.text.replaceAll(',', '.')) ?? 1.75,
+                    'percentualGordura':
+                        double.tryParse(bfCtrl.text.replaceAll(',', '.')) ?? 15.0,
+                    'medidasJson': medidasJson,
+                    'restricoesLesoes': lesoesCtrl.text.trim(),
+                    'observacoes': obsCtrl.text.trim(),
+                    'fotoFrenteUrl': fotoFrenteB64,
+                    'fotoLadoCostasUrl': fotoCostasB64,
+                  },
+                );
+                if (!ctx.mounted) return;
+                Navigator.pop(ctx);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: AppTheme.neonGreen,
+                    content: Text(
+                      '📏 Avaliação física + fotos salvas e aluno notificado!',
+                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.save),
-            label: const Text('SALVAR NOVA AVALIAÇÃO'),
-          ),
-        ],
+                );
+              },
+              icon: const Icon(Icons.save),
+              label: const Text('SALVAR NOVA AVALIAÇÃO'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -739,13 +801,25 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.neonGreen.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+            InkWell(
+              onTap: () async {
+                final novoLogo = await ImageHelper.selecionarImagemBase64();
+                if (novoLogo != null) {
+                  await ApiService().dio.put('/api/personal/meu-perfil', data: {
+                    'nomeProfissional': _personal['nomeProfissional']?.toString() ?? 'Personal',
+                    'cref': _personal['cref']?.toString() ?? '',
+                    'telefone': _personal['telefone']?.toString() ?? '',
+                    'chavePix': _personal['chavePix']?.toString() ?? '',
+                    'logoUrl': novoLogo,
+                  });
+                  _carregarTudo();
+                }
+              },
+              child: ImageHelper.renderAvatarOrImage(
+                _personal['logoUrl']?.toString(),
+                radius: 20,
+                fallbackIcon: Icons.fitness_center,
               ),
-              child: const Icon(Icons.fitness_center, color: AppTheme.neonGreen),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1013,15 +1087,10 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: AppTheme.neonGreen.withValues(alpha: 0.15),
-                        child: Text(
-                          (a['nome']?.toString() ?? 'A')[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: AppTheme.neonGreen,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      ImageHelper.renderAvatarOrImage(
+                        a['fotoUrl']?.toString(),
+                        radius: 22,
+                        fallbackText: a['nome']?.toString() ?? 'A',
                       ),
                       const SizedBox(width: 12),
                       Expanded(

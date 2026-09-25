@@ -104,6 +104,97 @@ namespace PersonalProAPI.Controllers
             });
         }
 
+        // ─── RECUPERAÇÃO DE SENHA POR CÓDIGO DE 6 DÍGITOS (PADRÃO FIGHTCENTER) ──────
+        [HttpPost("solicitar-codigo-recuperacao")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SolicitarCodigoRecuperacao([FromBody] SolicitarCodigoRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(new { mensagem = "Informe o e-mail cadastrado." });
+
+            using var con = _db.CriarConexao();
+            var usuario = await con.QueryFirstOrDefaultAsync<dynamic>(@"
+                SELECT ID AS Id, NOME AS Nome, EMAIL AS Email
+                FROM USUARIOS
+                WHERE EMAIL = @Email AND STATUS = 1",
+                new { Email = request.Email.Trim() }
+            );
+
+            if (usuario == null)
+                return BadRequest(new { mensagem = "E-mail não encontrado na plataforma PersonalPro." });
+
+            var codigo = Random.Shared.Next(100000, 999999).ToString();
+
+            await con.ExecuteAsync(@"
+                UPDATE USUARIOS
+                SET CODIGO_RECUPERACAO = @Codigo,
+                    RECUPERACAO_EXPIRACAO = DATEADD(MINUTE, 15, GETDATE())
+                WHERE ID = @Id",
+                new { Codigo = codigo, Id = (int)usuario.Id }
+            );
+
+            Console.WriteLine($"[RECUPERAÇÃO DE SENHA PERSONALPRO] E-mail: {usuario.Email} | Código: {codigo} (Expira em 15min)");
+
+            return Ok(new
+            {
+                mensagem = "Código de 6 dígitos gerado! Válido por 15 minutos.",
+                codigoDev = codigo
+            });
+        }
+
+        [HttpPost("redefinir-senha")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RedefinirSenha([FromBody] RedefinirSenhaRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Codigo) ||
+                string.IsNullOrWhiteSpace(request.NovaSenha))
+            {
+                return BadRequest(new { mensagem = "Preencha o e-mail, o código de 6 dígitos e a nova senha." });
+            }
+
+            if (request.NovaSenha.Length < 6)
+                return BadRequest(new { mensagem = "A nova senha deve ter pelo menos 6 caracteres." });
+
+            using var con = _db.CriarConexao();
+            var usuario = await con.QueryFirstOrDefaultAsync<dynamic>(@"
+                SELECT
+                    ID AS Id,
+                    CODIGO_RECUPERACAO AS CodigoRecuperacao,
+                    RECUPERACAO_EXPIRACAO AS RecuperacaoExpiracao
+                FROM USUARIOS
+                WHERE EMAIL = @Email AND STATUS = 1",
+                new { Email = request.Email.Trim() }
+            );
+
+            if (usuario == null)
+                return BadRequest(new { mensagem = "Usuário não encontrado." });
+
+            string? codigoBanco = usuario.CodigoRecuperacao;
+            DateTime? expiracao = usuario.RecuperacaoExpiracao;
+
+            if (string.IsNullOrEmpty(codigoBanco) ||
+                codigoBanco != request.Codigo.Trim() ||
+                !expiracao.HasValue ||
+                expiracao.Value < DateTime.Now)
+            {
+                return BadRequest(new { mensagem = "Código inválido ou expirado. Solicite um novo código." });
+            }
+
+            var novaSenhaHash = BCrypt.Net.BCrypt.HashPassword(request.NovaSenha);
+
+            await con.ExecuteAsync(@"
+                UPDATE USUARIOS
+                SET SENHA_HASH = @Hash,
+                    CODIGO_RECUPERACAO = NULL,
+                    RECUPERACAO_EXPIRACAO = NULL
+                WHERE ID = @Id",
+                new { Hash = novaSenhaHash, Id = (int)usuario.Id }
+            );
+
+            return Ok(new { mensagem = "✅ Senha redefinida com sucesso! Você já pode entrar com a nova senha." });
+        }
+
         [HttpPost("fcm-token")]
         [Authorize]
         public async Task<IActionResult> SalvarFcmToken([FromBody] FcmTokenDto dto)
@@ -174,6 +265,18 @@ namespace PersonalProAPI.Controllers
         {
             public string Email { get; set; } = string.Empty;
             public string Senha { get; set; } = string.Empty;
+        }
+
+        public class SolicitarCodigoRequest
+        {
+            public string Email { get; set; } = string.Empty;
+        }
+
+        public class RedefinirSenhaRequest
+        {
+            public string Email { get; set; } = string.Empty;
+            public string Codigo { get; set; } = string.Empty;
+            public string NovaSenha { get; set; } = string.Empty;
         }
 
         public class FcmTokenDto

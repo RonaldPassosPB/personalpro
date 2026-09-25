@@ -25,7 +25,6 @@ namespace PersonalProAPI.Controllers
         public async Task<IActionResult> GetHome()
         {
             var usuarioId = UsuarioContexto.GetUsuarioId(User);
-            var personalId = UsuarioContexto.GetPersonalId(User);
 
             using var con = _db.CriarConexao();
 
@@ -38,12 +37,14 @@ namespace PersonalProAPI.Controllers
                     U.EMAIL AS Email,
                     A.TELEFONE AS Telefone,
                     A.OBJETIVO AS Objetivo,
+                    A.FOTO_URL AS FotoUrl,
                     A.VALOR_MENSALIDADE AS ValorMensalidade,
                     A.DIA_VENCIMENTO AS DiaVencimento,
                     P.NOME_PROFISSIONAL AS NomePersonal,
                     P.CREF AS CrefPersonal,
                     P.TELEFONE AS TelefonePersonal,
-                    P.CHAVE_PIX AS ChavePixPersonal
+                    P.CHAVE_PIX AS ChavePixPersonal,
+                    P.LOGO_URL AS LogoPersonal
                 FROM ALUNOS A
                 INNER JOIN USUARIOS U ON U.ID = A.USUARIO_ID
                 INNER JOIN PERSONAIS P ON P.ID = A.PERSONAL_ID
@@ -126,12 +127,35 @@ namespace PersonalProAPI.Controllers
             });
         }
 
-        // ─── ATUALIZAR CARGA (KG) NA EXECUÇÃO DO TREINO (PROGRESSÃO DE CARGA) ────────
+        [HttpPut("foto-perfil")]
+        public async Task<IActionResult> AtualizarFotoPerfil([FromBody] FotoPerfilDto dto)
+        {
+            var usuarioId = UsuarioContexto.GetUsuarioId(User);
+            using var con = _db.CriarConexao();
+            await con.ExecuteAsync(
+                "UPDATE ALUNOS SET FOTO_URL = @FotoUrl WHERE USUARIO_ID = @UsuarioId",
+                new { dto.FotoUrl, UsuarioId = usuarioId }
+            );
+            return Ok(new { mensagem = "📸 Foto de perfil atualizada com sucesso!" });
+        }
+
+        // ─── ATUALIZAR CARGA (KG) NA EXECUÇÃO DO TREINO + GRAVAR HISTÓRICO DE PROGRESSÃO ───
         [HttpPatch("exercicios/{exercicioId}/carga")]
         public async Task<IActionResult> AtualizarCargaExercicio(int exercicioId, [FromBody] AtualizarCargaDto dto)
         {
             var personalId = UsuarioContexto.GetPersonalId(User);
             using var con = _db.CriarConexao();
+
+            var info = await con.QueryFirstOrDefaultAsync<dynamic>(@"
+                SELECT
+                    FE.NOME_EXERCICIO AS NomeExercicio,
+                    FE.GRUPO_MUSCULAR AS GrupoMuscular,
+                    FT.ALUNO_ID AS AlunoId
+                FROM FICHA_EXERCICIOS FE
+                INNER JOIN FICHAS_TREINO FT ON FT.ID = FE.FICHA_ID
+                WHERE FE.ID = @Id AND FT.PERSONAL_ID = @PersonalId",
+                new { Id = exercicioId, PersonalId = personalId }
+            );
 
             await con.ExecuteAsync(@"
                 UPDATE FE
@@ -142,7 +166,24 @@ namespace PersonalProAPI.Controllers
                 new { Id = exercicioId, CargaKg = dto.CargaKg, PersonalId = personalId }
             );
 
-            return Ok(new { mensagem = $"Carga atualizada para {dto.CargaKg} kg!" });
+            if (info != null)
+            {
+                await con.ExecuteAsync(@"
+                    INSERT INTO PROGRESSAO_CARGAS (ALUNO_ID, PERSONAL_ID, EXERCICIO_ID, NOME_EXERCICIO, GRUPO_MUSCULAR, CARGA_KG, DATA_REGISTRO)
+                    VALUES (@AlunoId, @PersonalId, @ExercicioId, @NomeExercicio, @GrupoMuscular, @CargaKg, GETDATE())",
+                    new
+                    {
+                        AlunoId = (int)info.AlunoId,
+                        PersonalId = personalId,
+                        ExercicioId = exercicioId,
+                        NomeExercicio = (string)info.NomeExercicio,
+                        GrupoMuscular = (string?)(info.GrupoMuscular ?? "Geral"),
+                        CargaKg = dto.CargaKg
+                    }
+                );
+            }
+
+            return Ok(new { mensagem = $"Carga atualizada para {dto.CargaKg} kg e registrada no gráfico de progressão!" });
         }
 
         // ─── FINALIZAR TREINO DE HOJE + NOTIFICAR PERSONAL TRAINER ───────────────────
@@ -189,7 +230,6 @@ namespace PersonalProAPI.Controllers
                 }
             );
 
-            // Busca o USUARIO_ID do Personal para enviar notificação em tempo real
             var usuarioPersonalId = await con.ExecuteScalarAsync<int?>(
                 "SELECT TOP 1 ID FROM USUARIOS WHERE PERSONAL_ID = @PersonalId AND PERFIL = 1",
                 new { PersonalId = personalId }
@@ -234,7 +274,9 @@ namespace PersonalProAPI.Controllers
                     PERCENTUAL_GORDURA AS PercentualGordura,
                     MEDIDAS_JSON AS MedidasJson,
                     RESTRICOES_LESOES AS RestricoesLesoes,
-                    OBSERVACOES AS Observacoes
+                    OBSERVACOES AS Observacoes,
+                    FOTO_FRENTE_URL AS FotoFrenteUrl,
+                    FOTO_LADO_COSTAS_URL AS FotoLadoCostasUrl
                 FROM AVALIACOES_FISICAS
                 WHERE ALUNO_ID = @AlunoId
                 ORDER BY DATA_AVALIACAO DESC, ID DESC",
@@ -254,10 +296,24 @@ namespace PersonalProAPI.Controllers
                 new { AlunoId = alunoId.Value }
             );
 
+            var progressaoCargas = await con.QueryAsync<dynamic>(@"
+                SELECT
+                    ID AS Id,
+                    NOME_EXERCICIO AS NomeExercicio,
+                    GRUPO_MUSCULAR AS GrupoMuscular,
+                    CARGA_KG AS CargaKg,
+                    DATA_REGISTRO AS DataRegistro
+                FROM PROGRESSAO_CARGAS
+                WHERE ALUNO_ID = @AlunoId
+                ORDER BY DATA_REGISTRO ASC",
+                new { AlunoId = alunoId.Value }
+            );
+
             return Ok(new
             {
                 avaliacoes,
-                historicoTreinos
+                historicoTreinos,
+                progressaoCargas
             });
         }
 
@@ -338,6 +394,11 @@ namespace PersonalProAPI.Controllers
                 telefonePersonal = (string?)(aluno.TelefonePersonal ?? ""),
                 pagamentos = listaFormatada
             });
+        }
+
+        public class FotoPerfilDto
+        {
+            public string FotoUrl { get; set; } = string.Empty;
         }
 
         public class AtualizarCargaDto

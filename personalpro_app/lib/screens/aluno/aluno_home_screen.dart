@@ -8,6 +8,7 @@ import '../../services/ficha_pdf_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
+import '../../widgets/evolucao_charts_widget.dart';
 import '../../widgets/notificacoes_sheet.dart';
 import '../../widgets/pix_modal.dart';
 import '../auth/login_screen.dart';
@@ -31,6 +32,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
 
   List<dynamic> _avaliacoes = [];
   List<dynamic> _historicoTreinos = [];
+  List<dynamic> _progressaoCargas = [];
 
   List<dynamic> _pagamentos = [];
   String _chavePixPersonal = '';
@@ -63,6 +65,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         _treinosTotal = homeData['treinosTotal'] ?? 0;
         _avaliacoes = evoData['avaliacoes'] ?? [];
         _historicoTreinos = evoData['historicoTreinos'] ?? [];
+        _progressaoCargas = evoData['progressaoCargas'] ?? [];
         _pagamentos = finData['pagamentos'] ?? [];
         _chavePixPersonal = finData['chavePixPersonal']?.toString() ?? '';
         _nomePersonal = finData['nomePersonal']?.toString() ?? 'PersonalPro';
@@ -92,13 +95,21 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.neonGreen.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+            InkWell(
+              onTap: () async {
+                final novaFoto = await ImageHelper.selecionarImagemBase64();
+                if (novaFoto != null) {
+                  await ApiService().dio.put('/api/aluno/foto-perfil', data: {
+                    'fotoUrl': novaFoto,
+                  });
+                  _carregarDadosAluno();
+                }
+              },
+              child: ImageHelper.renderAvatarOrImage(
+                _aluno['fotoUrl']?.toString(),
+                radius: 20,
+                fallbackText: _aluno['nome']?.toString() ?? 'A',
               ),
-              child: const Icon(Icons.bolt, color: AppTheme.neonGreen),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -110,7 +121,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Personal: ${_aluno['nomePersonal'] ?? _nomePersonal} • Foco: ${_aluno['objetivo'] ?? 'Hipertrofia'}',
+                    'Personal: ${_aluno['nomePersonal'] ?? _nomePersonal} • Toque na foto p/ alterar',
                     style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
                   ),
                 ],
@@ -308,7 +319,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     );
   }
 
-  // ─── ABA 2: MINHA EVOLUÇÃO & FICHA FÍSICA ────────────────────────────────────
+  // ─── ABA 2: MINHA EVOLUÇÃO, GRÁFICOS & FOTOS ANTES x DEPOIS ──────────────────
   Widget _buildAbaMinhaEvolucao() {
     final ultimaAval = _avaliacoes.isNotEmpty ? _avaliacoes.first : null;
     Map<String, dynamic> medidas = {};
@@ -321,6 +332,11 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        EvolucaoCompletaPanel(
+          avaliacoes: _avaliacoes,
+          progressaoCargas: _progressaoCargas,
+        ),
+        const SizedBox(height: 16),
         const Text(
           '📏 MINHA FICHA FÍSICA & COMPOSIÇÃO CORPORAL',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),

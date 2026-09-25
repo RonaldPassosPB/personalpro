@@ -152,6 +152,140 @@ class _LoginScreenState extends State<LoginScreen> {
     _fazerLogin();
   }
 
+  void _abrirModalRecuperarSenha() {
+    final emailRecCtrl = TextEditingController(text: _emailCtrl.text.trim());
+    final codigoCtrl = TextEditingController();
+    final novaSenhaCtrl = TextEditingController();
+    String? codigoGeradoDev;
+    bool etapaCodigo = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          backgroundColor: AppTheme.surfaceCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_reset, color: AppTheme.neonGreen),
+              SizedBox(width: 10),
+              Expanded(child: Text('Recuperar Senha (6 Dígitos)')),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: emailRecCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Seu E-mail Cadastrado',
+                    prefixIcon: Icon(Icons.email_outlined, color: AppTheme.neonGreen),
+                  ),
+                ),
+                if (codigoGeradoDev != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.neonGreen.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.neonGreen),
+                    ),
+                    child: Text(
+                      '🔑 Código de Verificação Gerado: $codigoGeradoDev (Válido por 15 min)',
+                      style: const TextStyle(
+                        color: AppTheme.neonGreen,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+                if (etapaCodigo) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: codigoCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Código de 6 Dígitos',
+                      prefixIcon: Icon(Icons.pin, color: AppTheme.neonGreen),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: novaSenhaCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Nova Senha (mín. 6 caracteres)',
+                      prefixIcon: Icon(Icons.lock_outline, color: AppTheme.neonGreen),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            if (!etapaCodigo)
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final resp = await ApiService().dio.post(
+                      '/api/auth/solicitar-codigo-recuperacao',
+                      data: {'email': emailRecCtrl.text.trim()},
+                    );
+                    setModalState(() {
+                      codigoGeradoDev = resp.data['codigoDev']?.toString();
+                      codigoCtrl.text = codigoGeradoDev ?? '';
+                      etapaCodigo = true;
+                    });
+                  } catch (_) {}
+                },
+                icon: const Icon(Icons.send),
+                label: const Text('GERAR CÓDIGO DE 6 DÍGITOS'),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await ApiService().dio.post(
+                    '/api/auth/redefinir-senha',
+                    data: {
+                      'email': emailRecCtrl.text.trim(),
+                      'codigo': codigoCtrl.text.trim(),
+                      'novaSenha': novaSenhaCtrl.text.trim(),
+                    },
+                  );
+                  if (!ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  if (!mounted) return;
+                  setState(() {
+                    _emailCtrl.text = emailRecCtrl.text.trim();
+                    _senhaCtrl.text = novaSenhaCtrl.text.trim();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      backgroundColor: AppTheme.neonGreen,
+                      content: Text(
+                        '✅ Senha redefinida com sucesso!',
+                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle),
+                label: const Text('CONFIRMAR NOVA SENHA'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -257,6 +391,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               )
                             : const Icon(Icons.login),
                         label: Text(_carregando ? 'AUTENTICANDO...' : 'ENTRAR NO SISTEMA'),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _abrirModalRecuperarSenha,
+                        icon: const Icon(Icons.lock_reset, size: 18, color: AppTheme.neonGreen),
+                        label: const Text(
+                          'Esqueci minha senha (Código de 6 dígitos)',
+                          style: TextStyle(color: AppTheme.neonGreen, fontSize: 12.5),
+                        ),
                       ),
                     ),
                     if (_temCredencialSalva) ...[
