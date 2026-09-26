@@ -31613,29 +31613,29 @@ aAk:function aAk(){},
 a2S:function a2S(a,b){this.b=a
 this.a=b},
 aCM:function aCM(){},
-aOY(a,b,c){var s,r,q="https://www.youtube.com/watch?v=rT7DgCr-3pg",p="https://www.youtube.com/watch?v=CAwf7n6Luuc",o="https://www.youtube.com/watch?v=ultWZbUMPL8",n="https://www.youtube.com/watch?v=3VcKaXpzqRo",m="https://www.youtube.com/watch?v=kwG2ipFRgfo",l="https://www.youtube.com/watch?v=2-LAMcpzODU",k=A.n.bY(c==null?"":c)
+aOY(a,b,c){var s,r,q="https://www.youtube.com/watch?v=pCPyqW60Wuk",p="https://www.youtube.com/watch?v=ftcql3-AMRs",o="https://www.youtube.com/watch?v=3vTRFnzCMaA",n="https://www.youtube.com/watch?v=yURmeIEl1Fg",m="https://www.youtube.com/watch?v=fjS0CqDR4v8",l="https://www.youtube.com/watch?v=VnFopAIGO7E",k=A.n.bY(c==null?"":c)
 if(k.length!==0&&A.n.bL(k,"http"))return k
 s=a.toLowerCase()
 r=b.toLowerCase()
-if(A.n.n(s,"supino inclinado"))return"https://www.youtube.com/watch?v=8iPEnn-ltC8"
+if(A.n.n(s,"supino inclinado"))return"https://www.youtube.com/watch?v=Fa-X2ByLHaY"
 if(A.n.n(s,"supino"))return q
-if(A.n.n(s,"crucifixo")||A.n.n(s,"peck"))return"https://www.youtube.com/watch?v=eozdVDA78K0"
-if(A.n.n(s,"crossover"))return"https://www.youtube.com/watch?v=taI4XduLpTk"
+if(A.n.n(s,"crucifixo")||A.n.n(s,"peck")||A.n.n(s,"voador"))return"https://www.youtube.com/watch?v=MENdoLpyj7c"
+if(A.n.n(s,"crossover"))return"https://www.youtube.com/watch?v=_hdQD_E3deE"
 if(A.n.n(s,"puxada")||A.n.n(s,"barra fixa"))return p
-if(A.n.n(s,"remada curvada"))return"https://www.youtube.com/watch?v=FWJR5Ve8bnQ"
-if(A.n.n(s,"remada"))return"https://www.youtube.com/watch?v=GZbfZ033f74"
+if(A.n.n(s,"remada curvada"))return"https://www.youtube.com/watch?v=SbuXAFpDUkI"
+if(A.n.n(s,"remada"))return"https://www.youtube.com/watch?v=zw0lUIPCq-U"
 if(A.n.n(s,"agachamento"))return o
-if(A.n.n(s,"leg press")||A.n.n(s,"leg"))return"https://www.youtube.com/watch?v=IZxyjW7MPJQ"
-if(A.n.n(s,"extensora"))return"https://www.youtube.com/watch?v=YyvSfVjQeL0"
-if(A.n.n(s,"flexora"))return"https://www.youtube.com/watch?v=1Tq3QdYUuHs"
-if(A.n.n(s,"stiff")||A.n.n(s,"terra"))return"https://www.youtube.com/watch?v=1oed-UmAxFs"
-if(A.n.n(s,"p\xe9lvica")||A.n.n(s,"pelvica"))return"https://www.youtube.com/watch?v=SEdqd1n0cvg"
-if(A.n.n(s,"panturrilha"))return"https://www.youtube.com/watch?v=gwLzBJYoWlI"
-if(A.n.n(s,"desenvolvimento"))return"https://www.youtube.com/watch?v=qEwKCR5JCog"
+if(A.n.n(s,"leg press")||A.n.n(s,"leg"))return"https://www.youtube.com/watch?v=DQ4-HXFlKXI"
+if(A.n.n(s,"extensora"))return"https://www.youtube.com/watch?v=y7GhuVphn4s"
+if(A.n.n(s,"flexora"))return"https://www.youtube.com/watch?v=umxlbgCK6oc"
+if(A.n.n(s,"stiff")||A.n.n(s,"terra"))return"https://www.youtube.com/watch?v=6PWws7e_z-s"
+if(A.n.n(s,"p\xe9lvica")||A.n.n(s,"pelvica"))return"https://www.youtube.com/watch?v=Q85EzsgleaE"
+if(A.n.n(s,"panturrilha"))return"https://www.youtube.com/watch?v=EILF4iyBxSQ"
+if(A.n.n(s,"desenvolvimento"))return"https://www.youtube.com/watch?v=DFXtzdXN_iY"
 if(A.n.n(s,"eleva\xe7\xe3o lateral")||A.n.n(s,"elevacao lateral"))return n
-if(A.n.n(s,"rosca martelo"))return"https://www.youtube.com/watch?v=zC3nLlEvin4"
+if(A.n.n(s,"rosca martelo"))return"https://www.youtube.com/watch?v=GilFwBs_kOs"
 if(A.n.n(s,"rosca"))return m
-if(A.n.n(s,"tr\xedceps testa")||A.n.n(s,"triceps testa"))return"https://www.youtube.com/watch?v=d_KZxkY_0cM"
+if(A.n.n(s,"tr\xedceps testa")||A.n.n(s,"triceps testa"))return"https://www.youtube.com/watch?v=CF6N7CfABIg"
 if(A.n.n(s,"tr\xedceps")||A.n.n(s,"triceps"))return l
 if(A.n.n(r,"peito"))return q
 if(A.n.n(r,"costa"))return p
@@ -31643,7 +31643,7 @@ if(A.n.n(r,"perna"))return o
 if(A.n.n(r,"ombro"))return n
 if(A.n.n(r,"b\xedceps")||A.n.n(r,"biceps"))return m
 if(A.n.n(r,"tr\xedceps")||A.n.n(r,"triceps"))return l
-return"https://www.youtube.com/watch?v=pSHjTRCQxIw"},
+return"https://www.youtube.com/watch?v=ffHr8a6DRvU"},
 aOX(a){var s=A.n.bY(a),r=B.cG('(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?|shorts)\\/|.*[?&]v=)|youtu\\.be\\/)([^"&?\\/\\s]{11})',!1,!1).oI(s)
 return r==null?null:r.b[1]},
 aOW(a,b,c,d,e,f){return new B.vP(c,a,e,f,b,d,null)},
@@ -108071,7 +108071,7 @@ $S:0}
 B.aMF.prototype={
 $1(a){var s,r=this.a,q=r!=null&&r.length===11,p=v.G
 if(q){s=p.document.createElement("iframe")
-s.src="https://www.youtube.com/embed/"+r+"?rel=0&modestbranding=1&playsinline=1&autoplay=1"
+s.src="https://www.youtube.com/embed/"+r+"?rel=0&modestbranding=1&playsinline=1&autoplay=1&hl=pt-BR&cc_lang_pref=pt"
 s.style.border="none"
 s.style.width="100%"
 s.style.height="100%"

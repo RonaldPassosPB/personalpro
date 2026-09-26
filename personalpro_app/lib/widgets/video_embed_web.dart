@@ -15,7 +15,7 @@ Widget buildNativeWebVideoEmbed(String videoUrl, String? youtubeId) {
       if (youtubeId != null && youtubeId.length == 11) {
         final iframe = web.HTMLIFrameElement()
           ..src =
-              'https://www.youtube.com/embed/$youtubeId?rel=0&modestbranding=1&playsinline=1&autoplay=1'
+              'https://www.youtube.com/embed/$youtubeId?rel=0&modestbranding=1&playsinline=1&autoplay=1&hl=pt-BR&cc_lang_pref=pt'
           ..style.border = 'none'
           ..style.width = '100%'
           ..style.height = '100%'

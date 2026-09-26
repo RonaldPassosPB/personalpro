@@ -22,37 +22,39 @@ class ExercicioVideoCatalogo {
     final n = nomeExercicio.toLowerCase();
     final g = grupoMuscular.toLowerCase();
 
-    if (n.contains('supino inclinado')) return 'https://www.youtube.com/watch?v=8iPEnn-ltC8';
-    if (n.contains('supino')) return 'https://www.youtube.com/watch?v=rT7DgCr-3pg';
-    if (n.contains('crucifixo') || n.contains('peck')) return 'https://www.youtube.com/watch?v=eozdVDA78K0';
-    if (n.contains('crossover')) return 'https://www.youtube.com/watch?v=taI4XduLpTk';
-    if (n.contains('puxada') || n.contains('barra fixa')) return 'https://www.youtube.com/watch?v=CAwf7n6Luuc';
-    if (n.contains('remada curvada')) return 'https://www.youtube.com/watch?v=FWJR5Ve8bnQ';
-    if (n.contains('remada')) return 'https://www.youtube.com/watch?v=GZbfZ033f74';
-    if (n.contains('agachamento')) return 'https://www.youtube.com/watch?v=ultWZbUMPL8';
-    if (n.contains('leg press') || n.contains('leg')) return 'https://www.youtube.com/watch?v=IZxyjW7MPJQ';
-    if (n.contains('extensora')) return 'https://www.youtube.com/watch?v=YyvSfVjQeL0';
-    if (n.contains('flexora')) return 'https://www.youtube.com/watch?v=1Tq3QdYUuHs';
-    if (n.contains('stiff') || n.contains('terra')) return 'https://www.youtube.com/watch?v=1oed-UmAxFs';
-    if (n.contains('pélvica') || n.contains('pelvica')) return 'https://www.youtube.com/watch?v=SEdqd1n0cvg';
-    if (n.contains('panturrilha')) return 'https://www.youtube.com/watch?v=gwLzBJYoWlI';
-    if (n.contains('desenvolvimento')) return 'https://www.youtube.com/watch?v=qEwKCR5JCog';
+    if (n.contains('supino inclinado')) return 'https://www.youtube.com/watch?v=Fa-X2ByLHaY';
+    if (n.contains('supino')) return 'https://www.youtube.com/watch?v=pCPyqW60Wuk';
+    if (n.contains('crucifixo') || n.contains('peck') || n.contains('voador')) {
+      return 'https://www.youtube.com/watch?v=MENdoLpyj7c';
+    }
+    if (n.contains('crossover')) return 'https://www.youtube.com/watch?v=_hdQD_E3deE';
+    if (n.contains('puxada') || n.contains('barra fixa')) return 'https://www.youtube.com/watch?v=ftcql3-AMRs';
+    if (n.contains('remada curvada')) return 'https://www.youtube.com/watch?v=SbuXAFpDUkI';
+    if (n.contains('remada')) return 'https://www.youtube.com/watch?v=zw0lUIPCq-U';
+    if (n.contains('agachamento')) return 'https://www.youtube.com/watch?v=3vTRFnzCMaA';
+    if (n.contains('leg press') || n.contains('leg')) return 'https://www.youtube.com/watch?v=DQ4-HXFlKXI';
+    if (n.contains('extensora')) return 'https://www.youtube.com/watch?v=y7GhuVphn4s';
+    if (n.contains('flexora')) return 'https://www.youtube.com/watch?v=umxlbgCK6oc';
+    if (n.contains('stiff') || n.contains('terra')) return 'https://www.youtube.com/watch?v=6PWws7e_z-s';
+    if (n.contains('pélvica') || n.contains('pelvica')) return 'https://www.youtube.com/watch?v=Q85EzsgleaE';
+    if (n.contains('panturrilha')) return 'https://www.youtube.com/watch?v=EILF4iyBxSQ';
+    if (n.contains('desenvolvimento')) return 'https://www.youtube.com/watch?v=DFXtzdXN_iY';
     if (n.contains('elevação lateral') || n.contains('elevacao lateral')) {
-      return 'https://www.youtube.com/watch?v=3VcKaXpzqRo';
+      return 'https://www.youtube.com/watch?v=yURmeIEl1Fg';
     }
-    if (n.contains('rosca martelo')) return 'https://www.youtube.com/watch?v=zC3nLlEvin4';
-    if (n.contains('rosca')) return 'https://www.youtube.com/watch?v=kwG2ipFRgfo';
+    if (n.contains('rosca martelo')) return 'https://www.youtube.com/watch?v=GilFwBs_kOs';
+    if (n.contains('rosca')) return 'https://www.youtube.com/watch?v=fjS0CqDR4v8';
     if (n.contains('tríceps testa') || n.contains('triceps testa')) {
-      return 'https://www.youtube.com/watch?v=d_KZxkY_0cM';
+      return 'https://www.youtube.com/watch?v=CF6N7CfABIg';
     }
-    if (n.contains('tríceps') || n.contains('triceps')) return 'https://www.youtube.com/watch?v=2-LAMcpzODU';
-    if (g.contains('peito')) return 'https://www.youtube.com/watch?v=rT7DgCr-3pg';
-    if (g.contains('costa')) return 'https://www.youtube.com/watch?v=CAwf7n6Luuc';
-    if (g.contains('perna')) return 'https://www.youtube.com/watch?v=ultWZbUMPL8';
-    if (g.contains('ombro')) return 'https://www.youtube.com/watch?v=3VcKaXpzqRo';
-    if (g.contains('bíceps') || g.contains('biceps')) return 'https://www.youtube.com/watch?v=kwG2ipFRgfo';
-    if (g.contains('tríceps') || g.contains('triceps')) return 'https://www.youtube.com/watch?v=2-LAMcpzODU';
-    return 'https://www.youtube.com/watch?v=pSHjTRCQxIw';
+    if (n.contains('tríceps') || n.contains('triceps')) return 'https://www.youtube.com/watch?v=VnFopAIGO7E';
+    if (g.contains('peito')) return 'https://www.youtube.com/watch?v=pCPyqW60Wuk';
+    if (g.contains('costa')) return 'https://www.youtube.com/watch?v=ftcql3-AMRs';
+    if (g.contains('perna')) return 'https://www.youtube.com/watch?v=3vTRFnzCMaA';
+    if (g.contains('ombro')) return 'https://www.youtube.com/watch?v=yURmeIEl1Fg';
+    if (g.contains('bíceps') || g.contains('biceps')) return 'https://www.youtube.com/watch?v=fjS0CqDR4v8';
+    if (g.contains('tríceps') || g.contains('triceps')) return 'https://www.youtube.com/watch?v=VnFopAIGO7E';
+    return 'https://www.youtube.com/watch?v=ffHr8a6DRvU';
   }
 
   static String? extrairYoutubeId(String url) {
