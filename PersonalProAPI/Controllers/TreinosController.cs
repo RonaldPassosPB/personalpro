@@ -403,6 +403,39 @@ namespace PersonalProAPI.Controllers
             }
         }
 
+        [HttpPatch("exercicios/{id}/video")]
+        public async Task<IActionResult> AtualizarVideoExercicio(int id, [FromBody] AtualizarVideoDto dto)
+        {
+            var personalId = UsuarioContexto.GetPersonalId(User);
+            using var con = _db.CriarConexao();
+
+            var ex = await con.QueryFirstOrDefaultAsync<dynamic>(@"
+                SELECT FE.ID, FE.NOME_EXERCICIO
+                FROM FICHA_EXERCICIOS FE
+                INNER JOIN FICHAS_TREINO FT ON FT.ID = FE.FICHA_ID
+                WHERE FE.ID = @Id AND FT.PERSONAL_ID = @PersonalId",
+                new { Id = id, PersonalId = personalId }
+            );
+            if (ex == null) return NotFound();
+
+            await con.ExecuteAsync(
+                "UPDATE FICHA_EXERCICIOS SET VIDEO_URL = @VideoUrl WHERE ID = @Id",
+                new { dto.VideoUrl, Id = id }
+            );
+
+            await con.ExecuteAsync(
+                "UPDATE EXERCICIOS_BASE SET VIDEO_URL = @VideoUrl WHERE NOME = @Nome",
+                new { dto.VideoUrl, Nome = (string)ex.NOME_EXERCICIO }
+            );
+
+            return Ok(new { mensagem = "Vídeo do exercício atualizado com sucesso!" });
+        }
+
+        public class AtualizarVideoDto
+        {
+            public string? VideoUrl { get; set; }
+        }
+
         public class NovoExercicioBaseDto
         {
             public string Nome { get; set; } = string.Empty;

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -7,12 +8,69 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/whatsapp_service.dart';
 import '../theme.dart';
+import 'video_embed_stub.dart' if (dart.library.js_interop) 'video_embed_web.dart';
 
 // ============================================================================
-// 1. DEMONSTRADOR ANIMADO DE EXECUÇÃO DE EXERCÍCIOS (60 FPS + GIF + VÍDEO)
+// HELPER DE VÍDEOS REAIS DE EXERCÍCIOS (YOUTUBE / MP4 / GIF)
 // ============================================================================
 
-class ExercicioAnimadoThumbnail extends StatefulWidget {
+class ExercicioVideoCatalogo {
+  static String resolverUrlVideoPadrao(String nomeExercicio, String grupoMuscular, String? customUrl) {
+    final c = (customUrl ?? '').trim();
+    if (c.isNotEmpty && c.startsWith('http')) return c;
+
+    final n = nomeExercicio.toLowerCase();
+    final g = grupoMuscular.toLowerCase();
+
+    if (n.contains('supino inclinado')) return 'https://www.youtube.com/watch?v=8iPEnn-ltC8';
+    if (n.contains('supino')) return 'https://www.youtube.com/watch?v=rT7DgCr-3pg';
+    if (n.contains('crucifixo') || n.contains('peck')) return 'https://www.youtube.com/watch?v=eozdVDA78K0';
+    if (n.contains('crossover')) return 'https://www.youtube.com/watch?v=taI4XduLpTk';
+    if (n.contains('puxada') || n.contains('barra fixa')) return 'https://www.youtube.com/watch?v=CAwf7n6Luuc';
+    if (n.contains('remada curvada')) return 'https://www.youtube.com/watch?v=FWJR5Ve8bnQ';
+    if (n.contains('remada')) return 'https://www.youtube.com/watch?v=GZbfZ033f74';
+    if (n.contains('agachamento')) return 'https://www.youtube.com/watch?v=ultWZbUMPL8';
+    if (n.contains('leg press') || n.contains('leg')) return 'https://www.youtube.com/watch?v=IZxyjW7MPJQ';
+    if (n.contains('extensora')) return 'https://www.youtube.com/watch?v=YyvSfVjQeL0';
+    if (n.contains('flexora')) return 'https://www.youtube.com/watch?v=1Tq3QdYUuHs';
+    if (n.contains('stiff') || n.contains('terra')) return 'https://www.youtube.com/watch?v=1oed-UmAxFs';
+    if (n.contains('pélvica') || n.contains('pelvica')) return 'https://www.youtube.com/watch?v=SEdqd1n0cvg';
+    if (n.contains('panturrilha')) return 'https://www.youtube.com/watch?v=gwLzBJYoWlI';
+    if (n.contains('desenvolvimento')) return 'https://www.youtube.com/watch?v=qEwKCR5JCog';
+    if (n.contains('elevação lateral') || n.contains('elevacao lateral')) {
+      return 'https://www.youtube.com/watch?v=3VcKaXpzqRo';
+    }
+    if (n.contains('rosca martelo')) return 'https://www.youtube.com/watch?v=zC3nLlEvin4';
+    if (n.contains('rosca')) return 'https://www.youtube.com/watch?v=kwG2ipFRgfo';
+    if (n.contains('tríceps testa') || n.contains('triceps testa')) {
+      return 'https://www.youtube.com/watch?v=d_KZxkY_0cM';
+    }
+    if (n.contains('tríceps') || n.contains('triceps')) return 'https://www.youtube.com/watch?v=2-LAMcpzODU';
+    if (g.contains('peito')) return 'https://www.youtube.com/watch?v=rT7DgCr-3pg';
+    if (g.contains('costa')) return 'https://www.youtube.com/watch?v=CAwf7n6Luuc';
+    if (g.contains('perna')) return 'https://www.youtube.com/watch?v=ultWZbUMPL8';
+    if (g.contains('ombro')) return 'https://www.youtube.com/watch?v=3VcKaXpzqRo';
+    if (g.contains('bíceps') || g.contains('biceps')) return 'https://www.youtube.com/watch?v=kwG2ipFRgfo';
+    if (g.contains('tríceps') || g.contains('triceps')) return 'https://www.youtube.com/watch?v=2-LAMcpzODU';
+    return 'https://www.youtube.com/watch?v=pSHjTRCQxIw';
+  }
+
+  static String? extrairYoutubeId(String url) {
+    final u = url.trim();
+    final reg = RegExp(
+      r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
+      caseSensitive: false,
+    );
+    final match = reg.firstMatch(u);
+    return match?.group(1);
+  }
+}
+
+// ============================================================================
+// 1. MINIATURA DE VÍDEO REAL DO EXERCÍCIO + PLAYER EMBUTIDO (IFRAME / VIDEO)
+// ============================================================================
+
+class ExercicioAnimadoThumbnail extends StatelessWidget {
   final String nomeExercicio;
   final String grupoMuscular;
   final String? videoUrl;
@@ -25,113 +83,101 @@ class ExercicioAnimadoThumbnail extends StatefulWidget {
     required this.nomeExercicio,
     required this.grupoMuscular,
     this.videoUrl,
-    this.width = 96,
-    this.height = 82,
+    this.width = 112,
+    this.height = 76,
     this.onTap,
   });
 
   @override
-  State<ExercicioAnimadoThumbnail> createState() =>
-      _ExercicioAnimadoThumbnailState();
-}
-
-class _ExercicioAnimadoThumbnailState extends State<ExercicioAnimadoThumbnail>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  bool get _isDirectGifOrImage {
-    final u = (widget.videoUrl ?? '').trim().toLowerCase();
-    return u.endsWith('.gif') ||
-        u.endsWith('.webp') ||
-        u.endsWith('.png') ||
-        u.endsWith('.jpg') ||
-        u.startsWith('data:image');
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final resolvedUrl = ExercicioVideoCatalogo.resolverUrlVideoPadrao(
+      nomeExercicio,
+      grupoMuscular,
+      videoUrl,
+    );
+    final ytId = ExercicioVideoCatalogo.extrairYoutubeId(resolvedUrl);
+    final thumbUrl = ytId != null
+        ? 'https://img.youtube.com/vi/$ytId/hqdefault.jpg'
+        : resolvedUrl;
+
     return InkWell(
-      onTap: widget.onTap,
+      onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        width: widget.width,
-        height: widget.height,
+        width: width,
+        height: height,
         decoration: BoxDecoration(
           color: const Color(0xFF0E131A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppTheme.neonGreen.withValues(alpha: 0.45),
-            width: 1.2,
+            color: AppTheme.neonGreen.withValues(alpha: 0.55),
+            width: 1.4,
           ),
         ),
         child: Stack(
           children: [
             Positioned.fill(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(11),
-                child: _isDirectGifOrImage
-                    ? Image.network(
-                        widget.videoUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => AnimatedBuilder(
-                          animation: _ctrl,
-                          builder: (_, _) => CustomPaint(
-                            painter: _BiomecanicaExercicioPainter(
-                              progress: _ctrl.value,
-                              nomeExercicio: widget.nomeExercicio,
-                              grupoMuscular: widget.grupoMuscular,
-                              compact: true,
-                            ),
-                          ),
-                        ),
-                      )
-                    : AnimatedBuilder(
-                        animation: _ctrl,
-                        builder: (_, _) => CustomPaint(
-                          painter: _BiomecanicaExercicioPainter(
-                            progress: _ctrl.value,
-                            nomeExercicio: widget.nomeExercicio,
-                            grupoMuscular: widget.grupoMuscular,
-                            compact: true,
-                          ),
-                        ),
-                      ),
+                borderRadius: BorderRadius.circular(10.5),
+                child: Image.network(
+                  thumbUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    color: const Color(0xFF121822),
+                    child: const Center(
+                      child: Icon(Icons.fitness_center, color: AppTheme.neonGreen, size: 28),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10.5),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.55),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: AppTheme.neonGreen.withValues(alpha: 0.92),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.neonGreen.withValues(alpha: 0.45),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.play_arrow_rounded, size: 20, color: Colors.black),
               ),
             ),
             Positioned(
-              left: 4,
+              left: 5,
               top: 4,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 5,
-                  vertical: 1.5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.75),
+                  color: Colors.black.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.gif_box, color: AppTheme.neonGreen, size: 11),
-                    SizedBox(width: 2),
+                    Icon(Icons.videocam, color: AppTheme.neonGreen, size: 10),
+                    SizedBox(width: 3),
                     Text(
-                      'EXECUÇÃO',
+                      'VÍDEO HD',
                       style: TextStyle(
                         fontSize: 8,
                         fontWeight: FontWeight.w900,
@@ -142,24 +188,127 @@ class _ExercicioAnimadoThumbnailState extends State<ExercicioAnimadoThumbnail>
                 ),
               ),
             ),
-            Positioned(
-              right: 4,
-              bottom: 4,
-              child: Container(
-                padding: const EdgeInsets.all(3),
-                decoration: const BoxDecoration(
-                  color: AppTheme.neonGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  size: 12,
-                  color: Colors.black,
-                ),
-              ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class PlayerVideoExercicioInline extends StatelessWidget {
+  final String nomeExercicio;
+  final String grupoMuscular;
+  final String? videoUrl;
+  final int exercicioId;
+  final VoidCallback? onFechar;
+  final VoidCallback? onAbrirModalCompleto;
+
+  const PlayerVideoExercicioInline({
+    super.key,
+    required this.nomeExercicio,
+    required this.grupoMuscular,
+    this.videoUrl,
+    required this.exercicioId,
+    this.onFechar,
+    this.onAbrirModalCompleto,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedUrl = ExercicioVideoCatalogo.resolverUrlVideoPadrao(
+      nomeExercicio,
+      grupoMuscular,
+      videoUrl,
+    );
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.neonGreen.withValues(alpha: 0.55), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFF141820),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+            ),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.ondemand_video, color: AppTheme.neonGreen, size: 18),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'VÍDEO DE EXECUÇÃO: $nomeExercicio',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.neonGreen,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onAbrirModalCompleto != null)
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
+                        onPressed: onAbrirModalCompleto,
+                        icon: const Icon(Icons.open_in_full, size: 14, color: Colors.cyanAccent),
+                        label: const Text(
+                          'Guia Técnico / Editar Vídeo',
+                          style: TextStyle(fontSize: 11, color: Colors.cyanAccent),
+                        ),
+                      ),
+                    if (onFechar != null)
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Fechar Player',
+                        onPressed: onFechar,
+                        icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white70),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(13)),
+              child: kIsWeb
+                  ? buildNativeWebVideoEmbed(
+                      resolvedUrl,
+                      ExercicioVideoCatalogo.extrairYoutubeId(resolvedUrl),
+                    )
+                  : Center(
+                      child: ElevatedButton.icon(
+                        onPressed: () => launchUrl(
+                          Uri.parse(resolvedUrl),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('ASSISTIR VÍDEO'),
+                      ),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -180,18 +329,28 @@ class _ExercicioExecucaoDialog extends StatefulWidget {
   const _ExercicioExecucaoDialog({required this.exercicio});
 
   @override
-  State<_ExercicioExecucaoDialog> createState() =>
-      _ExercicioExecucaoDialogState();
+  State<_ExercicioExecucaoDialog> createState() => _ExercicioExecucaoDialogState();
 }
 
 class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  bool _cameraLenta = false;
+  late final TextEditingController _urlCtrl;
+  bool _modoSimuladorBiomecanico = false;
+  bool _salvandoUrl = false;
+  late String _videoUrlAtual;
 
   @override
   void initState() {
     super.initState();
+    final nome = (widget.exercicio['nomeExercicio'] ?? widget.exercicio['nome'] ?? 'Exercício').toString();
+    final grupo = (widget.exercicio['grupoMuscular'] ?? 'Musculação').toString();
+    _videoUrlAtual = ExercicioVideoCatalogo.resolverUrlVideoPadrao(
+      nome,
+      grupo,
+      widget.exercicio['videoUrl']?.toString(),
+    );
+    _urlCtrl = TextEditingController(text: _videoUrlAtual);
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1700),
@@ -201,6 +360,7 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
   @override
   void dispose() {
     _ctrl.dispose();
+    _urlCtrl.dispose();
     super.dispose();
   }
 
@@ -227,75 +387,90 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
           '2. Suba contraindo o bíceps até o topo e segure 1s apertando a musculatura.\n'
           '3. Desça controlando em 2 a 3 segundos até alongar quase totalmente o braço.';
     }
-    if (n.contains('tríceps') || n.contains('triceps')) {
-      return '1. Mantenha os cotovelos imóveis ao lado do corpo (apenas o antebraço se move).\n'
-          '2. Estenda completamente até travar a contração do tríceps embaixo.\n'
-          '3. Controle a subida até 90° mantendo tensão constante no cabo/barra.';
-    }
     return '1. Estabilize o core (abdômen e lombar) antes de iniciar a primeira repetição.\n'
         '2. Controle a fase excêntrica (descida) em 2 segundos e solte o ar na fase de força.\n'
         '3. Evite usar impulso articular; mantenha tensão contínua no músculo alvo.';
   }
 
+  Future<void> _salvarNovoVideo() async {
+    final exId = widget.exercicio['id'];
+    final novaUrl = _urlCtrl.text.trim();
+    if (novaUrl.isEmpty) return;
+    setState(() {
+      _salvandoUrl = true;
+      _videoUrlAtual = novaUrl;
+      widget.exercicio['videoUrl'] = novaUrl;
+    });
+    if (exId != null) {
+      try {
+        await ApiService().dio.patch(
+          '/api/treinos/exercicios/$exId/video',
+          data: {'videoUrl': novaUrl},
+        );
+      } catch (_) {}
+    }
+    if (mounted) {
+      setState(() => _salvandoUrl = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎬 Vídeo de execução atualizado com sucesso!'),
+          backgroundColor: AppTheme.neonGreen,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final nome =
-        (widget.exercicio['nomeExercicio'] ??
-                widget.exercicio['nome'] ??
-                'Exercício')
-            .toString();
-    final grupo = (widget.exercicio['grupoMuscular'] ?? 'Musculação')
-        .toString();
+    final screenW = MediaQuery.sizeOf(context).width;
+    final isMobile = screenW < 600;
+    final nome = (widget.exercicio['nomeExercicio'] ?? widget.exercicio['nome'] ?? 'Exercício').toString();
+    final grupo = (widget.exercicio['grupoMuscular'] ?? 'Musculação').toString();
     final series = widget.exercicio['series'] ?? 4;
     final reps = (widget.exercicio['repeticoes'] ?? '10 a 12').toString();
     final carga = widget.exercicio['cargaKg'] ?? 20;
     final descanso = widget.exercicio['descansoSegundos'] ?? 60;
     final obs = (widget.exercicio['observacaoTecnica'] ?? '').toString();
-    final videoUrl = (widget.exercicio['videoUrl'] ?? '').toString();
+    final ytId = ExercicioVideoCatalogo.extrairYoutubeId(_videoUrlAtual);
 
     return Dialog(
       backgroundColor: AppTheme.surfaceCard,
+      insetPadding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 24, vertical: isMobile ? 12 : 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
+        constraints: BoxConstraints(maxWidth: math.min(screenW - 20, 660)),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isMobile ? 14 : 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // CABEÇALHO DO EXERCÍCIO
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(9),
                     decoration: BoxDecoration(
                       color: AppTheme.neonGreen.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.play_circle_fill,
-                      color: AppTheme.neonGreen,
-                      size: 26,
-                    ),
+                    child: const Icon(Icons.play_circle_fill, color: AppTheme.neonGreen, size: 24),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           nome,
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: isMobile ? 15.5 : 18,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
                         Text(
-                          'Músculo Alvo: $grupo • $series séries x $reps ($carga kg)',
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: AppTheme.neonGreen,
-                          ),
+                          '$grupo • $series séries x $reps ($carga kg) • Descanso: ${descanso}s',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.neonGreen),
                         ),
                       ],
                     ),
@@ -306,115 +481,105 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // PLAYER ANIMADO EM LOOP (GIF / BIOMECÂNICA 60 FPS)
+              // SELETOR DE MODO: VÍDEO REAL EMBUTIDO vs SIMULADOR BIOMECÂNICO
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('🎬 Vídeo Real da Execução (Player HD)'),
+                    selected: !_modoSimuladorBiomecanico,
+                    selectedColor: AppTheme.neonGreen.withValues(alpha: 0.25),
+                    onSelected: (_) => setState(() => _modoSimuladorBiomecanico = false),
+                  ),
+                  ChoiceChip(
+                    label: const Text('🦾 Mapa de Ativação Muscular (2D)'),
+                    selected: _modoSimuladorBiomecanico,
+                    selectedColor: AppTheme.neonGreen.withValues(alpha: 0.25),
+                    onSelected: (_) => setState(() => _modoSimuladorBiomecanico = true),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // PLAYER DE VÍDEO REAL EMBUTIDO (IFRAME YOUTUBE / HTML5 VIDEO) OU MAPA 2D
               Container(
-                height: 260,
+                height: isMobile ? 225 : 330,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0A0E14),
+                  color: Colors.black,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.neonGreen.withValues(alpha: 0.4),
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: AppTheme.neonGreen.withValues(alpha: 0.45), width: 1.5),
                 ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: AnimatedBuilder(
-                        animation: _ctrl,
-                        builder: (_, _) => CustomPaint(
-                          painter: _BiomecanicaExercicioPainter(
-                            progress: _ctrl.value,
-                            nomeExercicio: nome,
-                            grupoMuscular: grupo,
-                            compact: false,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14.5),
+                  child: !_modoSimuladorBiomecanico && kIsWeb
+                      ? buildNativeWebVideoEmbed(_videoUrlAtual, ytId)
+                      : AnimatedBuilder(
+                          animation: _ctrl,
+                          builder: (_, _) => CustomPaint(
+                            painter: _BiomecanicaExercicioPainter(
+                              progress: _ctrl.value,
+                              nomeExercicio: nome,
+                              grupoMuscular: grupo,
+                              compact: false,
+                            ),
                           ),
                         ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // CAMPO PARA O PERSONAL PERSONALIZAR O LINK DO VÍDEO (YOUTUBE / MP4)
+              if (widget.exercicio['id'] != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF131820),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '🔗 LINK DO VÍDEO DO EXERCÍCIO (YOUTUBE / SHORTS / MP4)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: AnimatedBuilder(
-                        animation: _ctrl,
-                        builder: (_, _) {
-                          final subindo =
-                              _ctrl.status == AnimationStatus.forward;
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.78),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: subindo
-                                    ? AppTheme.neonGreen
-                                    : const Color(0xFF29B6F6),
-                              ),
-                            ),
-                            child: Text(
-                              subindo
-                                  ? '🔥 FASE CONCÊNTRICA (SOLTE O AR / CONTRAIA)'
-                                  : '❄️ FASE EXCÊNTRICA (INSPIRE / SEGURE A DESCIDA 2s)',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                color: subindo
-                                    ? AppTheme.neonGreen
-                                    : const Color(0xFF29B6F6),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 10,
-                      right: 12,
-                      child: Row(
+                      const SizedBox(height: 6),
+                      Row(
                         children: [
-                          ActionChip(
-                            backgroundColor: const Color(0xFF1A222D),
-                            avatar: Icon(
-                              _cameraLenta
-                                  ? Icons.slow_motion_video
-                                  : Icons.speed,
-                              size: 16,
-                              color: AppTheme.neonGreen,
-                            ),
-                            label: Text(
-                              _cameraLenta
-                                  ? 'Velocidade: 0.5x (Lento)'
-                                  : 'Velocidade: 1.0x (Normal)',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.white,
+                          Expanded(
+                            child: TextField(
+                              controller: _urlCtrl,
+                              style: const TextStyle(fontSize: 12.5),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                hintText: 'Cole aqui o link do YouTube ou MP4...',
                               ),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _cameraLenta = !_cameraLenta;
-                                _ctrl.duration = Duration(
-                                  milliseconds: _cameraLenta ? 3400 : 1700,
-                                );
-                                _ctrl.repeat(reverse: true);
-                              });
-                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: _salvandoUrl ? null : _salvarNovoVideo,
+                            icon: const Icon(Icons.save, size: 16),
+                            label: Text(_salvandoUrl ? '...' : 'Trocar Vídeo'),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 12),
+              ],
 
-              // GUIA TÉCNICO DE BIOMECÂNICA E EXECUÇÃO
+              // GUIA TÉCNICO DE BIOMECÂNICA E POSTURA
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -427,18 +592,16 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
                   children: [
                     const Row(
                       children: [
-                        Icon(
-                          Icons.verified_outlined,
-                          color: AppTheme.neonGreen,
-                          size: 18,
-                        ),
+                        Icon(Icons.verified_outlined, color: AppTheme.neonGreen, size: 18),
                         SizedBox(width: 8),
-                        Text(
-                          'COMO EXECUTAR CORRETAMENTE (BIOMECÂNICA & POSTURA)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.neonGreen,
+                        Expanded(
+                          child: Text(
+                            'DICAS DE EXECUÇÃO CORRETA & POSTURA',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.neonGreen,
+                            ),
                           ),
                         ),
                       ],
@@ -446,11 +609,7 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
                     const SizedBox(height: 8),
                     Text(
                       _obterDicaBiomecanica(grupo, nome),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.45,
-                        color: Colors.white,
-                      ),
+                      style: const TextStyle(fontSize: 12.5, height: 1.45, color: Colors.white),
                     ),
                     if (obs.isNotEmpty) ...[
                       const SizedBox(height: 10),
@@ -462,15 +621,11 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.tips_and_updates,
-                              color: Colors.amberAccent,
-                              size: 16,
-                            ),
+                            const Icon(Icons.tips_and_updates, color: Colors.amberAccent, size: 16),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Orientação do seu Personal: $obs (Descanso: ${descanso}s)',
+                                'Orientação do Personal: $obs',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.amberAccent,
@@ -487,34 +642,23 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
               ),
               const SizedBox(height: 14),
 
-              // BOTÕES DE VÍDEO EXTERNO / YOUTUBE
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              // BOTÕES DE AÇÃO RESPONSIVOS
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 10,
+                runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
                     onPressed: () async {
-                      final url =
-                          videoUrl.isNotEmpty && videoUrl.startsWith('http')
-                          ? Uri.parse(videoUrl)
-                          : Uri.parse(
-                              'https://www.youtube.com/results?search_query=${Uri.encodeComponent("como fazer $nome execucao correta musculacao")}',
-                            );
-                      await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      );
+                      final uri = Uri.parse(_videoUrlAtual);
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
                     },
-                    icon: const Icon(
-                      Icons.ondemand_video,
-                      color: Colors.redAccent,
-                      size: 18,
-                    ),
-                    label: const Text('Ver Vídeo Real no YouTube'),
+                    icon: const Icon(Icons.open_in_new, color: AppTheme.neonGreen, size: 16),
+                    label: const Text('Abrir no App YouTube'),
                   ),
-                  const SizedBox(width: 10),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('ENTENDI A EXECUÇÃO'),
+                    child: const Text('FECHAR PLAYER'),
                   ),
                 ],
               ),
@@ -544,7 +688,6 @@ class _BiomecanicaExercicioPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Grid de fundo estilo laboratório de biomecânica
     final gridPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 1;
@@ -569,11 +712,7 @@ class _BiomecanicaExercicioPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final neonMusclePaint = Paint()
-      ..color = Color.lerp(
-        const Color(0xFF00E676),
-        const Color(0xFFFF5252),
-        progress,
-      )!
+      ..color = Color.lerp(const Color(0xFF00E676), const Color(0xFFFF5252), progress)!
       ..strokeWidth = compact ? 5.0 : 9.0
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -588,72 +727,34 @@ class _BiomecanicaExercicioPainter extends CustomPainter {
     final cx = w * 0.5;
     final cy = h * 0.54;
 
-    if (n.contains('supino') ||
-        n.contains('crucifixo') ||
-        g.contains('peito')) {
-      // ─── ANIMAÇÃO DE SUPINO / PEITORAL ─────────────────────────────────────
+    if (n.contains('supino') || n.contains('crucifixo') || g.contains('peito')) {
       final benchY = cy + (compact ? 12 : 26);
-      // Banco
-      canvas.drawLine(
-        Offset(w * 0.20, benchY),
-        Offset(w * 0.78, benchY),
-        equipPaint,
-      );
-      canvas.drawLine(
-        Offset(w * 0.30, benchY),
-        Offset(w * 0.30, h * 0.88),
-        equipPaint,
-      );
-      canvas.drawLine(
-        Offset(w * 0.68, benchY),
-        Offset(w * 0.68, h * 0.88),
-        equipPaint,
-      );
+      canvas.drawLine(Offset(w * 0.20, benchY), Offset(w * 0.78, benchY), equipPaint);
+      canvas.drawLine(Offset(w * 0.30, benchY), Offset(w * 0.30, h * 0.88), equipPaint);
+      canvas.drawLine(Offset(w * 0.68, benchY), Offset(w * 0.68, h * 0.88), equipPaint);
 
-      // Tronco deitado e pernas
       final shoulder = Offset(w * 0.36, benchY - (compact ? 6 : 12));
       final hip = Offset(w * 0.60, benchY - (compact ? 6 : 12));
       final knee = Offset(w * 0.74, benchY - (compact ? 4 : 8));
       final foot = Offset(w * 0.78, h * 0.86);
-      canvas.drawCircle(
-        Offset(w * 0.28, benchY - (compact ? 8 : 14)),
-        compact ? 5 : 9,
-        bodyPaint,
-      );
+      canvas.drawCircle(Offset(w * 0.28, benchY - (compact ? 8 : 14)), compact ? 5 : 9, bodyPaint);
       canvas.drawLine(shoulder, hip, bodyPaint);
       canvas.drawLine(hip, knee, bodyPaint);
       canvas.drawLine(knee, foot, bodyPaint);
 
-      // Músculo Peitoral Iluminado
-      canvas.drawLine(
-        shoulder,
-        Offset(w * 0.46, benchY - (compact ? 8 : 15)),
-        glowPaint,
-      );
-      canvas.drawLine(
-        shoulder,
-        Offset(w * 0.46, benchY - (compact ? 8 : 15)),
-        neonMusclePaint,
-      );
+      canvas.drawLine(shoulder, Offset(w * 0.46, benchY - (compact ? 8 : 15)), glowPaint);
+      canvas.drawLine(shoulder, Offset(w * 0.46, benchY - (compact ? 8 : 15)), neonMusclePaint);
 
-      // Movimento vertical da barra (progress 0 = no peito, 1 = braços estendidos)
-      final barY =
-          (benchY - (compact ? 12 : 24)) - progress * (compact ? 22 : 48);
-      final elbowY =
-          (benchY - (compact ? 2 : 4)) - progress * (compact ? 14 : 30);
+      final barY = (benchY - (compact ? 12 : 24)) - progress * (compact ? 22 : 48);
+      final elbowY = (benchY - (compact ? 2 : 4)) - progress * (compact ? 14 : 30);
       final elbow = Offset(w * 0.38, elbowY);
       final hand = Offset(w * 0.38, barY);
 
       canvas.drawLine(shoulder, elbow, bodyPaint);
       canvas.drawLine(elbow, hand, bodyPaint);
 
-      // Barra + Anilhas
       final platePaint = Paint()..color = AppTheme.neonGreen;
-      canvas.drawLine(
-        Offset(w * 0.26, barY),
-        Offset(w * 0.50, barY),
-        equipPaint,
-      );
+      canvas.drawLine(Offset(w * 0.26, barY), Offset(w * 0.50, barY), equipPaint);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromCenter(
@@ -670,29 +771,19 @@ class _BiomecanicaExercicioPainter extends CustomPainter {
         n.contains('extensora') ||
         n.contains('stiff') ||
         g.contains('perna')) {
-      // ─── ANIMAÇÃO DE AGACHAMENTO / PERNAS ──────────────────────────────────
-      // progress: 0 = agachado 90°, 1 = em pé contraído
       final drop = (1.0 - progress) * (compact ? 15.0 : 34.0);
       final ankle = Offset(cx + (compact ? 4 : 8), h * 0.84);
-      final knee = Offset(
-        cx + (compact ? 12 : 24) * (1.1 - 0.5 * progress),
-        h * 0.64 + drop * 0.35,
-      );
-      final hip = Offset(
-        cx - (compact ? 10 : 22) * (1.1 - 0.4 * progress),
-        h * 0.46 + drop,
-      );
+      final knee = Offset(cx + (compact ? 12 : 24) * (1.1 - 0.5 * progress), h * 0.64 + drop * 0.35);
+      final hip = Offset(cx - (compact ? 10 : 22) * (1.1 - 0.4 * progress), h * 0.46 + drop);
       final shoulder = Offset(cx - (compact ? 2 : 5), h * 0.24 + drop);
       final head = Offset(shoulder.dx + 2, shoulder.dy - (compact ? 9 : 16));
 
-      // Coxa / Glúteo iluminado (músculo alvo)
       canvas.drawLine(hip, knee, glowPaint);
       canvas.drawLine(hip, knee, neonMusclePaint);
       canvas.drawLine(knee, ankle, bodyPaint);
       canvas.drawLine(hip, shoulder, bodyPaint);
       canvas.drawCircle(head, compact ? 5 : 9, bodyPaint);
 
-      // Barra nas costas + anilha neon
       canvas.drawLine(
         Offset(shoulder.dx - (compact ? 14 : 26), shoulder.dy + 2),
         Offset(shoulder.dx + (compact ? 14 : 26), shoulder.dy + 2),
@@ -703,51 +794,7 @@ class _BiomecanicaExercicioPainter extends CustomPainter {
         compact ? 6 : 11,
         Paint()..color = AppTheme.neonGreen,
       );
-    } else if (n.contains('puxada') ||
-        n.contains('remada') ||
-        n.contains('barra') ||
-        g.contains('costa')) {
-      // ─── ANIMAÇÃO DE PUXADA / DORSAIS ──────────────────────────────────────
-      final seatY = h * 0.74;
-      final hip = Offset(cx, seatY);
-      final shoulder = Offset(cx, h * 0.42);
-      final head = Offset(cx, h * 0.30);
-
-      // Cabo superior
-      final barY = (h * 0.16) + progress * (compact ? 18 : 36);
-      canvas.drawLine(Offset(cx, 6), Offset(cx, barY), equipPaint);
-      canvas.drawLine(
-        Offset(cx - (compact ? 20 : 38), barY),
-        Offset(cx + (compact ? 20 : 38), barY),
-        Paint()
-          ..color = AppTheme.neonGreen
-          ..strokeWidth = compact ? 3 : 5
-          ..strokeCap = StrokeCap.round,
-      );
-
-      // Dorsais iluminadas
-      canvas.drawLine(shoulder, hip, glowPaint);
-      canvas.drawLine(shoulder, hip, neonMusclePaint);
-      canvas.drawCircle(head, compact ? 5 : 9, bodyPaint);
-
-      // Braços puxando a barra
-      final leftHand = Offset(cx - (compact ? 16 : 30), barY);
-      final rightHand = Offset(cx + (compact ? 16 : 30), barY);
-      final leftElbow = Offset(
-        cx - (compact ? 14 : 26),
-        shoulder.dy + progress * (compact ? 8 : 16),
-      );
-      final rightElbow = Offset(
-        cx + (compact ? 14 : 26),
-        shoulder.dy + progress * (compact ? 8 : 16),
-      );
-
-      canvas.drawLine(shoulder, leftElbow, bodyPaint);
-      canvas.drawLine(leftElbow, leftHand, bodyPaint);
-      canvas.drawLine(shoulder, rightElbow, bodyPaint);
-      canvas.drawLine(rightElbow, rightHand, bodyPaint);
     } else {
-      // ─── ANIMAÇÃO DE BRAÇOS / OMBROS (ROSCA / TRÍCEPS / ELEVAÇÃO) ──────────
       final hip = Offset(cx, h * 0.62);
       final footL = Offset(cx - (compact ? 8 : 16), h * 0.86);
       final footR = Offset(cx + (compact ? 8 : 16), h * 0.86);
@@ -760,11 +807,9 @@ class _BiomecanicaExercicioPainter extends CustomPainter {
       canvas.drawCircle(head, compact ? 5 : 9, bodyPaint);
 
       final elbow = Offset(cx + (compact ? 8 : 16), h * 0.48);
-      // Braço/Bíceps/Ombro iluminado
       canvas.drawLine(shoulder, elbow, glowPaint);
       canvas.drawLine(shoulder, elbow, neonMusclePaint);
 
-      // Antebraço movendo em arco (rosca/tríceps/elevação)
       final angle = (math.pi * 0.42) - progress * (math.pi * 0.72);
       final forearmLen = compact ? 16.0 : 32.0;
       final hand = Offset(
@@ -772,13 +817,7 @@ class _BiomecanicaExercicioPainter extends CustomPainter {
         elbow.dy + math.sin(angle) * forearmLen,
       );
       canvas.drawLine(elbow, hand, bodyPaint);
-
-      // Halter na mão
-      canvas.drawCircle(
-        hand,
-        compact ? 5 : 9,
-        Paint()..color = AppTheme.neonGreen,
-      );
+      canvas.drawCircle(hand, compact ? 5 : 9, Paint()..color = AppTheme.neonGreen);
     }
   }
 
@@ -828,25 +867,16 @@ class DietaPdfService {
                     pw.SizedBox(height: 4),
                     pw.Text(
                       'Aluno(a): $nomeAluno  |  Consultoria: $nomePersonal',
-                      style: const pw.TextStyle(
-                        color: PdfColors.white,
-                        fontSize: 11,
-                      ),
+                      style: const pw.TextStyle(color: PdfColors.white, fontSize: 11),
                     ),
                     pw.Text(
                       'Protocolo: ${plano['titulo'] ?? 'Dieta Personalizada'} (${plano['objetivo'] ?? 'Hipertrofia'})',
-                      style: const pw.TextStyle(
-                        color: PdfColors.grey300,
-                        fontSize: 10,
-                      ),
+                      style: const pw.TextStyle(color: PdfColors.grey300, fontSize: 10),
                     ),
                   ],
                 ),
                 pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: pw.BoxDecoration(
                     color: PdfColor.fromHex('#00E676'),
                     borderRadius: pw.BorderRadius.circular(8),
@@ -864,8 +894,6 @@ class DietaPdfService {
             ),
           ),
           pw.SizedBox(height: 14),
-
-          // QUADRO DE MACRONUTRIENTES E TMB/GET
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
             decoration: pw.BoxDecoration(
@@ -876,26 +904,15 @@ class DietaPdfService {
               mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
                 _macroPdfBox('TMB Basal', '${plano['tmbKcal'] ?? 1800} kcal'),
-                _macroPdfBox(
-                  'Gasto Total (GET)',
-                  '${plano['getKcal'] ?? 2400} kcal',
-                ),
+                _macroPdfBox('Gasto Total (GET)', '${plano['getKcal'] ?? 2400} kcal'),
                 _macroPdfBox('Proteínas', '${plano['proteinaG'] ?? 180} g'),
-                _macroPdfBox(
-                  'Carboidratos',
-                  '${plano['carboidratoG'] ?? 300} g',
-                ),
+                _macroPdfBox('Carboidratos', '${plano['carboidratoG'] ?? 300} g'),
                 _macroPdfBox('Gorduras Boas', '${plano['gorduraG'] ?? 70} g'),
-                _macroPdfBox(
-                  'Meta de Água',
-                  '${plano['aguaLitros'] ?? 3.5} Litros',
-                ),
+                _macroPdfBox('Meta de Água', '${plano['aguaLitros'] ?? 3.5} Litros'),
               ],
             ),
           ),
           pw.SizedBox(height: 16),
-
-          // LISTA DE REFEIÇÕES
           ...refeicoes.map((r) {
             return pw.Container(
               margin: const pw.EdgeInsets.only(bottom: 10),
@@ -912,17 +929,11 @@ class DietaPdfService {
                     children: [
                       pw.Text(
                         '${r['horario'] ?? '08:00'} - ${r['nomeRefeicao'] ?? 'Refeição'}',
-                        style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
                       ),
                       pw.Text(
                         '~${r['kcalEstimada'] ?? 500} kcal  (P: ${r['proteinaG']}g | C: ${r['carboG']}g | G: ${r['gorduraG']}g)',
-                        style: pw.TextStyle(
-                          fontSize: 9.5,
-                          color: PdfColors.grey700,
-                        ),
+                        style: pw.TextStyle(fontSize: 9.5, color: PdfColors.grey700),
                       ),
                     ],
                   ),
@@ -931,10 +942,7 @@ class DietaPdfService {
                     (r['alimentosDescricao'] ?? '').toString(),
                     style: const pw.TextStyle(fontSize: 10.5),
                   ),
-                  if ((r['substituicoes'] ?? '')
-                      .toString()
-                      .trim()
-                      .isNotEmpty) ...[
+                  if ((r['substituicoes'] ?? '').toString().trim().isNotEmpty) ...[
                     pw.SizedBox(height: 4),
                     pw.Text(
                       'Opções de Substituição: ${r['substituicoes']}',
@@ -949,21 +957,6 @@ class DietaPdfService {
               ),
             );
           }),
-
-          if ((plano['observacoes'] ?? '').toString().trim().isNotEmpty) ...[
-            pw.SizedBox(height: 10),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(10),
-              decoration: pw.BoxDecoration(
-                color: PdfColor.fromHex('#FFF8E1'),
-                borderRadius: pw.BorderRadius.circular(6),
-              ),
-              child: pw.Text(
-                'Recomendações & Suplementação: ${plano['observacoes']}',
-                style: const pw.TextStyle(fontSize: 10),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -977,22 +970,16 @@ class DietaPdfService {
   static pw.Widget _macroPdfBox(String label, String val) {
     return pw.Column(
       children: [
-        pw.Text(
-          label,
-          style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
-        ),
+        pw.Text(label, style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
         pw.SizedBox(height: 2),
-        pw.Text(
-          val,
-          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
-        ),
+        pw.Text(val, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
       ],
     );
   }
 }
 
 // ============================================================================
-// 3. PAINEL DO PERSONAL: PRESCRIÇÃO DE DIETA & CALCULADORA DE MACROS (TMB/GET)
+// 3. PAINEL DO PERSONAL: PRESCRIÇÃO DE DIETA & CALCULADORA DE MACROS (100% RESPONSIVO)
 // ============================================================================
 
 class PainelDietaPersonalWidget extends StatefulWidget {
@@ -1006,17 +993,14 @@ class PainelDietaPersonalWidget extends StatefulWidget {
   });
 
   @override
-  State<PainelDietaPersonalWidget> createState() =>
-      _PainelDietaPersonalWidgetState();
+  State<PainelDietaPersonalWidget> createState() => _PainelDietaPersonalWidgetState();
 }
 
 class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
   int? _alunoIdSelecionado;
   bool _carregando = false;
 
-  final _tituloCtrl = TextEditingController(
-    text: 'Protocolo Hipertrofia Limpa & Definição',
-  );
+  final _tituloCtrl = TextEditingController(text: 'Protocolo Hipertrofia Limpa & Definição');
   String _objetivo = 'Hipertrofia';
   final _pesoCtrl = TextEditingController(text: '81.4');
   final _alturaCtrl = TextEditingController(text: '178');
@@ -1062,22 +1046,16 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
         _alturaCtrl.text = (plano['alturaCm'] ?? 175).toString();
         _idadeCtrl.text = (plano['idade'] ?? 25).toString();
         _sexo = (plano['sexo'] ?? 'M').toString();
-        _fatorAtividade =
-            double.tryParse((plano['fatorAtividade'] ?? 1.55).toString()) ??
-            1.55;
+        _fatorAtividade = double.tryParse((plano['fatorAtividade'] ?? 1.55).toString()) ?? 1.55;
         _tmb = int.tryParse((plano['tmbKcal'] ?? 1800).toString()) ?? 1800;
         _get = int.tryParse((plano['getKcal'] ?? 2400).toString()) ?? 2400;
-        _metaKcal =
-            int.tryParse((plano['metaKcal'] ?? 2600).toString()) ?? 2600;
+        _metaKcal = int.tryParse((plano['metaKcal'] ?? 2600).toString()) ?? 2600;
         _protG = int.tryParse((plano['proteinaG'] ?? 180).toString()) ?? 180;
         _carbG = int.tryParse((plano['carboidratoG'] ?? 300).toString()) ?? 300;
         _gordG = int.tryParse((plano['gorduraG'] ?? 70).toString()) ?? 70;
-        _aguaLitros =
-            double.tryParse((plano['aguaLitros'] ?? 3.5).toString()) ?? 3.5;
+        _aguaLitros = double.tryParse((plano['aguaLitros'] ?? 3.5).toString()) ?? 3.5;
         _obsCtrl.text = (plano['observacoes'] ?? '').toString();
-        _refeicoes = refs
-            .map((r) => Map<String, dynamic>.from(r as Map))
-            .toList();
+        _refeicoes = refs.map((r) => Map<String, dynamic>.from(r as Map)).toList();
       } else {
         _calcularMifflinStJeorGerarCardapio();
       }
@@ -1087,11 +1065,9 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
 
   void _calcularMifflinStJeorGerarCardapio() {
     final peso = double.tryParse(_pesoCtrl.text.replaceAll(',', '.')) ?? 80;
-    final altura =
-        double.tryParse(_alturaCtrl.text.replaceAll(',', '.')) ?? 175;
+    final altura = double.tryParse(_alturaCtrl.text.replaceAll(',', '.')) ?? 175;
     final idade = int.tryParse(_idadeCtrl.text) ?? 25;
 
-    // Fórmula de Mifflin-St Jeor
     final tmbCalc = _sexo == 'M'
         ? (10 * peso) + (6.25 * altura) - (5 * idade) + 5
         : (10 * peso) + (6.25 * altura) - (5 * idade) - 161;
@@ -1120,10 +1096,8 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           {
             'horario': '07:30',
             'nomeRefeicao': 'Refeição 1 — Café da Manhã Proteico',
-            'alimentosDescricao':
-                '• 3 Ovos mexidos + 2 fatias de pão integral\n• 1 Banana com aveia (40g)\n• Café sem açúcar',
-            'substituicoes':
-                'Crepioca (2 ovos + 40g goma de tapioca + queijo minas)',
+            'alimentosDescricao': '• 3 Ovos mexidos + 2 fatias de pão integral\n• 1 Banana com aveia (40g)\n• Café sem açúcar',
+            'substituicoes': 'Crepioca (2 ovos + 40g goma de tapioca + queijo minas)',
             'kcalEstimada': (meta * 0.22).round(),
             'proteinaG': (prot * 0.22).round(),
             'carboG': (carb * 0.22).round(),
@@ -1132,8 +1106,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           {
             'horario': '12:30',
             'nomeRefeicao': 'Refeição 2 — Almoço Base',
-            'alimentosDescricao':
-                '• 180g Filé de Frango Grelhado\n• 200g Arroz Branco/Integral + 100g Feijão\n• Salada verde + 1 col. sopa de Azeite Extra Virgem',
+            'alimentosDescricao': '• 180g Filé de Frango Grelhado\n• 200g Arroz Branco/Integral + 100g Feijão\n• Salada verde + 1 col. sopa de Azeite Extra Virgem',
             'substituicoes': '180g Patinho moído + 220g Batata inglesa ou doce',
             'kcalEstimada': (meta * 0.30).round(),
             'proteinaG': (prot * 0.30).round(),
@@ -1143,8 +1116,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           {
             'horario': '16:30',
             'nomeRefeicao': 'Refeição 3 — Pré-Treino Energético',
-            'alimentosDescricao':
-                '• 40g Whey Protein + 50g Aveia\n• 1 Banana prata + 15g Pasta de Amendoim\n• 5g Creatina Monohidratada',
+            'alimentosDescricao': '• 40g Whey Protein + 50g Aveia\n• 1 Banana prata + 15g Pasta de Amendoim\n• 5g Creatina Monohidratada',
             'substituicoes': '150g Frango desfiado + 150g Batata doce cozida',
             'kcalEstimada': (meta * 0.20).round(),
             'proteinaG': (prot * 0.22).round(),
@@ -1154,8 +1126,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           {
             'horario': '20:30',
             'nomeRefeicao': 'Refeição 4 — Pós-Treino / Jantar',
-            'alimentosDescricao':
-                '• 180g Carne Magra (Patinho/Alcatra) ou Tilápia\n• 180g Arroz ou Macarrão\n• Legumes no vapor à vontade',
+            'alimentosDescricao': '• 180g Carne Magra (Patinho/Alcatra) ou Tilápia\n• 180g Arroz ou Macarrão\n• Legumes no vapor à vontade',
             'substituicoes': '180g Peito de Frango + 200g Mandioca ou Abóbora',
             'kcalEstimada': (meta * 0.28).round(),
             'proteinaG': (prot * 0.26).round(),
@@ -1175,10 +1146,8 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
         'alunoId': _alunoIdSelecionado,
         'titulo': _tituloCtrl.text,
         'objetivo': _objetivo,
-        'pesoBaseKg':
-            double.tryParse(_pesoCtrl.text.replaceAll(',', '.')) ?? 80,
-        'alturaCm':
-            double.tryParse(_alturaCtrl.text.replaceAll(',', '.')) ?? 175,
+        'pesoBaseKg': double.tryParse(_pesoCtrl.text.replaceAll(',', '.')) ?? 80,
+        'alturaCm': double.tryParse(_alturaCtrl.text.replaceAll(',', '.')) ?? 175,
         'idade': int.tryParse(_idadeCtrl.text) ?? 25,
         'sexo': _sexo,
         'fatorAtividade': _fatorAtividade,
@@ -1196,9 +1165,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          '🥗 Plano Alimentar & Macros salvo e liberado no App do Aluno!',
-        ),
+        content: Text('🥗 Plano Alimentar & Macros salvo e liberado no App do Aluno!'),
         backgroundColor: AppTheme.neonGreen,
       ),
     );
@@ -1206,13 +1173,15 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final isMobile = screenW < 640;
     final alunoAtual = widget.alunos.firstWhere(
       (a) => a['id'] == _alunoIdSelecionado,
       orElse: () => widget.alunos.isNotEmpty ? widget.alunos.first : null,
     );
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       children: [
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -1225,7 +1194,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
               children: [
                 Text(
                   '🥗 PRESCRIÇÃO DE DIETA & CALCULADORA DE MACROS (TMB / GET)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                 ),
                 Text(
                   'Calcule automaticamente o Gasto Energético (Mifflin-St Jeor), prescreva refeições e exporte em PDF',
@@ -1235,6 +1204,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
             ),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton.icon(
                   onPressed: () {
@@ -1257,17 +1227,13 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
                       refeicoes: _refeicoes,
                     );
                   },
-                  icon: const Icon(
-                    Icons.picture_as_pdf,
-                    color: AppTheme.neonGreen,
-                    size: 18,
-                  ),
-                  label: const Text('Exportar PDF da Dieta'),
+                  icon: const Icon(Icons.picture_as_pdf, color: AppTheme.neonGreen, size: 18),
+                  label: const Text('Exportar PDF'),
                 ),
                 ElevatedButton.icon(
                   onPressed: _salvarPlanoNoServidor,
                   icon: const Icon(Icons.save, size: 18),
-                  label: const Text('SALVAR DIETA NO ALUNO'),
+                  label: const Text('SALVAR DIETA'),
                 ),
               ],
             ),
@@ -1275,9 +1241,9 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
         ),
         const SizedBox(height: 16),
 
-        // SELETOR DE ALUNO
         Wrap(
           spacing: 8,
+          runSpacing: 8,
           children: widget.alunos.map((a) {
             final sel = a['id'] == _alunoIdSelecionado;
             return ChoiceChip(
@@ -1291,35 +1257,30 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
         const SizedBox(height: 16),
 
         if (_carregando)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(),
-            ),
-          )
+          const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
         else ...[
-          // CALCULADORA DE TMB & MACROS
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
             decoration: BoxDecoration(
               color: AppTheme.surfaceCard,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppTheme.neonGreen.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: AppTheme.neonGreen.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
                   children: [
                     const Text(
                       '⚡ CALCULADORA AUTOMÁTICA DE MACROS & METABOLISMO (MIFFLIN-ST JEOR)',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         color: AppTheme.neonGreen,
-                        fontSize: 13.5,
+                        fontSize: 13,
                       ),
                     ),
                     ElevatedButton.icon(
@@ -1334,125 +1295,97 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _tituloCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Título do Protocolo Alimentar',
+                if (isMobile) ...[
+                  TextField(
+                    controller: _tituloCtrl,
+                    decoration: const InputDecoration(labelText: 'Título do Protocolo Alimentar'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    initialValue: ['Hipertrofia', 'Emagrecimento', 'Manutenção'].contains(_objetivo)
+                        ? _objetivo
+                        : 'Hipertrofia',
+                    decoration: const InputDecoration(labelText: 'Objetivo'),
+                    items: const [
+                      DropdownMenuItem(value: 'Hipertrofia', child: Text('💪 Hipertrofia (+350 kcal)')),
+                      DropdownMenuItem(value: 'Emagrecimento', child: Text('🔥 Cutting (-450 kcal)')),
+                      DropdownMenuItem(value: 'Manutenção', child: Text('⚖️ Recomposição (Normocalórica)')),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _objetivo = v ?? 'Hipertrofia');
+                      _calcularMifflinStJeorGerarCardapio();
+                    },
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _tituloCtrl,
+                          decoration: const InputDecoration(labelText: 'Título do Protocolo Alimentar'),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue:
-                            [
-                              'Hipertrofia',
-                              'Emagrecimento',
-                              'Manutenção',
-                            ].contains(_objetivo)
-                            ? _objetivo
-                            : 'Hipertrofia',
-                        decoration: const InputDecoration(
-                          labelText: 'Objetivo',
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: ['Hipertrofia', 'Emagrecimento', 'Manutenção'].contains(_objetivo)
+                              ? _objetivo
+                              : 'Hipertrofia',
+                          decoration: const InputDecoration(labelText: 'Objetivo'),
+                          items: const [
+                            DropdownMenuItem(value: 'Hipertrofia', child: Text('💪 Hipertrofia (+350 kcal)')),
+                            DropdownMenuItem(value: 'Emagrecimento', child: Text('🔥 Cutting (-450 kcal)')),
+                            DropdownMenuItem(value: 'Manutenção', child: Text('⚖️ Recomposição (Normocalórica)')),
+                          ],
+                          onChanged: (v) {
+                            setState(() => _objetivo = v ?? 'Hipertrofia');
+                            _calcularMifflinStJeorGerarCardapio();
+                          },
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Hipertrofia',
-                            child: Text('💪 Hipertrofia (+350 kcal)'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Emagrecimento',
-                            child: Text('🔥 Cutting (-450 kcal)'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Manutenção',
-                            child: Text('⚖️ Recomposição (Normocalórica)'),
-                          ),
-                        ],
-                        onChanged: (v) {
-                          setState(() => _objetivo = v ?? 'Hipertrofia');
-                          _calcularMifflinStJeorGerarCardapio();
-                        },
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _pesoCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Peso (kg)',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Peso (kg)'),
                         onChanged: (_) => _calcularMifflinStJeorGerarCardapio(),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
                         controller: _alturaCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Altura (cm)',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Altura (cm)'),
                         onChanged: (_) => _calcularMifflinStJeorGerarCardapio(),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
                         controller: _idadeCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Idade (anos)',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Idade'),
                         onChanged: (_) => _calcularMifflinStJeorGerarCardapio(),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // BARRA VISUAL DE RESULTADO DOS MACROS
                 Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                  spacing: 10,
+                  runSpacing: 10,
                   children: [
                     _macroBadge('TMB Basal', '$_tmb kcal', Colors.grey),
-                    _macroBadge(
-                      'Gasto Diário (GET)',
-                      '$_get kcal',
-                      Colors.cyanAccent,
-                    ),
-                    _macroBadge(
-                      'META CALÓRICA',
-                      '$_metaKcal kcal',
-                      AppTheme.neonGreen,
-                    ),
-                    _macroBadge(
-                      'PROTEÍNAS (2.2g/kg)',
-                      '${_protG}g',
-                      const Color(0xFFFF5252),
-                    ),
-                    _macroBadge(
-                      'CARBOIDRATOS',
-                      '${_carbG}g',
-                      Colors.amberAccent,
-                    ),
-                    _macroBadge(
-                      'GORDURAS BOAS',
-                      '${_gordG}g',
-                      Colors.orangeAccent,
-                    ),
-                    _macroBadge(
-                      'HIDRATAÇÃO',
-                      '${_aguaLitros}L Água',
-                      const Color(0xFF29B6F6),
-                    ),
+                    _macroBadge('Gasto Diário (GET)', '$_get kcal', Colors.cyanAccent),
+                    _macroBadge('META CALÓRICA', '$_metaKcal kcal', AppTheme.neonGreen),
+                    _macroBadge('PROTEÍNAS (2.2g/kg)', '${_protG}g', const Color(0xFFFF5252)),
+                    _macroBadge('CARBOIDRATOS', '${_carbG}g', Colors.amberAccent),
+                    _macroBadge('GORDURAS BOAS', '${_gordG}g', Colors.orangeAccent),
+                    _macroBadge('HIDRATAÇÃO', '${_aguaLitros}L Água', const Color(0xFF29B6F6)),
                   ],
                 ),
               ],
@@ -1460,16 +1393,15 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           ),
           const SizedBox(height: 20),
 
-          // CARDÁPIO E REFEIÇÕES DO PLANO
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
             children: [
               Text(
                 '🍽️ REFEIÇÕES DO DIA (${_refeicoes.length})',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
               ),
               OutlinedButton.icon(
                 onPressed: () {
@@ -1477,10 +1409,8 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
                     _refeicoes.add({
                       'horario': '15:00',
                       'nomeRefeicao': 'Nova Refeição / Lanche Proteico',
-                      'alimentosDescricao':
-                          '• 170g Iogurte Natural + 30g Whey + 1 Fruta',
-                      'substituicoes':
-                          '2 Ovos cozidos + 1 fatia de pão integral',
+                      'alimentosDescricao': '• 170g Iogurte Natural + 30g Whey + 1 Fruta',
+                      'substituicoes': '2 Ovos cozidos + 1 fatia de pão integral',
                       'kcalEstimada': 320,
                       'proteinaG': 28,
                       'carboG': 32,
@@ -1488,11 +1418,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
                     });
                   });
                 },
-                icon: const Icon(
-                  Icons.add,
-                  size: 16,
-                  color: AppTheme.neonGreen,
-                ),
+                icon: const Icon(Icons.add, size: 16, color: AppTheme.neonGreen),
                 label: const Text('+ Adicionar Refeição'),
               ),
             ],
@@ -1508,50 +1434,50 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 6,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.neonGreen.withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            r['horario']?.toString() ?? '08:00',
-                            style: const TextStyle(
-                              color: AppTheme.neonGreen,
-                              fontWeight: FontWeight.w900,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.neonGreen.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                r['horario']?.toString() ?? '08:00',
+                                style: const TextStyle(
+                                  color: AppTheme.neonGreen,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            r['nomeRefeicao']?.toString() ?? 'Refeição',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                r['nomeRefeicao']?.toString() ?? 'Refeição',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        Text(
-                          '${r['kcalEstimada']} kcal • P:${r['proteinaG']}g C:${r['carboG']}g G:${r['gorduraG']}g',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.cyanAccent,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: AppTheme.performanceRed,
-                            size: 18,
-                          ),
-                          onPressed: () =>
-                              setState(() => _refeicoes.removeAt(idx)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${r['kcalEstimada']} kcal • P:${r['proteinaG']}g C:${r['carboG']}g G:${r['gorduraG']}g',
+                              style: const TextStyle(fontSize: 11.5, color: Colors.cyanAccent),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: AppTheme.performanceRed, size: 18),
+                              onPressed: () => setState(() => _refeicoes.removeAt(idx)),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1564,10 +1490,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
                       const SizedBox(height: 6),
                       Text(
                         '🔄 Substituições: ${r['substituicoes']}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.neonGreen,
-                        ),
+                        style: const TextStyle(fontSize: 12, color: AppTheme.neonGreen),
                       ),
                     ],
                   ],
@@ -1582,7 +1505,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
 
   Widget _macroBadge(String label, String val, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
@@ -1591,21 +1514,11 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10.5,
-              color: AppTheme.textSecondary,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
           const SizedBox(height: 2),
           Text(
             val,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
+            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900, color: color),
           ),
         ],
       ),
@@ -1614,7 +1527,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
 }
 
 // ============================================================================
-// 4. PAINEL DO PERSONAL: AGENDA DE HORÁRIOS & CHECK-IN DE AULAS PRESENCIAIS
+// 4. PAINEL DO PERSONAL: AGENDA DE HORÁRIOS & CHECK-IN (100% RESPONSIVO)
 // ============================================================================
 
 class PainelAgendaPersonalWidget extends StatefulWidget {
@@ -1623,12 +1536,10 @@ class PainelAgendaPersonalWidget extends StatefulWidget {
   const PainelAgendaPersonalWidget({super.key, required this.alunos});
 
   @override
-  State<PainelAgendaPersonalWidget> createState() =>
-      _PainelAgendaPersonalWidgetState();
+  State<PainelAgendaPersonalWidget> createState() => _PainelAgendaPersonalWidgetState();
 }
 
-class _PainelAgendaPersonalWidgetState
-    extends State<PainelAgendaPersonalWidget> {
+class _PainelAgendaPersonalWidgetState extends State<PainelAgendaPersonalWidget> {
   bool _carregando = true;
   Map<String, dynamic> _resumo = {};
   List<dynamic> _aulas = [];
@@ -1657,144 +1568,118 @@ class _PainelAgendaPersonalWidgetState
 
   void _abrirModalNovoAgendamento() {
     int? alunoId = widget.alunos.isNotEmpty ? widget.alunos.first['id'] : null;
-    final tituloCtrl = TextEditingController(
-      text: 'Treino Presencial — Acompanhamento Biomecânico',
-    );
-    final localCtrl = TextEditingController(
-      text: 'Unidade Principal — Sala de Musculação',
-    );
+    final tituloCtrl = TextEditingController(text: 'Treino Presencial — Acompanhamento Biomecânico');
+    final localCtrl = TextEditingController(text: 'Unidade Principal — Sala de Musculação');
     final horaCtrl = TextEditingController(text: '18:00');
     String tipo = 'PRESENCIAL';
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => AlertDialog(
-          backgroundColor: AppTheme.surfaceCard,
-          title: const Text('📅 Agendar Aula / Consultoria'),
-          content: SizedBox(
-            width: 440,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<int>(
-                  initialValue: alunoId,
-                  decoration: const InputDecoration(labelText: 'Aluno'),
-                  items: widget.alunos
-                      .map(
-                        (a) => DropdownMenuItem<int>(
-                          value: a['id'],
-                          child: Text(a['nome']?.toString() ?? 'Aluno'),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setModalState(() => alunoId = v),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: tipo,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de Atendimento',
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'PRESENCIAL',
-                      child: Text('🏋️ Aula Presencial na Academia'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'AVALIACAO_FISICA',
-                      child: Text('📏 Avaliação Física & Fotos Antes/Depois'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'CONSULTORIA_ONLINE',
-                      child: Text('💻 Alinhamento / Consultoria Online'),
-                    ),
-                  ],
-                  onChanged: (v) =>
-                      setModalState(() => tipo = v ?? 'PRESENCIAL'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: tituloCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Foco do Treino / Aula',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
+      builder: (ctx) {
+        final w = MediaQuery.sizeOf(ctx).width;
+        return StatefulBuilder(
+          builder: (ctx, setModalState) => AlertDialog(
+            backgroundColor: AppTheme.surfaceCard,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            title: const Text('📅 Agendar Aula / Consultoria'),
+            content: SizedBox(
+              width: math.min(w - 32, 440),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: horaCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Horário de Hoje (HH:mm)',
-                        ),
-                      ),
+                    DropdownButtonFormField<int>(
+                      initialValue: alunoId,
+                      decoration: const InputDecoration(labelText: 'Aluno'),
+                      items: widget.alunos
+                          .map((a) => DropdownMenuItem<int>(
+                                value: a['id'],
+                                child: Text(a['nome']?.toString() ?? 'Aluno'),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setModalState(() => alunoId = v),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: localCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Local / Academia',
-                        ),
-                      ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: tipo,
+                      decoration: const InputDecoration(labelText: 'Tipo de Atendimento'),
+                      items: const [
+                        DropdownMenuItem(value: 'PRESENCIAL', child: Text('🏋️ Aula Presencial na Academia')),
+                        DropdownMenuItem(value: 'AVALIACAO_FISICA', child: Text('📏 Avaliação Física & Fotos')),
+                        DropdownMenuItem(value: 'CONSULTORIA_ONLINE', child: Text('💻 Consultoria Online')),
+                      ],
+                      onChanged: (v) => setModalState(() => tipo = v ?? 'PRESENCIAL'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: tituloCtrl,
+                      decoration: const InputDecoration(labelText: 'Foco do Treino / Aula'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: horaCtrl,
+                      decoration: const InputDecoration(labelText: 'Horário de Hoje (HH:mm)'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: localCtrl,
+                      decoration: const InputDecoration(labelText: 'Local / Academia'),
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (alunoId == null) return;
-                final parts = horaCtrl.text.split(':');
-                final h = int.tryParse(parts.first) ?? 18;
-                final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-                final now = DateTime.now();
-                final dt = DateTime(now.year, now.month, now.day, h, m);
-                await ApiService().dio.post(
-                  '/api/agenda',
-                  data: {
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+              ElevatedButton(
+                onPressed: () async {
+                  if (alunoId == null) return;
+                  final parts = horaCtrl.text.split(':');
+                  final h = int.tryParse(parts.first) ?? 18;
+                  final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+                  final now = DateTime.now();
+                  final dt = DateTime(now.year, now.month, now.day, h, m);
+                  await ApiService().dio.post('/api/agenda', data: {
                     'alunoId': alunoId,
                     'dataHoraInicio': dt.toIso8601String(),
                     'duracaoMinutos': 60,
                     'tipoAula': tipo,
                     'tituloTreino': tituloCtrl.text,
                     'localAcademia': localCtrl.text,
-                  },
-                );
-                if (!ctx.mounted) return;
-                Navigator.pop(ctx);
-                _carregarAgenda();
-              },
-              child: const Text('CONFIRMAR AGENDAMENTO'),
-            ),
-          ],
-        ),
-      ),
+                  });
+                  if (!ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  _carregarAgenda();
+                },
+                child: const Text('CONFIRMAR'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final isMobile = screenW < 640;
+
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 12,
           children: [
             const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '📅 AGENDA DE HORÁRIOS & CHECK-IN DE AULAS PRESENCIAIS',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                 ),
                 Text(
                   'Controle seus horários de atendimento, envie lembrete no WhatsApp e faça Check-in de presença',
@@ -1805,30 +1690,18 @@ class _PainelAgendaPersonalWidgetState
             ElevatedButton.icon(
               onPressed: _abrirModalNovoAgendamento,
               icon: const Icon(Icons.add_alarm),
-              label: const Text('+ AGENDAR AULA / AVALIAÇÃO'),
+              label: const Text('+ AGENDAR AULA'),
             ),
           ],
         ),
         const SizedBox(height: 16),
         Wrap(
-          spacing: 14,
-          runSpacing: 14,
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            _kpiCard(
-              'Aulas Hoje',
-              '${_resumo['aulasHoje'] ?? 0}',
-              AppTheme.neonGreen,
-            ),
-            _kpiCard(
-              'Horários Agendados',
-              '${_resumo['agendadasPendentes'] ?? 0}',
-              Colors.cyanAccent,
-            ),
-            _kpiCard(
-              'Aulas Concluídas (Check-in)',
-              '${_resumo['concluidasTotal'] ?? 0}',
-              Colors.amberAccent,
-            ),
+            _kpiCard('Aulas Hoje', '${_resumo['aulasHoje'] ?? 0}', AppTheme.neonGreen, isMobile),
+            _kpiCard('Horários Agendados', '${_resumo['agendadasPendentes'] ?? 0}', Colors.cyanAccent, isMobile),
+            _kpiCard('Aulas Concluídas', '${_resumo['concluidasTotal'] ?? 0}', Colors.amberAccent, isMobile),
           ],
         ),
         const SizedBox(height: 20),
@@ -1838,110 +1711,89 @@ class _PainelAgendaPersonalWidgetState
           ..._aulas.map((ag) {
             final status = (ag['status'] ?? 'AGENDADA').toString();
             final concluida = status == 'CONCLUIDA';
-            final dt =
-                DateTime.tryParse((ag['dataHoraInicio'] ?? '').toString()) ??
-                DateTime.now();
+            final dt = DateTime.tryParse((ag['dataHoraInicio'] ?? '').toString()) ?? DateTime.now();
             final dataFmt =
                 '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} às ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
+                padding: EdgeInsets.all(isMobile ? 12 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: concluida
-                            ? AppTheme.neonGreen.withValues(alpha: 0.16)
-                            : Colors.cyanAccent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            concluida ? Icons.verified : Icons.schedule,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
                             color: concluida
-                                ? AppTheme.neonGreen
-                                : Colors.cyanAccent,
+                                ? AppTheme.neonGreen.withValues(alpha: 0.16)
+                                : Colors.cyanAccent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            dataFmt,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                          child: Column(
                             children: [
-                              Text(
-                                ag['nomeAluno']?.toString() ?? 'Aluno',
-                                style: const TextStyle(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Icon(
+                                concluida ? Icons.verified : Icons.schedule,
+                                color: concluida ? AppTheme.neonGreen : Colors.cyanAccent,
+                                size: 20,
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: concluida
-                                      ? AppTheme.neonGreen.withValues(
-                                          alpha: 0.18,
-                                        )
-                                      : Colors.amber.withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  status,
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: concluida
-                                        ? AppTheme.neonGreen
-                                        : Colors.amberAccent,
-                                  ),
-                                ),
+                              const SizedBox(height: 2),
+                              Text(
+                                dataFmt,
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${ag['tituloTreino']} • 📍 ${ag['localAcademia'] ?? 'Academia'}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.white,
-                            ),
-                          ),
-                          if ((ag['observacoes'] ?? '').toString().isNotEmpty)
-                            Text(
-                              'Obs: ${ag['observacoes']}',
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text(
+                                    ag['nomeAluno']?.toString() ?? 'Aluno',
+                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: concluida
+                                          ? AppTheme.neonGreen.withValues(alpha: 0.18)
+                                          : Colors.amber.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      status,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: concluida ? AppTheme.neonGreen : Colors.amberAccent,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                        ],
-                      ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${ag['tituloTreino']} • 📍 ${ag['localAcademia'] ?? 'Academia'}',
+                                style: const TextStyle(fontSize: 12.5, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
+                      runSpacing: 8,
                       children: [
                         if (!concluida)
                           ElevatedButton.icon(
@@ -1960,11 +1812,7 @@ class _PainelAgendaPersonalWidgetState
                             ag['telefoneAluno']?.toString(),
                             'Olá ${ag['nomeAluno']}! Confirmando nosso horário agendado ($dataFmt) para *${ag['tituloTreino']}* em ${ag['localAcademia']}. Bora pra cima! 💪🔥',
                           ),
-                          icon: const Icon(
-                            Icons.chat,
-                            size: 16,
-                            color: AppTheme.neonGreen,
-                          ),
+                          icon: const Icon(Icons.chat, size: 16, color: AppTheme.neonGreen),
                           label: const Text('Lembrete WhatsApp'),
                         ),
                       ],
@@ -1978,9 +1826,9 @@ class _PainelAgendaPersonalWidgetState
     );
   }
 
-  Widget _kpiCard(String label, String val, Color color) {
+  Widget _kpiCard(String label, String val, Color color, bool isMobile) {
     return Container(
-      width: 210,
+      width: isMobile ? 155 : 210,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
@@ -1990,19 +1838,9 @@ class _PainelAgendaPersonalWidgetState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-          ),
+          Text(label, style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary)),
           const SizedBox(height: 4),
-          Text(
-            val,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
-          ),
+          Text(val, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color)),
         ],
       ),
     );

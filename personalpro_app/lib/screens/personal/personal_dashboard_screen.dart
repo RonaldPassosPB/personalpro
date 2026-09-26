@@ -41,6 +41,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
   Map<String, dynamic> _resumoFinanceiro = {};
   List<dynamic> _pagamentos = [];
   String _chavePixPersonal = '';
+  final Set<int> _exerciciosPlayerInlineAbertos = {};
 
   @override
   void initState() {
@@ -857,6 +858,27 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 920;
+    final isMobile = screenWidth < 600;
+
+    final conteudoPrincipal = _carregando
+        ? const Center(child: CircularProgressIndicator())
+        : IndexedStack(
+            index: _abaAtual,
+            children: [
+              _buildAbaVisaoGeralFrequencia(),
+              _buildAbaGestaoAlunos(),
+              _buildAbaCriadorFichas(),
+              PainelDietaPersonalWidget(
+                alunos: _alunos,
+                nomePersonal: _personal['nomeProfissional']?.toString() ?? 'Personal',
+              ),
+              PainelAgendaPersonalWidget(alunos: _alunos),
+              _buildAbaFinanceiroPersonal(),
+            ],
+          );
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -890,11 +912,15 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     _personal['nomeProfissional']?.toString() ??
                         widget.session['nome']?.toString() ??
                         'Painel do Personal Trainer',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: isMobile ? 14.5 : 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     'CREF: ${_personal['cref'] ?? 'Ativo'} • Plano ${_personal['plano'] ?? 'ELITE'}',
-                    style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                   ),
                 ],
               ),
@@ -902,26 +928,27 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           ],
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () async {
-              final novoLogo = await ImageHelper.selecionarImagemBase64();
-              if (novoLogo != null) {
-                await ApiService().dio.put('/api/personal/meu-perfil', data: {
-                  'nomeProfissional': _personal['nomeProfissional']?.toString() ?? 'Personal',
-                  'cref': _personal['cref']?.toString() ?? '',
-                  'telefone': _personal['telefone']?.toString() ?? '',
-                  'chavePix': _personal['chavePix']?.toString() ?? '',
-                  'logoUrl': novoLogo,
-                });
-                _carregarTudo();
-              }
-            },
-            icon: const Icon(Icons.add_a_photo, size: 16, color: AppTheme.neonGreen),
-            label: const Text(
-              'Alterar Logo',
-              style: TextStyle(color: AppTheme.neonGreen, fontWeight: FontWeight.bold, fontSize: 12),
+          if (!isMobile)
+            TextButton.icon(
+              onPressed: () async {
+                final novoLogo = await ImageHelper.selecionarImagemBase64();
+                if (novoLogo != null) {
+                  await ApiService().dio.put('/api/personal/meu-perfil', data: {
+                    'nomeProfissional': _personal['nomeProfissional']?.toString() ?? 'Personal',
+                    'cref': _personal['cref']?.toString() ?? '',
+                    'telefone': _personal['telefone']?.toString() ?? '',
+                    'chavePix': _personal['chavePix']?.toString() ?? '',
+                    'logoUrl': novoLogo,
+                  });
+                  _carregarTudo();
+                }
+              },
+              icon: const Icon(Icons.add_a_photo, size: 16, color: AppTheme.neonGreen),
+              label: const Text(
+                'Alterar Logo',
+                style: TextStyle(color: AppTheme.neonGreen, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
             ),
-          ),
           IconButton(
             tooltip: 'Notificações',
             icon: const Icon(Icons.notifications_active_outlined, color: AppTheme.neonGreen),
@@ -941,60 +968,94 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           ),
         ],
       ),
-      body: _carregando
-          ? const Center(child: CircularProgressIndicator())
-          : IndexedStack(
-              index: _abaAtual,
+      body: isDesktop
+          ? Row(
               children: [
-                _buildAbaVisaoGeralFrequencia(),
-                _buildAbaGestaoAlunos(),
-                _buildAbaCriadorFichas(),
-                PainelDietaPersonalWidget(
-                  alunos: _alunos,
-                  nomePersonal: _personal['nomeProfissional']?.toString() ?? 'Personal',
+                NavigationRail(
+                  selectedIndex: _abaAtual,
+                  backgroundColor: const Color(0xFF13151B),
+                  indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
+                  labelType: NavigationRailLabelType.all,
+                  onDestinationSelected: (i) => setState(() => _abaAtual = i),
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.dashboard_outlined),
+                      selectedIcon: Icon(Icons.dashboard, color: AppTheme.neonGreen),
+                      label: Text('Frequência'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.people_outline),
+                      selectedIcon: Icon(Icons.people, color: AppTheme.neonGreen),
+                      label: Text('Alunos'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.ondemand_video_outlined),
+                      selectedIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
+                      label: Text('Treinos (Vídeo)'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.restaurant_menu_outlined),
+                      selectedIcon: Icon(Icons.restaurant_menu, color: AppTheme.neonGreen),
+                      label: Text('Dieta & Macros'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.calendar_month_outlined),
+                      selectedIcon: Icon(Icons.calendar_month, color: AppTheme.neonGreen),
+                      label: Text('Agenda'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.pix_outlined),
+                      selectedIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
+                      label: Text('Financeiro PIX'),
+                    ),
+                  ],
                 ),
-                PainelAgendaPersonalWidget(alunos: _alunos),
-                _buildAbaFinanceiroPersonal(),
+                const VerticalDivider(width: 1, color: Colors.white10),
+                Expanded(child: conteudoPrincipal),
+              ],
+            )
+          : conteudoPrincipal,
+      bottomNavigationBar: isDesktop
+          ? null
+          : NavigationBar(
+              selectedIndex: _abaAtual,
+              backgroundColor: const Color(0xFF16181D),
+              indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              onDestinationSelected: (i) => setState(() => _abaAtual = i),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard, color: AppTheme.neonGreen),
+                  label: 'Frequência',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.people_outline),
+                  selectedIcon: Icon(Icons.people, color: AppTheme.neonGreen),
+                  label: 'Alunos',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.ondemand_video_outlined),
+                  selectedIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
+                  label: 'Treinos',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.restaurant_menu_outlined),
+                  selectedIcon: Icon(Icons.restaurant_menu, color: AppTheme.neonGreen),
+                  label: 'Dieta',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  selectedIcon: Icon(Icons.calendar_month, color: AppTheme.neonGreen),
+                  label: 'Agenda',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.pix_outlined),
+                  selectedIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
+                  label: 'PIX',
+                ),
               ],
             ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _abaAtual,
-        backgroundColor: const Color(0xFF16181D),
-        indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
-        onDestinationSelected: (i) => setState(() => _abaAtual = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard, color: AppTheme.neonGreen),
-            label: 'Frequência',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people, color: AppTheme.neonGreen),
-            label: 'Meus Alunos',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.fitness_center_outlined),
-            selectedIcon: Icon(Icons.fitness_center, color: AppTheme.neonGreen),
-            label: 'Treinos (GIF)',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            selectedIcon: Icon(Icons.restaurant_menu, color: AppTheme.neonGreen),
-            label: 'Dieta & Macros',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month, color: AppTheme.neonGreen),
-            label: 'Agenda & Aulas',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.pix_outlined),
-            selectedIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
-            label: 'Financeiro PIX',
-          ),
-        ],
-      ),
     );
   }
 
@@ -1562,66 +1623,170 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   const Divider(color: Colors.white12, height: 22),
                   ...exercicios.map((ex) {
                     final exMap = Map<String, dynamic>.from(ex as Map);
+                    final exId = (exMap['id'] as num?)?.toInt() ?? exMap.hashCode;
+                    final playerAberto = _exerciciosPlayerInlineAbertos.contains(exId);
+
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
+                      margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: AppTheme.bgDark,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(
+                          color: playerAberto
+                              ? AppTheme.neonGreen.withValues(alpha: 0.6)
+                              : Colors.white10,
+                        ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          ExercicioAnimadoThumbnail(
-                            nomeExercicio: (exMap['nomeExercicio'] ?? '').toString(),
-                            grupoMuscular: (exMap['grupoMuscular'] ?? '').toString(),
-                            videoUrl: exMap['videoUrl']?.toString(),
-                            onTap: () => ExercicioExecucaoModal.abrir(context, exMap),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${exMap['nomeExercicio']} (${exMap['grupoMuscular']})',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '🎯 ${exMap['series']} séries x ${exMap['repeticoes']} reps  |  🏋️ ${exMap['cargaKg']} kg  |  ⏱️ ${exMap['descansoSegundos']}s descanso',
-                                  style: const TextStyle(
-                                    color: AppTheme.neonGreen,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if ((exMap['observacaoTecnica']?.toString() ?? '').isNotEmpty)
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isNarrow = constraints.maxWidth < 620;
+                              final thumb = ExercicioAnimadoThumbnail(
+                                nomeExercicio: (exMap['nomeExercicio'] ?? '').toString(),
+                                grupoMuscular: (exMap['grupoMuscular'] ?? '').toString(),
+                                videoUrl: exMap['videoUrl']?.toString(),
+                                onTap: () {
+                                  setState(() {
+                                    if (playerAberto) {
+                                      _exerciciosPlayerInlineAbertos.remove(exId);
+                                    } else {
+                                      _exerciciosPlayerInlineAbertos.add(exId);
+                                    }
+                                  });
+                                },
+                              );
+
+                              final infoColumn = Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    '💡 Técnica: ${exMap['observacaoTecnica']}',
+                                    '${exMap['nomeExercicio']} (${exMap['grupoMuscular']})',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '🎯 ${exMap['series']} séries x ${exMap['repeticoes']} reps  |  🏋️ ${exMap['cargaKg']} kg  |  ⏱️ ${exMap['descansoSegundos']}s descanso',
                                     style: const TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 12,
+                                      color: AppTheme.neonGreen,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () => ExercicioExecucaoModal.abrir(context, exMap),
-                            icon: const Icon(Icons.play_circle_fill, size: 16, color: AppTheme.neonGreen),
-                            label: const Text('🎬 Ver Execução'),
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: const Icon(Icons.close, size: 18, color: Colors.white54),
-                            onPressed: () async {
-                              await ApiService()
-                                  .dio
-                                  .delete('/api/treinos/exercicios/${exMap['id']}');
-                              _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
+                                  if ((exMap['observacaoTecnica']?.toString() ?? '').isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        '💡 Técnica: ${exMap['observacaoTecnica']}',
+                                        style: const TextStyle(
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+
+                              final botoesAcao = Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: playerAberto
+                                          ? AppTheme.surfaceCard
+                                          : AppTheme.neonGreen,
+                                      foregroundColor: playerAberto
+                                          ? AppTheme.neonGreen
+                                          : Colors.black,
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        if (playerAberto) {
+                                          _exerciciosPlayerInlineAbertos.remove(exId);
+                                        } else {
+                                          _exerciciosPlayerInlineAbertos.add(exId);
+                                        }
+                                      });
+                                    },
+                                    icon: Icon(
+                                      playerAberto ? Icons.stop_circle_outlined : Icons.play_circle_fill,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      playerAberto ? 'Fechar Vídeo' : '🎬 Assistir Vídeo',
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                                    ),
+                                  ),
+                                  OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    ),
+                                    onPressed: () => ExercicioExecucaoModal.abrir(context, exMap),
+                                    icon: const Icon(Icons.video_settings, size: 15, color: Colors.cyanAccent),
+                                    label: const Text(
+                                      'Guia / Editar Link',
+                                      style: TextStyle(fontSize: 11.5, color: Colors.cyanAccent),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Remover Exercício',
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(Icons.close, size: 18, color: Colors.white54),
+                                    onPressed: () async {
+                                      await ApiService()
+                                          .dio
+                                          .delete('/api/treinos/exercicios/${exMap['id']}');
+                                      _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
+                                    },
+                                  ),
+                                ],
+                              );
+
+                              if (isNarrow) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        thumb,
+                                        const SizedBox(width: 12),
+                                        Expanded(child: infoColumn),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    botoesAcao,
+                                  ],
+                                );
+                              }
+
+                              return Row(
+                                children: [
+                                  thumb,
+                                  const SizedBox(width: 14),
+                                  Expanded(child: infoColumn),
+                                  const SizedBox(width: 10),
+                                  botoesAcao,
+                                ],
+                              );
                             },
                           ),
+                          if (playerAberto)
+                            PlayerVideoExercicioInline(
+                              nomeExercicio: (exMap['nomeExercicio'] ?? '').toString(),
+                              grupoMuscular: (exMap['grupoMuscular'] ?? '').toString(),
+                              videoUrl: exMap['videoUrl']?.toString(),
+                              exercicioId: exId,
+                              onFechar: () => setState(() => _exerciciosPlayerInlineAbertos.remove(exId)),
+                              onAbrirModalCompleto: () => ExercicioExecucaoModal.abrir(context, exMap),
+                            ),
                         ],
                       ),
                     );
