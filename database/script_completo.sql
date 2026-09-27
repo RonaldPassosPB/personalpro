@@ -301,8 +301,8 @@ END
 GO
 
 -- 13.2 Usuários e Dados de Demonstração (Senha padrão: admin123)
--- Hash BCrypt válido para 'admin123': $2a$11$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW
-DECLARE @SenhaAdmin123 NVARCHAR(256) = '$2a$11$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW';
+-- Hash BCrypt válido para 'admin123': $2a$11$B/tpjRzgpzW6lzxKbpqRRe7xfmrxk8N/FYqcChJI9VeJrzSRMoPFi
+DECLARE @SenhaAdmin123 NVARCHAR(256) = '$2a$11$B/tpjRzgpzW6lzxKbpqRRe7xfmrxk8N/FYqcChJI9VeJrzSRMoPFi';
 DECLARE @MesAtual VARCHAR(7) = FORMAT(GETDATE(), 'yyyy-MM');
 
 -- 1) SUPER ADMIN (PERFIL 3)
