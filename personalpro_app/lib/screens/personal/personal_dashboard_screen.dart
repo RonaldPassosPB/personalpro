@@ -614,12 +614,16 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     );
   }
 
-  // ─── MODAL ADICIONAR EXERCÍCIO DA BIBLIOTECA (40+) ───────────────────────────
+  // ─── MODAL ADICIONAR EXERCÍCIO DA BIBLIOTECA (120+ EXERCÍCIOS + BUSCA + NOVO) ──
   void _abrirModalAdicionarExercicio(int fichaId) {
     String grupoFiltro = 'Todos';
+    String termoBusca = '';
+    bool salvarNaBiblioteca = false;
+
     dynamic exercicioSelecionado =
         _exerciciosBiblioteca.isNotEmpty ? _exerciciosBiblioteca.first : null;
 
+    final buscaCtrl = TextEditingController();
     final nomeCtrl = TextEditingController(
       text: exercicioSelecionado?['nome']?.toString() ?? 'Supino Reto com Barra',
     );
@@ -635,44 +639,133 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
       text: exercicioSelecionado?['videoUrl']?.toString() ?? '',
     );
 
+    final gruposDisponiveis = <String>{
+      'Peito',
+      'Costas',
+      'Pernas',
+      'Glúteos',
+      'Ombros',
+      'Bíceps',
+      'Tríceps',
+      'Abdômen',
+      'Cardio & HIIT',
+      ..._exerciciosBiblioteca
+          .map((e) => (e['grupoMuscular'] ?? '').toString())
+          .where((g) => g.isNotEmpty),
+    }.toList();
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
-          final filtrados = grupoFiltro == 'Todos'
-              ? _exerciciosBiblioteca
-              : _exerciciosBiblioteca
-                  .where((e) => e['grupoMuscular'] == grupoFiltro)
-                  .toList();
+          final filtrados = _exerciciosBiblioteca.where((e) {
+            final matchGrupo =
+                grupoFiltro == 'Todos' || e['grupoMuscular'] == grupoFiltro;
+            final matchBusca = termoBusca.isEmpty ||
+                (e['nome'] ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .contains(termoBusca.toLowerCase()) ||
+                (e['grupoMuscular'] ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .contains(termoBusca.toLowerCase());
+            return matchGrupo && matchBusca;
+          }).toList();
 
           return AlertDialog(
             backgroundColor: AppTheme.surfaceCard,
-            title: const Text('+ Adicionar Exercício na Ficha'),
+            title: Row(
+              children: [
+                const Icon(Icons.fitness_center, color: AppTheme.neonGreen),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '+ Adicionar Exercício (${_exerciciosBiblioteca.length}+ na Biblioteca)',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
             content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
+              constraints: const BoxConstraints(maxWidth: 520),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: grupoFiltro,
-                      decoration: const InputDecoration(
-                        labelText: 'Filtrar Biblioteca por Grupo Muscular (40+ exercícios)',
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText:
+                            '1. Filtrar por Grupo Muscular (${_exerciciosBiblioteca.length} exercícios)',
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'Todos', child: Text('Todos os Grupos (40+)')),
-                        DropdownMenuItem(value: 'Peito', child: Text('Peito')),
-                        DropdownMenuItem(value: 'Costas', child: Text('Costas')),
-                        DropdownMenuItem(value: 'Pernas', child: Text('Pernas')),
-                        DropdownMenuItem(value: 'Ombros', child: Text('Ombros')),
-                        DropdownMenuItem(value: 'Bíceps', child: Text('Bíceps')),
-                        DropdownMenuItem(value: 'Tríceps', child: Text('Tríceps')),
-                        DropdownMenuItem(value: 'Abdômen', child: Text('Abdômen')),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'Todos',
+                          child: Text('Todos os Grupos (${_exerciciosBiblioteca.length} exercícios)'),
+                        ),
+                        ...gruposDisponiveis.map(
+                          (g) => DropdownMenuItem(
+                            value: g,
+                            child: Text(
+                              '$g (${_exerciciosBiblioteca.where((x) => x['grupoMuscular'] == g).length} exercícios)',
+                            ),
+                          ),
+                        ),
                       ],
                       onChanged: (g) {
                         if (g != null) {
-                          setModalState(() => grupoFiltro = g);
+                          setModalState(() {
+                            grupoFiltro = g;
+                            final novaLista = _exerciciosBiblioteca.where((e) {
+                              return (g == 'Todos' || e['grupoMuscular'] == g) &&
+                                  (termoBusca.isEmpty ||
+                                      (e['nome'] ?? '')
+                                          .toString()
+                                          .toLowerCase()
+                                          .contains(termoBusca.toLowerCase()));
+                            }).toList();
+                            if (novaLista.isNotEmpty) {
+                              exercicioSelecionado = novaLista.first;
+                              nomeCtrl.text = exercicioSelecionado['nome']?.toString() ?? '';
+                              grupoCtrl.text =
+                                  exercicioSelecionado['grupoMuscular']?.toString() ?? '';
+                              videoCtrl.text =
+                                  exercicioSelecionado['videoUrl']?.toString() ?? '';
+                            }
+                          });
                         }
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: buscaCtrl,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search, color: AppTheme.neonGreen),
+                        labelText: '🔍 Pesquisar exercício pelo nome (ex: Búlgaro, Polia, Halter...)',
+                      ),
+                      onChanged: (val) {
+                        setModalState(() {
+                          termoBusca = val.trim();
+                          final novaLista = _exerciciosBiblioteca.where((e) {
+                            final matchGrupo =
+                                grupoFiltro == 'Todos' || e['grupoMuscular'] == grupoFiltro;
+                            final matchBusca = termoBusca.isEmpty ||
+                                (e['nome'] ?? '')
+                                    .toString()
+                                    .toLowerCase()
+                                    .contains(termoBusca.toLowerCase());
+                            return matchGrupo && matchBusca;
+                          }).toList();
+                          if (novaLista.isNotEmpty) {
+                            exercicioSelecionado = novaLista.first;
+                            nomeCtrl.text = exercicioSelecionado['nome']?.toString() ?? '';
+                            grupoCtrl.text =
+                                exercicioSelecionado['grupoMuscular']?.toString() ?? '';
+                            videoCtrl.text = exercicioSelecionado['videoUrl']?.toString() ?? '';
+                          }
+                        });
                       },
                     ),
                     const SizedBox(height: 10),
@@ -680,12 +773,18 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                       initialValue: filtrados.contains(exercicioSelecionado)
                           ? exercicioSelecionado
                           : (filtrados.isNotEmpty ? filtrados.first : null),
-                      decoration: const InputDecoration(labelText: 'Escolher da Biblioteca'),
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: '2. Escolher da Biblioteca (${filtrados.length} encontrados)',
+                      ),
                       items: filtrados
                           .map(
                             (e) => DropdownMenuItem(
                               value: e,
-                              child: Text('${e['nome']} (${e['grupoMuscular']})'),
+                              child: Text(
+                                '${e['nome']} (${e['grupoMuscular']})',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           )
                           .toList(),
@@ -701,9 +800,27 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                       },
                     ),
                     const SizedBox(height: 10),
-                    TextField(
-                      controller: nomeCtrl,
-                      decoration: const InputDecoration(labelText: 'Nome do Exercício'),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: nomeCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Nome do Exercício (ou digite um novo)',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: grupoCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Grupo Muscular',
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -751,6 +868,27 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                         labelText: 'Técnica Avançada / Observação (Drop-set, Cadência...)',
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: videoCtrl,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
+                        labelText: 'Link do Vídeo YouTube PT-BR / MP4 (opcional)',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      activeColor: AppTheme.neonGreen,
+                      checkColor: Colors.black,
+                      value: salvarNaBiblioteca,
+                      title: const Text(
+                        'Salvar também na Minha Biblioteca para usar em outros alunos',
+                        style: TextStyle(fontSize: 12.5),
+                      ),
+                      onChanged: (v) => setModalState(() => salvarNaBiblioteca = v ?? false),
+                    ),
                   ],
                 ),
               ),
@@ -759,17 +897,45 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
               ElevatedButton(
                 onPressed: () async {
+                  final nomeFinal = nomeCtrl.text.trim();
+                  final grupoFinal = grupoCtrl.text.trim().isEmpty ? 'Geral' : grupoCtrl.text.trim();
+                  final videoFinal = videoCtrl.text.trim();
+
+                  // Se marcou salvar na biblioteca ou se não existe ainda na biblioteca, salva em EXERCICIOS_BASE
+                  final jaExisteNaBib = _exerciciosBiblioteca.any(
+                    (x) =>
+                        (x['nome'] ?? '').toString().toLowerCase() == nomeFinal.toLowerCase(),
+                  );
+                  if (salvarNaBiblioteca && !jaExisteNaBib && nomeFinal.isNotEmpty) {
+                    try {
+                      await ApiService().dio.post(
+                        '/api/treinos/exercicios-base',
+                        data: {
+                          'nome': nomeFinal,
+                          'grupoMuscular': grupoFinal,
+                          'videoUrl': videoFinal,
+                        },
+                      );
+                      final respBib = await ApiService().dio.get('/api/treinos/exercicios-base');
+                      if (mounted) {
+                        setState(() {
+                          _exerciciosBiblioteca = respBib.data as List<dynamic>;
+                        });
+                      }
+                    } catch (_) {}
+                  }
+
                   await ApiService().dio.post(
                     '/api/treinos/fichas/$fichaId/exercicios',
                     data: {
-                      'nomeExercicio': nomeCtrl.text.trim(),
-                      'grupoMuscular': grupoCtrl.text.trim(),
+                      'nomeExercicio': nomeFinal,
+                      'grupoMuscular': grupoFinal,
                       'series': int.tryParse(seriesCtrl.text) ?? 4,
                       'repeticoes': repsCtrl.text.trim(),
                       'cargaKg': double.tryParse(cargaCtrl.text.replaceAll(',', '.')) ?? 0,
                       'descansoSegundos': int.tryParse(descansoCtrl.text) ?? 60,
                       'observacaoTecnica': obsCtrl.text.trim(),
-                      'videoUrl': videoCtrl.text.trim(),
+                      'videoUrl': videoFinal,
                     },
                   );
                   if (!ctx.mounted) return;
@@ -1795,7 +1961,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   OutlinedButton.icon(
                     onPressed: () => _abrirModalAdicionarExercicio(ficha['id']),
                     icon: const Icon(Icons.add_circle_outline, color: AppTheme.neonGreen),
-                    label: const Text('+ Adicionar Exercício da Biblioteca (40+)'),
+                    label: Text('+ Adicionar Exercício da Biblioteca (${_exerciciosBiblioteca.length}+ exercícios)'),
                   ),
                 ],
               ),
