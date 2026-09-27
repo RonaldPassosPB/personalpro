@@ -546,7 +546,7 @@ class _ExercicioExecucaoDialogState extends State<_ExercicioExecucaoDialog>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '🔗 LINK DO VÍDEO DO EXERCÍCIO (YOUTUBE / SHORTS / MP4)',
                         style: TextStyle(
                           fontSize: 11,
@@ -1191,7 +1191,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           spacing: 12,
           runSpacing: 12,
           children: [
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -1516,7 +1516,7 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+          Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
           const SizedBox(height: 2),
           Text(
             val,
@@ -1676,7 +1676,7 @@ class _PainelAgendaPersonalWidgetState extends State<PainelAgendaPersonalWidget>
           spacing: 12,
           runSpacing: 12,
           children: [
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -1840,7 +1840,7 @@ class _PainelAgendaPersonalWidgetState extends State<PainelAgendaPersonalWidget>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary)),
+          Text(label, style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary)),
           const SizedBox(height: 4),
           Text(val, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color)),
         ],

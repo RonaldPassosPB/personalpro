@@ -290,12 +290,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -0.6),
+            center: const Alignment(0, -0.6),
             radius: 1.1,
             colors: [
-              Color(0xFF1A2E22),
+              AppTheme.isLight ? const Color(0xFFDFF7EA) : const Color(0xFF1A2E22),
               AppTheme.bgDark,
             ],
           ),
@@ -316,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
+                      color: Colors.black.withValues(alpha: AppTheme.isLight ? 0.12 : 0.5),
                       blurRadius: 30,
                       offset: const Offset(0, 12),
                     ),
@@ -325,6 +325,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    const Align(
+                      alignment: Alignment.centerRight,
+                      child: BotaoAlternarTema(mostrarTexto: true),
+                    ),
+                    const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -348,8 +353,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: AppTheme.neonGreen,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
+                    SizedBox(height: 4),
+                    Text(
                       'Plataforma SaaS Multi-Tenant • Consultorias & Academias',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
@@ -418,8 +423,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                     const SizedBox(height: 24),
                     const Divider(color: Colors.white12),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8),
+                    Text(
                       'ACESSO RÁPIDO DE DEMONSTRAÇÃO (1 CLIQUE):',
                       style: TextStyle(
                         fontSize: 11,
@@ -499,7 +504,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             Text(
               subtitulo,
-              style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 10, color: AppTheme.textSecondary),
             ),
           ],
         ),

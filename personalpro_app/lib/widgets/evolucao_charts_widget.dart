@@ -138,16 +138,16 @@ class ImageHelper {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.camera_alt_outlined,
             color: AppTheme.textSecondary,
             size: 36,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
         ],
       ),
@@ -487,7 +487,7 @@ class _DualEvolutionChartPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: dataStr.length >= 10 ? dataStr.substring(5, 10) : dataStr,
-          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -610,7 +610,7 @@ class _LoadProgressionChartPainter extends CustomPainter {
       final tpDate = TextPainter(
         text: TextSpan(
           text: dataRaw.length >= 10 ? dataRaw.substring(5, 10) : dataRaw,
-          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9.5),
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 9.5),
         ),
         textDirection: TextDirection.ltr,
       )..layout();

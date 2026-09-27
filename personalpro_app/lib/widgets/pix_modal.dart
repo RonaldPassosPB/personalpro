@@ -66,13 +66,13 @@ class PixModal extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Pagamento via PIX EMV',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           'Referência: $mesReferencia • $nomeBeneficiario',
-                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                         ),
                       ],
                     ),
@@ -114,10 +114,10 @@ class PixModal extends StatelessWidget {
                   backgroundColor: Colors.white,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 'Chave PIX: $chavePix',
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
               const SizedBox(height: 12),
               Container(
@@ -130,7 +130,7 @@ class PixModal extends StatelessWidget {
                 child: SelectableText(
                   pixCopiaECola,
                   maxLines: 3,
-                  style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                 ),
               ),
               const SizedBox(height: 16),

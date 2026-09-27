@@ -132,13 +132,13 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   'Olá, ${_aluno['nome'] ?? widget.session['nome'] ?? 'Atleta'}! 💪',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Personal: ${_aluno['nomePersonal'] ?? _nomePersonal} • Toque na foto p/ alterar',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                  style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
                 ),
               ],
             ),
@@ -146,6 +146,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         ],
       ),
       actions: [
+        const BotaoAlternarTema(mostrarTexto: true),
         IconButton(
           tooltip: 'Notificações',
           icon: const Icon(Icons.notifications_active_outlined, color: AppTheme.neonGreen),
@@ -187,7 +188,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
               children: [
                 NavigationRail(
                   selectedIndex: _abaAtual,
-                  backgroundColor: const Color(0xFF13151B),
+                  backgroundColor: AppTheme.surfaceCard,
                   indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
                   labelType: NavigationRailLabelType.all,
                   onDestinationSelected: (i) => setState(() => _abaAtual = i),
@@ -223,7 +224,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
           ? null
           : NavigationBar(
               selectedIndex: _abaAtual,
-              backgroundColor: const Color(0xFF16181D),
+              backgroundColor: AppTheme.surfaceCard,
               indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
               onDestinationSelected: (i) => setState(() => _abaAtual = i),
               destinations: const [
@@ -290,7 +291,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                       ),
                       Text(
                         'Total acumulado: $_treinosTotal treinos • Toque em qualquer exercício para ver o GIF/Vídeo de execução!',
-                        style: const TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
+                        style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
                       ),
                     ],
                   ),
@@ -404,10 +405,10 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         ],
                       ),
                       if ((fichaMap['descricao']?.toString() ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           fichaMap['descricao'].toString(),
-                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                         ),
                       ],
                       if (exercicios.isNotEmpty) ...[
@@ -489,7 +490,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         ),
                         Text(
                           'Objetivo: ${plano['objetivo']} • Prescrito por $_nomePersonal',
-                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                         ),
                       ],
                     ),
@@ -650,10 +651,10 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                           .toList(),
                     ),
                   ],
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Text(
                     '🩺 Restrições / Lesões: ${ultimaAval['restricoesLesoes'] ?? 'Nenhuma'}',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -677,11 +678,11 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
               leading: const Icon(Icons.check_circle, color: AppTheme.neonGreen),
               title: Text(
                 h['nomeTreino']?.toString() ?? '',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Duração: ${h['duracaoMinutos']} min • ${h['observacaoAluno'] ?? 'Concluído'}',
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
             ),
           );
@@ -781,7 +782,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(titulo, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+          Text(titulo, style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
           Text(valor, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: cor)),
         ],
       ),
@@ -1224,7 +1225,7 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                             ),
                             child: Text(
                               '💡 Instrução do Personal: ${ex['observacaoTecnica']}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12.5,
                                 color: AppTheme.textSecondary,
                               ),

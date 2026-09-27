@@ -334,19 +334,21 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'PERSONALPRO — PAINEL MASTER SAAS',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
                 ),
                 Text(
                   'SuperAdmin • Competência $_mesReferencia • $totalAlunosSaaS alunos ativos na plataforma',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                 ),
               ],
             ),
           ],
         ),
         actions: [
+          const BotaoAlternarTema(mostrarTexto: true),
+          const SizedBox(width: 8),
           ElevatedButton.icon(
             onPressed: () => _abrirModalNovoOuEditarPersonal(),
             icon: const Icon(Icons.add),
@@ -490,10 +492,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 6),
+                                      SizedBox(height: 6),
                                       Text(
                                         'E-mail: ${p['email']} • CREF: ${p['cref'] ?? '-'} • CPF/CNPJ: ${p['cpfCnpj'] ?? '-'}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: AppTheme.textSecondary,
                                           fontSize: 12.5,
                                         ),
@@ -597,7 +599,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
             children: [
               Text(
                 titulo,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textSecondary,
@@ -611,10 +613,10 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
             valor,
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: cor),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             subtitulo,
-            style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+            style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
           ),
         ],
       ),

@@ -76,9 +76,9 @@ class _NotificacoesSheetState extends State<NotificacoesSheet> {
           const Divider(color: Colors.white12),
           Expanded(
             child: _carregando
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator())
                 : _lista.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'Nenhuma notificação no momento.',
                           style: TextStyle(color: AppTheme.textSecondary),
@@ -126,10 +126,10 @@ class _NotificacoesSheetState extends State<NotificacoesSheet> {
                                           fontSize: 14,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      SizedBox(height: 4),
                                       Text(
                                         n['mensagem']?.toString() ?? '',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: AppTheme.textSecondary,
                                           fontSize: 13,
                                         ),

@@ -1086,7 +1086,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     'CREF: ${_personal['cref'] ?? 'Ativo'} • Plano ${_personal['plano'] ?? 'ELITE'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                   ),
                 ],
               ),
@@ -1115,6 +1115,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 style: TextStyle(color: AppTheme.neonGreen, fontWeight: FontWeight.bold, fontSize: 12),
               ),
             ),
+          BotaoAlternarTema(mostrarTexto: !isMobile),
           IconButton(
             tooltip: 'Notificações',
             icon: const Icon(Icons.notifications_active_outlined, color: AppTheme.neonGreen),
@@ -1139,7 +1140,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               children: [
                 NavigationRail(
                   selectedIndex: _abaAtual,
-                  backgroundColor: const Color(0xFF13151B),
+                  backgroundColor: AppTheme.surfaceCard,
                   indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
                   labelType: NavigationRailLabelType.all,
                   onDestinationSelected: (i) => setState(() => _abaAtual = i),
@@ -1185,7 +1186,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           ? null
           : NavigationBar(
               selectedIndex: _abaAtual,
-              backgroundColor: const Color(0xFF16181D),
+              backgroundColor: AppTheme.surfaceCard,
               indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               onDestinationSelected: (i) => setState(() => _abaAtual = i),
@@ -1309,11 +1310,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                               children: [
                                 Text(
                                   al['nome']?.toString() ?? '',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   'Há $dias dias sem concluir treino • Objetivo: ${al['objetivo']}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: AppTheme.textSecondary,
                                   ),
@@ -1356,11 +1357,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 ),
                 title: Text(
                   '${t['nomeAluno']} concluiu ${t['nomeTreino']}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
                   '⏱️ ${t['duracaoMinutos']} min • 💬 "${t['observacaoAluno'] ?? 'Treino concluído com sucesso!'}"',
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
                 ),
                 trailing: IconButton(
                   tooltip: 'Parabenizar no WhatsApp',
@@ -1482,10 +1483,10 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 3),
+                            SizedBox(height: 3),
                             Text(
                               '${a['email']} • WhatsApp: ${a['telefone'] ?? '-'} • Mensalidade: R\$ ${((a['valorMensalidade'] ?? 0) as num).toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.textSecondary,
                               ),
@@ -1578,7 +1579,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                                 color: AppTheme.neonGreen,
                               ),
                             ),
-                            const Text(
+                            Text(
                               'Selecione o aluno abaixo para visualizar gráficos de Peso/Gordura, Progressão de Carga (kg) e Fotos Antes x Depois',
                               style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
                             ),
@@ -1780,10 +1781,10 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     ],
                   ),
                   if ((ficha['descricao']?.toString() ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
                       ficha['descricao'].toString(),
-                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12.5),
                     ),
                   ],
                   const Divider(color: Colors.white12, height: 22),
@@ -1843,10 +1844,10 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                                   ),
                                   if ((exMap['observacaoTecnica']?.toString() ?? '').isNotEmpty)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 4),
+                                      padding: EdgeInsets.only(top: 4),
                                       child: Text(
                                         '💡 Técnica: ${exMap['observacaoTecnica']}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: AppTheme.textSecondary,
                                           fontSize: 12,
                                         ),
@@ -2218,7 +2219,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textSecondary,
