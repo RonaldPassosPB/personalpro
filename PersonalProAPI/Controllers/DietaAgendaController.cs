@@ -104,6 +104,18 @@ namespace PersonalProAPI.Controllers
             var personalId = UsuarioContexto.GetPersonalId(User);
             using var con = _db.CriarConexao();
 
+            if (req.AlunoId <= 0)
+            {
+                var usuarioId = UsuarioContexto.GetUsuarioId(User);
+                var aId = await con.ExecuteScalarAsync<int?>("SELECT ID FROM ALUNOS WHERE USUARIO_ID = @UsuarioId", new { UsuarioId = usuarioId });
+                if (aId.HasValue) req.AlunoId = aId.Value;
+            }
+
+            if (personalId <= 0 && req.AlunoId > 0)
+            {
+                personalId = await con.ExecuteScalarAsync<int>("SELECT ISNULL(PERSONAL_ID, 1) FROM ALUNOS WHERE ID = @AlunoId", new { AlunoId = req.AlunoId });
+            }
+
             // Desativar planos anteriores do aluno
             await con.ExecuteAsync(
                 "UPDATE PLANOS_ALIMENTARES SET ATIVO = 0 WHERE ALUNO_ID = @AlunoId AND TENANT_ID = @TenantId",

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/api_service.dart';
+import '../../services/evolucao_pdf_service.dart';
 import '../../services/ficha_pdf_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/whatsapp_service.dart';
@@ -132,6 +133,317 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
           nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
           onTreinoConcluido: _carregarDadosAluno,
         ),
+      ),
+    );
+  }
+
+  void _abrirModalDietaAluno() {
+    final plano = _meuPlanoDieta;
+    final tituloCtrl = TextEditingController(text: plano?['titulo'] ?? 'Minha Dieta Personalizada');
+    final metaKcalCtrl = TextEditingController(text: (plano?['metaKcal'] ?? 2600).toString());
+    final aguaCtrl = TextEditingController(text: (plano?['aguaLitros'] ?? 3.5).toString());
+    final protCtrl = TextEditingController(text: (plano?['proteinaG'] ?? 160).toString());
+    final carbCtrl = TextEditingController(text: (plano?['carboidratoG'] ?? 280).toString());
+    final gordCtrl = TextEditingController(text: (plano?['gorduraG'] ?? 65).toString());
+    final obsCtrl = TextEditingController(text: plano?['observacoes'] ?? '');
+    String objetivo = plano?['objetivo'] ?? 'Hipertrofia';
+
+    List<Map<String, dynamic>> refeicoesTemp = [];
+    if (_minhasRefeicoes.isNotEmpty) {
+      refeicoesTemp = _minhasRefeicoes.map((r) => Map<String, dynamic>.from(r as Map)).toList();
+    } else {
+      refeicoesTemp = [
+        {
+          'horario': '07:30',
+          'nomeRefeicao': 'Refeição 1 — Café da Manhã',
+          'alimentosDescricao': '• 3 Ovos mexidos + 2 fatias de pão integral\n• 1 Banana com aveia\n• Café preto',
+          'substituicoes': 'Crepioca (2 ovos + 30g tapioca)',
+          'kcalEstimada': 500,
+          'proteinaG': 30,
+          'carboG': 50,
+          'gorduraG': 15,
+        },
+        {
+          'horario': '12:30',
+          'nomeRefeicao': 'Refeição 2 — Almoço',
+          'alimentosDescricao': '• 180g Frango grelhado\n• 200g Arroz + 100g Feijão\n• Salada à vontade',
+          'substituicoes': '180g Patinho moído + 200g Batata doce',
+          'kcalEstimada': 700,
+          'proteinaG': 50,
+          'carboG': 70,
+          'gorduraG': 18,
+        },
+        {
+          'horario': '16:30',
+          'nomeRefeicao': 'Refeição 3 — Lanche / Pré-Treino',
+          'alimentosDescricao': '• 40g Whey Protein + 40g Aveia\n• 1 Banana + 15g Pasta de amendoim',
+          'substituicoes': 'Iogurte natural com frutas e chia',
+          'kcalEstimada': 450,
+          'proteinaG': 35,
+          'carboG': 45,
+          'gorduraG': 12,
+        },
+        {
+          'horario': '20:30',
+          'nomeRefeicao': 'Refeição 4 — Jantar',
+          'alimentosDescricao': '• 180g Carne magra ou Peixe\n• 150g Mandioca ou Batata\n• Legumes no vapor',
+          'substituicoes': 'Omelete de 3 ovos com legumes',
+          'kcalEstimada': 550,
+          'proteinaG': 45,
+          'carboG': 45,
+          'gorduraG': 15,
+        },
+      ];
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final isLight = AppTheme.isLight;
+          return AlertDialog(
+            backgroundColor: AppTheme.surfaceCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.restaurant_menu_rounded,
+                  color: isLight ? const Color(0xFF008744) : AppTheme.neonGreen,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Cadastrar / Ajustar Minha Dieta',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 580, maxHeight: 650),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: tituloCtrl,
+                      decoration: const InputDecoration(labelText: 'Título da Dieta'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: objetivo,
+                      decoration: const InputDecoration(labelText: 'Objetivo Nutricional'),
+                      items: const [
+                        DropdownMenuItem(value: 'Hipertrofia', child: Text('Hipertrofia')),
+                        DropdownMenuItem(value: 'Emagrecimento', child: Text('Emagrecimento')),
+                        DropdownMenuItem(value: 'Definição', child: Text('Definição Muscular')),
+                        DropdownMenuItem(value: 'Manutenção', child: Text('Manutenção')),
+                      ],
+                      onChanged: (v) => setModalState(() => objetivo = v ?? 'Hipertrofia'),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: metaKcalCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Meta Calórica (kcal)'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: aguaCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Meta de Água (L)'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: protCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Proteínas (g)'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: carbCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Carboidratos (g)'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: gordCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Gorduras (g)'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: obsCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Observações / Recomendações',
+                        hintText: 'Ex: Beber 500ml de água antes de cada refeição',
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Refeições (${refeicoesTemp.length})',
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            setModalState(() {
+                              refeicoesTemp.add({
+                                'horario': '15:00',
+                                'nomeRefeicao': 'Refeição ${refeicoesTemp.length + 1}',
+                                'alimentosDescricao': '• Alimento 1\n• Alimento 2',
+                                'substituicoes': '',
+                                'kcalEstimada': 400,
+                                'proteinaG': 25,
+                                'carboG': 40,
+                                'gorduraG': 10,
+                              });
+                            });
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Adicionar Refeição'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ...refeicoesTemp.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final r = entry.value;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.bgDark,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 80,
+                                  child: TextFormField(
+                                    initialValue: r['horario']?.toString(),
+                                    decoration: const InputDecoration(labelText: 'Horário', isDense: true),
+                                    onChanged: (v) => r['horario'] = v,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    initialValue: r['nomeRefeicao']?.toString(),
+                                    decoration: const InputDecoration(labelText: 'Nome da Refeição', isDense: true),
+                                    onChanged: (v) => r['nomeRefeicao'] = v,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: AppTheme.performanceRed, size: 20),
+                                  onPressed: () {
+                                    setModalState(() => refeicoesTemp.removeAt(i));
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              initialValue: (r['alimentosDescricao'] ?? '').toString().replaceAll(r'\n', '\n'),
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'Alimentos (1 por linha)',
+                                isDense: true,
+                              ),
+                              onChanged: (v) => r['alimentosDescricao'] = v,
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              initialValue: r['substituicoes']?.toString(),
+                              decoration: const InputDecoration(
+                                labelText: 'Opções de Substituição',
+                                isDense: true,
+                              ),
+                              onChanged: (v) => r['substituicoes'] = v,
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    await ApiService().dio.post(
+                      '/api/dieta/salvar',
+                      data: {
+                        'titulo': tituloCtrl.text.trim(),
+                        'objetivo': objetivo,
+                        'metaKcal': int.tryParse(metaKcalCtrl.text) ?? 2600,
+                        'aguaLitros': double.tryParse(aguaCtrl.text.replaceAll(',', '.')) ?? 3.5,
+                        'proteinaG': int.tryParse(protCtrl.text) ?? 160,
+                        'carboidratoG': int.tryParse(carbCtrl.text) ?? 280,
+                        'gorduraG': int.tryParse(gordCtrl.text) ?? 65,
+                        'observacoes': obsCtrl.text.trim(),
+                        'refeicoes': refeicoesTemp,
+                      },
+                    );
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    _carregarDadosAluno();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Dieta atualizada com sucesso!'),
+                        backgroundColor: AppTheme.neonGreen,
+                      ),
+                    );
+                  } catch (e) {
+                    if (!ctx.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erro ao salvar dieta: $e'),
+                        backgroundColor: AppTheme.performanceRed,
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.check_circle_outline, size: 18),
+                label: const Text('SALVAR MINHA DIETA'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -519,7 +831,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Seu Personal Trainer ainda está finalizando a periodização das suas divisões de treino. Assim que publicada, ela aparecerá aqui instantaneamente com vídeos demonstrativos em PT-BR.',
+                    'Seu Personal Trainer ainda está finalizando a periodização das suas divisões de treino. Assim que publicada, ela aparecerá aqui instantaneamente com vídeos demonstrativos de execução.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13.5, height: 1.5, color: AppTheme.textSecondary),
                   ),
@@ -534,10 +846,9 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
             final recolhida = _fichasRecolhidas.contains(fichaId);
             final exercicios = (fichaMap['exercicios'] as List<dynamic>?) ?? [];
             final nomeDivisao = fichaMap['nomeDivisao']?.toString() ?? 'Treino';
-            final descricao = fichaMap['descricao']?.toString() ?? '';
-            final tituloCompleto = descricao.isNotEmpty
-                ? '$nomeDivisao — $descricao'
-                : nomeDivisao;
+
+            // Usuário solicitou: "deixa apenas treino A ou B etc... sem a parte do foco em tensao"
+            final tituloCompleto = nomeDivisao;
 
             return Container(
               margin: const EdgeInsets.only(bottom: 20),
@@ -579,7 +890,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              '${exercicios.length} exercícios (PT-BR)',
+                              '${exercicios.length} exercícios',
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
@@ -645,7 +956,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                             ),
                           ),
                           child: const Text(
-                            'INICIAR EXECUÇÃO NA ACADEMIA (VÍDEOS PT-BR & CRONÔMETRO)',
+                            'INICIAR EXECUÇÃO NA ACADEMIA (VÍDEOS & CRONÔMETRO)',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13.5,
@@ -671,90 +982,154 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     final plano = _meuPlanoDieta;
     final accentGreen = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
 
-    if (plano == null) {
-      return Center(
-        child: Text(
-          'Seu Personal Trainer ainda está configurando seu Plano Alimentar.',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
-        ),
-      );
-    }
-
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       children: [
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceCard,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: borderSubtle, width: 1.2),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        (plano['titulo'] ?? 'Meu Plano Alimentar').toString(),
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Objetivo: ${plano['objetivo']} • Prescrito por $_nomePersonal',
-                        style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                      ),
-                    ],
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => DietaPdfService.exportarPlanoAlimentarPdf(
-                      nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
-                      nomePersonal: _nomePersonal,
-                      plano: plano,
-                      refeicoes: _minhasRefeicoes,
-                    ),
-                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                    label: const Text('Exportar Dieta PDF'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _statPill('META CALÓRICA', '${plano['metaKcal']} kcal', accentGreen),
-                  _statPill('PROTEÍNAS', '${plano['proteinaG']}g', const Color(0xFFFF5252)),
-                  _statPill('CARBOIDRATOS', '${plano['carboidratoG']}g', AppTheme.warningAmber),
-                  _statPill('GORDURAS', '${plano['gorduraG']}g', Colors.orange),
-                  _statPill('META DE ÁGUA', '${plano['aguaLitros']} Litros', AppTheme.electricBlue),
-                ],
-              ),
-              if ((plano['observacoes'] ?? '').toString().isNotEmpty) ...[
+        if (plano == null)
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceCard,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: borderSubtle, width: 1.2),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.restaurant_menu_rounded, size: 48, color: AppTheme.textSecondary),
                 const SizedBox(height: 14),
                 Text(
-                  'Recomendação do Personal: ${plano['observacoes']}',
+                  'Você ainda não possui um Plano Alimentar ativo',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Você pode cadastrar sua própria rotina alimentar agora mesmo ou aguardar a prescrição do seu Personal Trainer.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13.5, color: AppTheme.textSecondary, height: 1.45),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: _abrirModalDietaAluno,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.neonGreen,
+                    foregroundColor: const Color(0xFF0A0E12),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                  label: const Text(
+                    'CADASTRAR MINHA DIETA AGORA',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
                   ),
                 ),
               ],
-            ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceCard,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: borderSubtle, width: 1.2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (plano['titulo'] ?? 'Meu Plano Alimentar').toString(),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Objetivo: ${plano['objetivo']} • Prescrito por $_nomePersonal',
+                          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _abrirModalDietaAluno,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.neonGreen,
+                            foregroundColor: const Color(0xFF0A0E12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          icon: const Icon(Icons.edit_note_rounded, size: 18),
+                          label: const Text(
+                            'Registrar / Editar Minha Dieta',
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => DietaPdfService.exportarPlanoAlimentarPdf(
+                            nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
+                            nomePersonal: _nomePersonal,
+                            plano: plano,
+                            refeicoes: _minhasRefeicoes,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.textPrimary,
+                            side: BorderSide(color: borderSubtle, width: 1.2),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                          label: const Text('Exportar Dieta PDF'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _statPill('META CALÓRICA', '${plano['metaKcal']} kcal', accentGreen),
+                    _statPill('PROTEÍNAS', '${plano['proteinaG']}g', const Color(0xFFFF5252)),
+                    _statPill('CARBOIDRATOS', '${plano['carboidratoG']}g', AppTheme.warningAmber),
+                    _statPill('GORDURAS', '${plano['gorduraG']}g', Colors.orange),
+                    _statPill('META DE ÁGUA', '${plano['aguaLitros']} Litros', AppTheme.electricBlue),
+                  ],
+                ),
+                if ((plano['observacoes'] ?? '').toString().isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    'Recomendação: ${plano['observacoes']}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
         const SizedBox(height: 24),
         Text(
           'Refeições do Dia e Opções de Substituição',
@@ -766,6 +1141,8 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         ),
         const SizedBox(height: 12),
         ..._minhasRefeicoes.map((r) {
+          final alimentosTexto = (r['alimentosDescricao'] ?? '').toString().replaceAll(r'\n', '\n');
+
           return Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(18),
@@ -802,7 +1179,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  (r['alimentosDescricao'] ?? '').toString(),
+                  alimentosTexto,
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.5,
@@ -851,6 +1228,56 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       children: [
+        // Header com Botão de Exportar para PDF solicitado pelo usuário (Imagem 1)
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 14,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Minha Evolução',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.7,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Histórico de avaliações corporais, bioimpedância e progressão de cargas',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+            OutlinedButton.icon(
+              onPressed: () => EvolucaoPdfService.exportarEvolucaoPdf(
+                nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
+                nomePersonal: _aluno['nomePersonal']?.toString() ?? _nomePersonal,
+                avaliacoes: _avaliacoes,
+                progressaoCargas: _progressaoCargas,
+                historicoTreinos: _historicoTreinos,
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.textPrimary,
+                side: BorderSide(color: borderSubtle, width: 1.2),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: Icon(Icons.picture_as_pdf_outlined, size: 18, color: accentGreen),
+              label: const Text(
+                'Exportar Evolução em PDF',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
         EvolucaoCompletaPanel(
           avaliacoes: _avaliacoes,
           progressaoCargas: _progressaoCargas,
@@ -1439,7 +1866,7 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                                 size: 16,
                               ),
                               label: Text(
-                                videoAberto ? 'Fechar Vídeo' : 'Ver Vídeo PT-BR',
+                                videoAberto ? 'Fechar Vídeo' : 'Ver Vídeo',
                                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                               ),
                             );
