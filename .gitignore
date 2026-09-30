@@ -17,3 +17,7 @@ build/
 database/backups/*.bak
 database/backups/*.log
 
+# Agent Skills
+.gemini/
+.agents/
+
