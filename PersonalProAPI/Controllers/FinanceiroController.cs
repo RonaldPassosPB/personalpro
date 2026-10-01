@@ -9,7 +9,7 @@ namespace PersonalProAPI.Controllers
 {
     [ApiController]
     [Route("api/financeiro")]
-    [Authorize]
+    [Authorize(Roles = "Personal,SuperAdmin")]
     public class FinanceiroController : ControllerBase
     {
         private readonly DbConnection _db;
@@ -255,3 +255,4 @@ namespace PersonalProAPI.Controllers
         }
     }
 }
+

@@ -24,8 +24,23 @@ namespace PersonalProAPI.Controllers
         [HttpGet("api/dieta/aluno/{alunoId}")]
         public async Task<IActionResult> ObterDietaAluno(int alunoId)
         {
+            var perfil = UsuarioContexto.GetPerfil(User);
+            var usuarioId = UsuarioContexto.GetUsuarioId(User);
             var tenantId = UsuarioContexto.GetTenantId(User);
             using var con = _db.CriarConexao();
+
+            // Se for Aluno, só pode visualizar sua própria dieta
+            if (perfil == 2)
+            {
+                var meuAlunoId = await con.ExecuteScalarAsync<int?>(
+                    "SELECT ID FROM ALUNOS WHERE USUARIO_ID = @UsuarioId",
+                    new { UsuarioId = usuarioId }
+                );
+                if (meuAlunoId == null || meuAlunoId.Value != alunoId)
+                {
+                    return Forbid();
+                }
+            }
 
             var plano = await con.QueryFirstOrDefaultAsync<dynamic>(@"
                 SELECT TOP 1
@@ -100,13 +115,21 @@ namespace PersonalProAPI.Controllers
         [HttpPost("api/dieta/salvar")]
         public async Task<IActionResult> SalvarPlano([FromBody] SalvarDietaRequest req)
         {
+            var perfil = UsuarioContexto.GetPerfil(User);
+            var usuarioId = UsuarioContexto.GetUsuarioId(User);
             var tenantId = UsuarioContexto.GetTenantId(User);
             var personalId = UsuarioContexto.GetPersonalId(User);
             using var con = _db.CriarConexao();
 
-            if (req.AlunoId <= 0)
+            // Se for Aluno, força salvar exclusivamente na sua própria conta
+            if (perfil == 2)
             {
-                var usuarioId = UsuarioContexto.GetUsuarioId(User);
+                var aId = await con.ExecuteScalarAsync<int?>("SELECT ID FROM ALUNOS WHERE USUARIO_ID = @UsuarioId", new { UsuarioId = usuarioId });
+                if (!aId.HasValue) return Forbid();
+                req.AlunoId = aId.Value;
+            }
+            else if (req.AlunoId <= 0)
+            {
                 var aId = await con.ExecuteScalarAsync<int?>("SELECT ID FROM ALUNOS WHERE USUARIO_ID = @UsuarioId", new { UsuarioId = usuarioId });
                 if (aId.HasValue) req.AlunoId = aId.Value;
             }
@@ -198,6 +221,7 @@ namespace PersonalProAPI.Controllers
         // ==========================================
 
         [HttpGet("api/agenda/personal")]
+        [Authorize(Roles = "Personal,SuperAdmin")]
         public async Task<IActionResult> ObterAgendaPersonal()
         {
             var personalId = UsuarioContexto.GetPersonalId(User);
@@ -272,6 +296,7 @@ namespace PersonalProAPI.Controllers
         }
 
         [HttpPost("api/agenda")]
+        [Authorize(Roles = "Personal,SuperAdmin")]
         public async Task<IActionResult> CriarAgendamento([FromBody] CriarAgendamentoRequest req)
         {
             var personalId = UsuarioContexto.GetPersonalId(User);
@@ -305,6 +330,7 @@ namespace PersonalProAPI.Controllers
         }
 
         [HttpPatch("api/agenda/{id}/status")]
+        [Authorize(Roles = "Personal,SuperAdmin")]
         public async Task<IActionResult> AtualizarStatusAula(int id, [FromBody] AtualizarStatusRequest req)
         {
             var tenantId = UsuarioContexto.GetTenantId(User);

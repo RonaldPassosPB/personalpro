@@ -16,11 +16,13 @@ namespace PersonalProAPI.Controllers
     {
         private readonly DbConnection _db;
         private readonly IConfiguration _config;
+        private readonly IHostEnvironment _env;
 
-        public AuthController(DbConnection db, IConfiguration config)
+        public AuthController(DbConnection db, IConfiguration config, IHostEnvironment env)
         {
             _db = db;
             _config = config;
+            _env = env;
         }
 
         [HttpPost("login")]
@@ -135,7 +137,14 @@ namespace PersonalProAPI.Controllers
             );
 
             if (usuario == null)
-                return BadRequest(new { mensagem = "E-mail não encontrado na plataforma PersonalPro." });
+            {
+                // Resposta neutra para evitar enumeração de usuários (CWE-204)
+                return Ok(new
+                {
+                    mensagem = "Se o e-mail informado estiver cadastrado em nossa base, o código de recuperação foi gerado.",
+                    codigoDev = _env.IsDevelopment() ? "DEV-EMAIL-NAO-EXISTE" : null
+                });
+            }
 
             var codigo = Random.Shared.Next(100000, 999999).ToString();
 
@@ -151,8 +160,8 @@ namespace PersonalProAPI.Controllers
 
             return Ok(new
             {
-                mensagem = "Código de 6 dígitos gerado! Válido por 15 minutos.",
-                codigoDev = codigo
+                mensagem = "Se o e-mail informado estiver cadastrado em nossa base, o código de recuperação foi gerado.",
+                codigoDev = _env.IsDevelopment() ? codigo : null
             });
         }
 

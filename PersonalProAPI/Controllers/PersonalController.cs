@@ -9,7 +9,7 @@ namespace PersonalProAPI.Controllers
 {
     [ApiController]
     [Route("api/personal")]
-    [Authorize]
+    [Authorize(Roles = "Personal,SuperAdmin")]
     public class PersonalController : ControllerBase
     {
         private readonly DbConnection _db;

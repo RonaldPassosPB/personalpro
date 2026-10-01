@@ -7,11 +7,13 @@ namespace PersonalProAPI.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ErrorHandlingMiddleware> _logger;
+        private readonly IHostEnvironment _env;
 
-        public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+        public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IHostEnvironment env)
         {
             _next = next;
             _logger = logger;
+            _env = env;
         }
 
         public async Task InvokeAsync(HttpContext context, LogService logService)
@@ -31,7 +33,7 @@ namespace PersonalProAPI.Middlewares
                 var resposta = new
                 {
                     erro = "Ocorreu um erro interno ao processar sua requisição.",
-                    mensagem = ex.Message,
+                    mensagem = _env.IsDevelopment() ? ex.Message : "Por favor, entre em contato com o suporte informando o protocolo.",
                     protocolo = protocolo,
                     dataHora = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 };
@@ -46,3 +48,4 @@ namespace PersonalProAPI.Middlewares
         }
     }
 }
+

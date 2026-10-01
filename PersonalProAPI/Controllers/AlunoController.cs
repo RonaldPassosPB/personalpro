@@ -143,8 +143,20 @@ namespace PersonalProAPI.Controllers
         [HttpPatch("exercicios/{exercicioId}/carga")]
         public async Task<IActionResult> AtualizarCargaExercicio(int exercicioId, [FromBody] AtualizarCargaDto dto)
         {
+            var usuarioId = UsuarioContexto.GetUsuarioId(User);
+            var perfil = UsuarioContexto.GetPerfil(User);
             var personalId = UsuarioContexto.GetPersonalId(User);
             using var con = _db.CriarConexao();
+
+            int? alunoIdLogado = null;
+            if (perfil == 2)
+            {
+                alunoIdLogado = await con.ExecuteScalarAsync<int?>(
+                    "SELECT ID FROM ALUNOS WHERE USUARIO_ID = @UsuarioId",
+                    new { UsuarioId = usuarioId }
+                );
+                if (!alunoIdLogado.HasValue) return NotFound(new { mensagem = "Aluno não localizado." });
+            }
 
             var info = await con.QueryFirstOrDefaultAsync<dynamic>(@"
                 SELECT
@@ -153,35 +165,39 @@ namespace PersonalProAPI.Controllers
                     FT.ALUNO_ID AS AlunoId
                 FROM FICHA_EXERCICIOS FE
                 INNER JOIN FICHAS_TREINO FT ON FT.ID = FE.FICHA_ID
-                WHERE FE.ID = @Id AND FT.PERSONAL_ID = @PersonalId",
-                new { Id = exercicioId, PersonalId = personalId }
+                WHERE FE.ID = @Id 
+                  AND (FT.PERSONAL_ID = @PersonalId OR @PersonalId <= 0)
+                  AND (@AlunoId IS NULL OR FT.ALUNO_ID = @AlunoId)",
+                new { Id = exercicioId, PersonalId = personalId, AlunoId = alunoIdLogado }
             );
+
+            if (info == null)
+                return NotFound(new { mensagem = "Exercício não encontrado ou você não tem permissão para alterá-lo." });
 
             await con.ExecuteAsync(@"
                 UPDATE FE
                 SET FE.CARGA_KG = @CargaKg
                 FROM FICHA_EXERCICIOS FE
                 INNER JOIN FICHAS_TREINO FT ON FT.ID = FE.FICHA_ID
-                WHERE FE.ID = @Id AND FT.PERSONAL_ID = @PersonalId",
-                new { Id = exercicioId, CargaKg = dto.CargaKg, PersonalId = personalId }
+                WHERE FE.ID = @Id 
+                  AND (FT.PERSONAL_ID = @PersonalId OR @PersonalId <= 0)
+                  AND (@AlunoId IS NULL OR FT.ALUNO_ID = @AlunoId)",
+                new { Id = exercicioId, CargaKg = dto.CargaKg, PersonalId = personalId, AlunoId = alunoIdLogado }
             );
 
-            if (info != null)
-            {
-                await con.ExecuteAsync(@"
-                    INSERT INTO PROGRESSAO_CARGAS (ALUNO_ID, PERSONAL_ID, EXERCICIO_ID, NOME_EXERCICIO, GRUPO_MUSCULAR, CARGA_KG, DATA_REGISTRO)
-                    VALUES (@AlunoId, @PersonalId, @ExercicioId, @NomeExercicio, @GrupoMuscular, @CargaKg, GETDATE())",
-                    new
-                    {
-                        AlunoId = (int)info.AlunoId,
-                        PersonalId = personalId,
-                        ExercicioId = exercicioId,
-                        NomeExercicio = (string)info.NomeExercicio,
-                        GrupoMuscular = (string?)(info.GrupoMuscular ?? "Geral"),
-                        CargaKg = dto.CargaKg
-                    }
-                );
-            }
+            await con.ExecuteAsync(@"
+                INSERT INTO PROGRESSAO_CARGAS (ALUNO_ID, PERSONAL_ID, EXERCICIO_ID, NOME_EXERCICIO, GRUPO_MUSCULAR, CARGA_KG, DATA_REGISTRO)
+                VALUES (@AlunoId, @PersonalId, @ExercicioId, @NomeExercicio, @GrupoMuscular, @CargaKg, GETDATE())",
+                new
+                {
+                    AlunoId = (int)info.AlunoId,
+                    PersonalId = personalId > 0 ? personalId : 1,
+                    ExercicioId = exercicioId,
+                    NomeExercicio = (string)info.NomeExercicio,
+                    GrupoMuscular = (string?)(info.GrupoMuscular ?? "Geral"),
+                    CargaKg = dto.CargaKg
+                }
+            );
 
             return Ok(new { mensagem = $"Carga atualizada para {dto.CargaKg} kg e registrada no gráfico de progressão!" });
         }
@@ -208,6 +224,19 @@ namespace PersonalProAPI.Controllers
             int alunoId = (int)aluno.AlunoId;
             string nomeAluno = (string)aluno.NomeAluno;
             int duracao = dto.DuracaoMinutos > 0 ? dto.DuracaoMinutos : 45;
+
+            // Validação de segurança: garantir que a ficha pertence de fato a este aluno
+            if (dto.FichaId.HasValue && dto.FichaId.Value > 0)
+            {
+                var fichaValida = await con.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM FICHAS_TREINO WHERE ID = @FichaId AND ALUNO_ID = @AlunoId",
+                    new { FichaId = dto.FichaId.Value, AlunoId = alunoId }
+                );
+                if (fichaValida == 0)
+                {
+                    dto.FichaId = null;
+                }
+            }
 
             var historicoId = await con.ExecuteScalarAsync<int>(@"
                 INSERT INTO HISTORICO_TREINOS (
