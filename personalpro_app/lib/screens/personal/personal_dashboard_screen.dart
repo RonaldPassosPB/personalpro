@@ -1250,70 +1250,126 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 AppTheme.electricBlue,
               ),
               _kpiBox(
-                'RECEITA RECEBIDA MÊS',
+                'Receita Recebida Mês',
                 'R\$ ${((_metricas['receitaRecebidaMes'] ?? 0) as num).toStringAsFixed(2)}',
                 Icons.attach_money,
-                AppTheme.neonGreen,
+                AppTheme.primaryAccent,
               ),
               _kpiBox(
-                'ALUNOS SUMIDOS (+7 DIAS)',
+                'Alunos em Risco (+7d)',
                 '${_alunosSumidos.length}',
                 Icons.warning_amber_rounded,
-                AppTheme.performanceRed,
+                AppTheme.warningAmber,
               ),
             ],
           ),
           const SizedBox(height: 22),
 
-          // ALERTA DE ALUNOS SUMIDOS (+7 DIAS SEM TREINAR)
+          // RADAR DE RETENÇÃO: ATLETAS EM RISCO (+7 DIAS SEM TREINAR)
           if (_alunosSumidos.isNotEmpty) ...[
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppTheme.performanceRed.withValues(alpha: 0.1),
+                color: AppTheme.surfaceCard,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppTheme.performanceRed.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: AppTheme.warningAmber.withValues(alpha: 0.4),
+                  width: 1.2,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: AppTheme.performanceRed),
-                      SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.warningAmber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.radar_rounded,
+                          color: AppTheme.warningAmber,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          'ALERTA DE RETENÇÃO: ALUNOS SUMIDOS (+7 DIAS SEM TREINAR)',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.performanceRed,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Radar de Retenção: Alunos em Risco',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '${_alunosSumidos.length} aluno(s) sem treinar há mais de 7 dias. Envie um lembrete com 1 toque.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   ..._alunosSumidos.map((al) {
                     final dias = al['diasSemTreinar'] ?? 7;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceCard,
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.bgDark,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppTheme.isLight
+                              ? const Color(0xFFE2E8F0)
+                              : const Color(0xFF1E293B),
+                        ),
                       ),
                       child: Row(
                         children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.warningAmber.withValues(alpha: 0.15),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${dias}d',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.warningAmber,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   al['nome']?.toString() ?? '',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: AppTheme.textPrimary,
+                                  ),
                                 ),
+                                const SizedBox(height: 2),
                                 Text(
-                                  'Há $dias dias sem concluir treino • Objetivo: ${al['objetivo']}',
+                                  'Inativo há $dias dias • Objetivo: ${al['objetivo'] ?? 'Musculação'}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: AppTheme.textSecondary,
@@ -1322,14 +1378,32 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(width: 10),
                           ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryAccent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                             onPressed: () => WhatsAppService.chamarAlunoSumido(
                               telefoneAluno: al['telefone']?.toString(),
                               nomeAluno: al['nome']?.toString() ?? 'Aluno',
                               diasSemTreinar: int.tryParse(dias.toString()) ?? 7,
                             ),
-                            icon: const Icon(Icons.chat, size: 16),
-                            label: const Text('Chamar no WhatsApp'),
+                            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+                            label: const Text(
+                              'Reengajar Aluno',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ],
                       ),

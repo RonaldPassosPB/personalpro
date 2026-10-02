@@ -495,12 +495,14 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Telemetria de prescrição em tempo real',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+              Expanded(
+                child: Text(
+                  'Telemetria de prescrição em tempo real',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
               ),
               Row(

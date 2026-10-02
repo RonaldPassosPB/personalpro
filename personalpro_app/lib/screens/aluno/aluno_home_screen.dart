@@ -12,6 +12,10 @@ import '../../widgets/evolucao_charts_widget.dart';
 import '../../widgets/exercicio_animado_dieta_agenda_widget.dart';
 import '../../widgets/notificacoes_sheet.dart';
 import '../../widgets/pix_modal.dart';
+import '../../widgets/story_card_treino_modal.dart';
+import '../../widgets/antes_depois_slider_widget.dart';
+import '../../widgets/calendario_consistencia_widget.dart';
+import '../../widgets/calculadora_equivalencia_dieta_modal.dart';
 import '../auth/login_screen.dart';
 
 class AlunoHomeScreen extends StatefulWidget {
@@ -131,6 +135,8 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         builder: (_) => ModoExecucaoTreinoScreen(
           ficha: ficha,
           nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
+          treinosNoMes: _treinosMes,
+          progressaoCargas: _progressaoCargas,
           onTreinoConcluido: _carregarDadosAluno,
         ),
       ),
@@ -1082,6 +1088,20 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                           ),
                         ),
                         OutlinedButton.icon(
+                          onPressed: () => CalculadoraSubstituicaoAlimentosModal.abrir(context),
+                          icon: Icon(Icons.swap_horiz_rounded, size: 18, color: accentGreen),
+                          label: const Text(
+                            'Substituição de Alimentos',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.textPrimary,
+                            side: BorderSide(color: borderSubtle, width: 1.1),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                        OutlinedButton.icon(
                           onPressed: () => DietaPdfService.exportarPlanoAlimentarPdf(
                             nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
                             nomePersonal: _nomePersonal,
@@ -1297,6 +1317,18 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         EvolucaoCompletaPanel(
           avaliacoes: _avaliacoes,
           progressaoCargas: _progressaoCargas,
+        ),
+        const SizedBox(height: 20),
+
+        // Comparador Interativo de Fotos Antes & Depois
+        ComparadorFotosAntesDepoisWidget(
+          avaliacoes: _avaliacoes,
+        ),
+        const SizedBox(height: 20),
+
+        // Heatmap Mensal de Consistência e Streaks de Treino
+        CalendarioConsistenciaWidget(
+          historicoTreinos: _historicoTreinos,
         ),
         const SizedBox(height: 20),
         Text(
@@ -1558,12 +1590,16 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
 class ModoExecucaoTreinoScreen extends StatefulWidget {
   final Map<String, dynamic> ficha;
   final String nomeAluno;
+  final int treinosNoMes;
+  final List<dynamic> progressaoCargas;
   final VoidCallback onTreinoConcluido;
 
   const ModoExecucaoTreinoScreen({
     super.key,
     required this.ficha,
     required this.nomeAluno,
+    this.treinosNoMes = 1,
+    this.progressaoCargas = const [],
     required this.onTreinoConcluido,
   });
 
@@ -1593,6 +1629,21 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
   void dispose() {
     _timerDescanso?.cancel();
     super.dispose();
+  }
+
+  double _obterCargaAnterior(Map<String, dynamic> ex) {
+    final nome = (ex['nomeExercicio'] ?? '').toString().toLowerCase().trim();
+    if (nome.isEmpty) return 0.0;
+    double maxCarga = 0.0;
+    for (final item in widget.progressaoCargas) {
+      if (item == null) continue;
+      final n = (item['nomeExercicio'] ?? '').toString().toLowerCase().trim();
+      if (n == nome || (n.isNotEmpty && (n.contains(nome) || nome.contains(n)))) {
+        final c = ((item['cargaKg'] ?? 0) as num).toDouble();
+        if (c > maxCarga) maxCarga = c;
+      }
+    }
+    return maxCarga;
   }
 
   void _iniciarCronometroDescanso(int segundos) {
@@ -1649,7 +1700,7 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
     final duracaoMin = DateTime.now().difference(_inicioTreino).inMinutes.clamp(25, 120);
 
     try {
-      final resp = await ApiService().dio.post('/api/aluno/finalizar-treino', data: {
+      await ApiService().dio.post('/api/aluno/finalizar-treino', data: {
         'fichaId': widget.ficha['id'],
         'nomeTreino': widget.ficha['nomeDivisao'],
         'duracaoMinutos': duracaoMin,
@@ -1657,36 +1708,43 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
             'Concluídos ${_exerciciosConcluidos.length}/${_exercicios.length} exercícios com progressão de carga!',
       });
 
-      if (!mounted) return;
-      widget.onTreinoConcluido();
+      final novosRecordes = <String>[];
+      int totalSeries = 0;
+      for (final ex in _exercicios) {
+        final carga = ((ex['cargaKg'] ?? 0) as num).toDouble();
+        final anterior = _obterCargaAnterior(ex);
+        final series = (ex['series'] ?? 3) as int;
+        totalSeries += series;
+        if (anterior > 0 && carga > anterior) {
+          final diff = carga - anterior;
+          novosRecordes.add('${ex['nomeExercicio']}: ${carga.toStringAsFixed(1)} kg (+${diff.toStringAsFixed(1)} kg)');
+        }
+      }
 
-      await showDialog(
+      if (!mounted) return;
+
+      await StoryCardTreinoModal.exibir(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surfaceCard,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Icon(Icons.emoji_events_outlined, color: AppTheme.primaryAccent, size: 28),
-              const SizedBox(width: 10),
-              const Expanded(child: Text('Treino Finalizado!')),
-            ],
-          ),
-          content: Text(
-            resp.data['mensagem']?.toString() ??
-                'Seu Personal Trainer recebeu a confirmação de conclusão do seu treino.',
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-              },
-              child: const Text('Voltar aos Treinos'),
-            ),
-          ],
-        ),
+        nomeAluno: widget.nomeAluno,
+        nomeTreino: widget.ficha['nomeDivisao']?.toString() ?? 'Treino de Hoje',
+        duracaoMinutos: duracaoMin,
+        totalExercicios: _exercicios.length,
+        totalSeries: totalSeries,
+        novosRecordes: novosRecordes,
+        treinosNoMes: widget.treinosNoMes + 1,
+        onConcluir: () {
+          widget.onTreinoConcluido();
+          Navigator.pop(context);
+        },
       );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao registrar treino. Verifique sua conexão.'),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _finalizando = false);
     }
@@ -1838,6 +1896,8 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                 final videoAberto = _exerciciosComVideoInline.contains(id);
                 final descanso = (ex['descansoSegundos'] ?? 60) as int;
                 final carga = ((ex['cargaKg'] ?? 0) as num).toDouble();
+                final cargaAnterior = _obterCargaAnterior(ex);
+                final ehNovoRecorde = cargaAnterior > 0 && carga > cargaAnterior;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 14),
@@ -1951,6 +2011,67 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                                               fontSize: 12.5,
                                             ),
                                           ),
+                                          if (cargaAnterior > 0 || ehNovoRecorde) ...[
+                                            const SizedBox(height: 6),
+                                            Wrap(
+                                              spacing: 6,
+                                              runSpacing: 4,
+                                              children: [
+                                                if (cargaAnterior > 0)
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      border: Border.all(
+                                                        color: isLight ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(Icons.history_rounded, size: 11, color: AppTheme.textSecondary),
+                                                        const SizedBox(width: 3),
+                                                        Text(
+                                                          'Último: ${cargaAnterior.toStringAsFixed(1)} kg',
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: AppTheme.textSecondary,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                if (ehNovoRecorde)
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: AppTheme.warningAmber.withValues(alpha: 0.15),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      border: Border.all(
+                                                        color: AppTheme.warningAmber.withValues(alpha: 0.4),
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(Icons.emoji_events_rounded, size: 12, color: AppTheme.warningAmber),
+                                                        const SizedBox(width: 3),
+                                                        Text(
+                                                          '🏆 Novo Recorde (+${(carga - cargaAnterior).toStringAsFixed(1)} kg)',
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.w800,
+                                                            color: isLight ? const Color(0xFFB45309) : AppTheme.warningAmber,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ),
@@ -2057,6 +2178,29 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                                     color: accentGreen,
                                   ),
                                 ),
+                                if (carga == 0 && cargaAnterior > 0) ...[
+                                  const SizedBox(width: 6),
+                                  InkWell(
+                                    onTap: () => _alterarCarga(index, cargaAnterior),
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: accentGreen.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: accentGreen.withValues(alpha: 0.3)),
+                                      ),
+                                      child: Text(
+                                        'Repetir ${cargaAnterior.toStringAsFixed(1)} kg',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: accentGreen,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                             OutlinedButton.icon(
