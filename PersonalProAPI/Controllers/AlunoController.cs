@@ -139,6 +139,37 @@ namespace PersonalProAPI.Controllers
             return Ok(new { mensagem = "📸 Foto de perfil atualizada com sucesso!" });
         }
 
+        [HttpPut("meu-perfil")]
+        public async Task<IActionResult> AtualizarMeuPerfil([FromBody] PerfilAlunoDto dto)
+        {
+            var usuarioId = UsuarioContexto.GetUsuarioId(User);
+            using var con = _db.CriarConexao();
+
+            if (!string.IsNullOrWhiteSpace(dto.Nome))
+            {
+                await con.ExecuteAsync(
+                    "UPDATE USUARIOS SET NOME = @Nome WHERE ID = @UsuarioId",
+                    new { Nome = dto.Nome.Trim(), UsuarioId = usuarioId }
+                );
+            }
+
+            await con.ExecuteAsync(@"
+                UPDATE ALUNOS 
+                SET TELEFONE = @Telefone,
+                    OBJETIVO = @Objetivo,
+                    FOTO_URL = CASE WHEN @FotoUrl IS NOT NULL AND @FotoUrl <> '' THEN @FotoUrl ELSE FOTO_URL END
+                WHERE USUARIO_ID = @UsuarioId",
+                new { 
+                    dto.Telefone, 
+                    dto.Objetivo, 
+                    FotoUrl = string.IsNullOrWhiteSpace(dto.FotoUrl) ? null : dto.FotoUrl, 
+                    UsuarioId = usuarioId 
+                }
+            );
+
+            return Ok(new { mensagem = "Perfil do aluno atualizado com sucesso!" });
+        }
+
         // ─── ATUALIZAR CARGA (KG) NA EXECUÇÃO DO TREINO + GRAVAR HISTÓRICO DE PROGRESSÃO ───
         [HttpPatch("exercicios/{exercicioId}/carga")]
         public async Task<IActionResult> AtualizarCargaExercicio(int exercicioId, [FromBody] AtualizarCargaDto dto)
@@ -423,6 +454,14 @@ namespace PersonalProAPI.Controllers
                 telefonePersonal = (string?)(aluno.TelefonePersonal ?? ""),
                 pagamentos = listaFormatada
             });
+        }
+
+        public class PerfilAlunoDto
+        {
+            public string Nome { get; set; } = string.Empty;
+            public string? Telefone { get; set; }
+            public string? Objetivo { get; set; }
+            public string? FotoUrl { get; set; }
         }
 
         public class FotoPerfilDto

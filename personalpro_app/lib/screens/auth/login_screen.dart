@@ -299,63 +299,28 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bgDark,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 920;
-
-            return Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: isWide ? const Alignment(-0.45, -0.35) : const Alignment(0, -0.6),
-                  radius: 1.25,
-                  colors: [
-                    isLight ? const Color(0xFFE4F8ED) : const Color(0xFF15261D),
-                    AppTheme.bgDark,
-                  ],
-                ),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(0, -0.4),
+              radius: 1.2,
+              colors: [
+                isLight ? const Color(0xFFE4F8ED) : const Color(0xFF15261D),
+                AppTheme.bgDark,
+              ],
+            ),
+          ),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: _buildAuthVault(isLight, borderSubtle),
               ),
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isWide ? 56 : 20,
-                    vertical: isWide ? 40 : 24,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: isWide ? 1140 : 460),
-                    child: isWide
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                flex: 11,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 56),
-                                  child: _buildEditorialColumn(isLight, borderSubtle, isWide: true),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 9,
-                                child: _buildAuthVault(isLight, borderSubtle),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildCompactBrandHeader(isLight),
-                              const SizedBox(height: 20),
-                              _buildAuthVault(isLight, borderSubtle),
-                              const SizedBox(height: 20),
-                              _buildTelemetryCard(isLight, borderSubtle),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
@@ -366,8 +331,8 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: AppTheme.neonGreen.withValues(alpha: isLight ? 0.18 : 0.14),
             borderRadius: BorderRadius.circular(10),
@@ -378,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           child: Icon(
             Icons.fitness_center,
-            size: 18,
+            size: 20,
             color: isLight ? const Color(0xFF008744) : AppTheme.neonGreen,
           ),
         ),
@@ -409,222 +374,19 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildCompactBrandHeader(bool isLight) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildWordmark(isLight, fontSize: 22),
-            const BotaoAlternarTema(mostrarTexto: false),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Prescrição biomecânica, nutrição e cobrança PIX em um só comando',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            height: 1.18,
-            letterSpacing: -0.6,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEditorialColumn(bool isLight, Color borderSubtle, {required bool isWide}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildWordmark(isLight, fontSize: 24),
-        const SizedBox(height: 32),
-        Text(
-          'Prescrição biomecânica,\nnutrição e cobrança PIX\nem um só comando',
-          style: TextStyle(
-            fontSize: 42,
-            fontWeight: FontWeight.w800,
-            height: 1.12,
-            letterSpacing: -1.1,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 18),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Text(
-            'Plataforma Multi-Tenant que conecta o catálogo de 121 exercícios com vídeo em português, calculadora Mifflin-St Jeor e liberação automática via PIX diretamente ao treino do aluno.',
-            style: TextStyle(
-              fontSize: 15.5,
-              height: 1.55,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-        ),
-        const SizedBox(height: 34),
-        _buildTelemetryCard(isLight, borderSubtle),
-      ],
-    );
-  }
-
-  Widget _buildTelemetryCard(bool isLight, Color borderSubtle) {
-    final accentGreen = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
-    final innerSurface = isLight ? const Color(0xFFF8FAFC) : const Color(0xFF171A21);
-
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 520),
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceCard.withValues(alpha: isLight ? 0.92 : 0.78),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderSubtle, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isLight ? 0.06 : 0.35),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Telemetria de prescrição em tempo real',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: accentGreen,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: accentGreen.withValues(alpha: 0.45),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: accentGreen.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: innerSurface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderSubtle),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Prescrição ativa no treino do aluno',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Supino Reto com Barra  •  4x 8–10 reps',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Icon(Icons.play_circle_outline, size: 15, color: accentGreen),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Descanso 90s  •  Vídeo PT-BR integrado  •  121 exercícios',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Divider(height: 1, color: borderSubtle),
-                ),
-                Text(
-                  'Meta diária de macronutrientes (Mifflin-St Jeor)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '2.450 kcal  •  180g Proteína  •  Status PIX Em Dia',
-                  style: TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAuthVault(bool isLight, Color borderSubtle) {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 34),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isLight
-              ? const Color(0xFF0F172A).withValues(alpha: 0.10)
-              : Colors.white.withValues(alpha: 0.10),
+          color: borderSubtle,
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isLight ? 0.08 : 0.45),
+            color: Colors.black.withValues(alpha: isLight ? 0.07 : 0.40),
             blurRadius: 32,
             offset: const Offset(0, 16),
           ),
@@ -634,11 +396,25 @@ class _LoginScreenState extends State<LoginScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: const BotaoAlternarTema(mostrarTexto: true),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildWordmark(isLight, fontSize: 22),
+              const BotaoAlternarTema(mostrarTexto: false),
+            ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 10),
+          Text(
+            'Acesse sua conta para continuar',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Divider(height: 1, color: borderSubtle),
+          const SizedBox(height: 22),
           Text(
             'E-mail',
             style: TextStyle(

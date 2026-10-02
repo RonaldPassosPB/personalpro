@@ -149,6 +149,7 @@ namespace PersonalProAPI.Controllers
         {
             var personalId = UsuarioContexto.GetPersonalId(User);
             var usuarioId = UsuarioContexto.GetUsuarioId(User);
+            var foto = !string.IsNullOrWhiteSpace(dto.FotoUrl) ? dto.FotoUrl : dto.LogoUrl;
 
             using var con = _db.CriarConexao();
             await con.ExecuteAsync(@"
@@ -157,7 +158,7 @@ namespace PersonalProAPI.Controllers
                     CREF = @Cref,
                     TELEFONE = @Telefone,
                     CHAVE_PIX = @ChavePix,
-                    LOGO_URL = ISNULL(@LogoUrl, LOGO_URL)
+                    LOGO_URL = CASE WHEN @Foto IS NOT NULL AND @Foto <> '' THEN @Foto ELSE LOGO_URL END
                 WHERE ID = @PersonalId;
 
                 UPDATE USUARIOS
@@ -171,11 +172,11 @@ namespace PersonalProAPI.Controllers
                     dto.Cref,
                     dto.Telefone,
                     dto.ChavePix,
-                    dto.LogoUrl
+                    Foto = string.IsNullOrWhiteSpace(foto) ? null : foto
                 }
             );
 
-            return Ok(new { mensagem = "Configurações, Logo e Chave PIX salvas com sucesso!" });
+            return Ok(new { mensagem = "Perfil, Foto e Dados atualizados com sucesso!" });
         }
 
         [HttpGet("alunos")]
@@ -496,6 +497,7 @@ namespace PersonalProAPI.Controllers
             public string? Telefone { get; set; }
             public string? ChavePix { get; set; }
             public string? LogoUrl { get; set; }
+            public string? FotoUrl { get; set; }
         }
 
         public class NovoAlunoDto

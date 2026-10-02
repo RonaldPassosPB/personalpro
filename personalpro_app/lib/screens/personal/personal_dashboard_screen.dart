@@ -1022,6 +1022,245 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     );
   }
 
+  void _abrirModalEditarPerfilPersonal() {
+    final nomeCtrl = TextEditingController(
+      text: _personal['nomeProfissional']?.toString() ?? widget.session['nome']?.toString() ?? '',
+    );
+    final crefCtrl = TextEditingController(text: _personal['cref']?.toString() ?? '');
+    final telefoneCtrl = TextEditingController(text: _personal['telefone']?.toString() ?? '');
+    final chavePixCtrl = TextEditingController(text: _personal['chavePix']?.toString() ?? '');
+    String? fotoAtual = _personal['logoUrl']?.toString() ?? _personal['fotoUrl']?.toString();
+    bool salvando = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final isLight = AppTheme.isLight;
+          return AlertDialog(
+            backgroundColor: AppTheme.surfaceCard,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: isLight
+                    ? const Color(0xFF0F172A).withValues(alpha: 0.10)
+                    : Colors.white.withValues(alpha: 0.10),
+              ),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.person, color: AppTheme.neonGreen, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Editar Meus Dados',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Personal Trainer • Perfil e Foto',
+                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Column(
+                        children: [
+                          Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              ImageHelper.renderAvatarOrImage(
+                                fotoAtual,
+                                radius: 46,
+                                fallbackIcon: Icons.fitness_center,
+                              ),
+                              Material(
+                                color: AppTheme.neonGreen,
+                                shape: const CircleBorder(),
+                                elevation: 3,
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: () async {
+                                    final nova = await ImageHelper.selecionarImagemBase64();
+                                    if (nova != null) {
+                                      setModalState(() => fotoAtual = nova);
+                                    }
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(7),
+                                    child: Icon(Icons.photo_camera, size: 16, color: Color(0xFF0A0E12)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () async {
+                              final nova = await ImageHelper.selecionarImagemBase64();
+                              if (nova != null) {
+                                setModalState(() => fotoAtual = nova);
+                              }
+                            },
+                            icon: const Icon(Icons.image_outlined, size: 16, color: AppTheme.neonGreen),
+                            label: Text(
+                              (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
+                                  ? 'Alterar Foto de Perfil'
+                                  : 'Adicionar Foto de Perfil',
+                              style: const TextStyle(
+                                color: AppTheme.neonGreen,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          if (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                setModalState(() => fotoAtual = '');
+                              },
+                              child: const Text(
+                                'Remover foto (usar halter padrão)',
+                                style: TextStyle(color: AppTheme.performanceRed, fontSize: 11),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nomeCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome Profissional / Coach',
+                        prefixIcon: Icon(Icons.badge_outlined, color: AppTheme.neonGreen, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: telefoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'WhatsApp / Telefone',
+                        prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.neonGreen, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: crefCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Registro Profissional (CREF)',
+                        prefixIcon: Icon(Icons.verified_outlined, color: AppTheme.neonGreen, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: chavePixCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Chave PIX (para cobranças)',
+                        prefixIcon: Icon(Icons.pix, color: AppTheme.neonGreen, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: salvando ? null : () => Navigator.pop(ctx),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.neonGreen,
+                  foregroundColor: const Color(0xFF0A0E12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+                onPressed: salvando
+                    ? null
+                    : () async {
+                        setModalState(() => salvando = true);
+                        try {
+                          await ApiService().dio.put('/api/personal/meu-perfil', data: {
+                            'nomeProfissional': nomeCtrl.text.trim(),
+                            'cref': crefCtrl.text.trim(),
+                            'telefone': telefoneCtrl.text.trim(),
+                            'chavePix': chavePixCtrl.text.trim(),
+                            'logoUrl': fotoAtual ?? '',
+                            'fotoUrl': fotoAtual ?? '',
+                          });
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+                          if (!mounted) return;
+                          setState(() {
+                            _personal['nomeProfissional'] = nomeCtrl.text.trim();
+                            _personal['cref'] = crefCtrl.text.trim();
+                            _personal['telefone'] = telefoneCtrl.text.trim();
+                            _personal['chavePix'] = chavePixCtrl.text.trim();
+                            _personal['logoUrl'] = fotoAtual;
+                            _personal['fotoUrl'] = fotoAtual;
+                            widget.session['nome'] = nomeCtrl.text.trim();
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: AppTheme.neonGreen,
+                              content: Text(
+                                'Dados do perfil salvos com sucesso!',
+                                style: TextStyle(color: Color(0xFF0A0E12), fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          );
+                          _carregarTudo();
+                        } catch (e) {
+                          setModalState(() => salvando = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: AppTheme.performanceRed,
+                              content: Text('Falha ao salvar dados do perfil.'),
+                            ),
+                          );
+                        }
+                      },
+                icon: salvando
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A0E12)),
+                      )
+                    : const Icon(Icons.check, size: 18),
+                label: Text(
+                  salvando ? 'Salvando...' : 'Salvar Alterações',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1050,71 +1289,90 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         title: Row(
           children: [
             InkWell(
-              onTap: () async {
-                final novoLogo = await ImageHelper.selecionarImagemBase64();
-                if (novoLogo != null) {
-                  await ApiService().dio.put('/api/personal/meu-perfil', data: {
-                    'nomeProfissional': _personal['nomeProfissional']?.toString() ?? 'Personal',
-                    'cref': _personal['cref']?.toString() ?? '',
-                    'telefone': _personal['telefone']?.toString() ?? '',
-                    'chavePix': _personal['chavePix']?.toString() ?? '',
-                    'logoUrl': novoLogo,
-                  });
-                  _carregarTudo();
-                }
-              },
-              child: ImageHelper.renderAvatarOrImage(
-                _personal['logoUrl']?.toString(),
-                radius: 20,
-                fallbackIcon: Icons.fitness_center,
+              borderRadius: BorderRadius.circular(24),
+              onTap: _abrirModalEditarPerfilPersonal,
+              child: Tooltip(
+                message: 'Toque para alterar foto ou dados',
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ImageHelper.renderAvatarOrImage(
+                      _personal['logoUrl']?.toString() ?? _personal['fotoUrl']?.toString(),
+                      radius: 20,
+                      fallbackIcon: Icons.fitness_center,
+                    ),
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          color: AppTheme.neonGreen,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.surfaceCard, width: 1.5),
+                        ),
+                        child: const Icon(
+                          Icons.photo_camera,
+                          size: 9,
+                          color: Color(0xFF0A0E12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _personal['nomeProfissional']?.toString() ??
-                        widget.session['nome']?.toString() ??
-                        'Painel do Personal Trainer',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: isMobile ? 14.5 : 16, fontWeight: FontWeight.bold),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: _abrirModalEditarPerfilPersonal,
+                child: Tooltip(
+                  message: 'Toque para editar seus dados',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _personal['nomeProfissional']?.toString() ??
+                                    widget.session['nome']?.toString() ??
+                                    'Painel do Personal Trainer',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: isMobile ? 14.5 : 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 14,
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'CREF: ${_personal['cref'] ?? 'Ativo'} • Plano ${_personal['plano'] ?? 'ELITE'}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ),
                   ),
-                  Text(
-                    'CREF: ${_personal['cref'] ?? 'Ativo'} • Plano ${_personal['plano'] ?? 'ELITE'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
         ),
         actions: [
-          if (!isMobile)
-            TextButton.icon(
-              onPressed: () async {
-                final novoLogo = await ImageHelper.selecionarImagemBase64();
-                if (novoLogo != null) {
-                  await ApiService().dio.put('/api/personal/meu-perfil', data: {
-                    'nomeProfissional': _personal['nomeProfissional']?.toString() ?? 'Personal',
-                    'cref': _personal['cref']?.toString() ?? '',
-                    'telefone': _personal['telefone']?.toString() ?? '',
-                    'chavePix': _personal['chavePix']?.toString() ?? '',
-                    'logoUrl': novoLogo,
-                  });
-                  _carregarTudo();
-                }
-              },
-              icon: const Icon(Icons.add_a_photo, size: 16, color: AppTheme.neonGreen),
-              label: const Text(
-                'Alterar Logo',
-                style: TextStyle(color: AppTheme.neonGreen, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ),
           BotaoAlternarTema(mostrarTexto: !isMobile),
           IconButton(
             tooltip: 'Notificações',
