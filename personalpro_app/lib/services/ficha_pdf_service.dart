@@ -91,7 +91,10 @@ class FichaPdfService {
                 children: [
                   pw.Container(
                     width: double.infinity,
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: pw.BoxDecoration(
                       color: corPrimaria,
                       borderRadius: pw.BorderRadius.circular(6),
@@ -120,7 +123,10 @@ class FichaPdfService {
                   ),
                   pw.SizedBox(height: 6),
                   pw.Table(
-                    border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.6),
+                    border: pw.TableBorder.all(
+                      color: PdfColors.grey300,
+                      width: 0.6,
+                    ),
                     columnWidths: {
                       0: const pw.FlexColumnWidth(3.0),
                       1: const pw.FlexColumnWidth(1.3),
@@ -145,12 +151,16 @@ class FichaPdfService {
                         final series = ex['series']?.toString() ?? '4';
                         final reps = ex['repeticoes']?.toString() ?? '10-12';
                         final carga = ex['cargaKg']?.toString() ?? '0';
-                        final descanso = ex['descansoSegundos']?.toString() ?? '60';
+                        final descanso =
+                            ex['descansoSegundos']?.toString() ?? '60';
                         final obs = ex['observacaoTecnica']?.toString() ?? '-';
 
                         return pw.TableRow(
                           children: [
-                            _cellBody(ex['nomeExercicio']?.toString() ?? '', bold: true),
+                            _cellBody(
+                              ex['nomeExercicio']?.toString() ?? '',
+                              bold: true,
+                            ),
                             _cellBody(ex['grupoMuscular']?.toString() ?? ''),
                             _cellBody('${series}x $reps'),
                             _cellBody('${carga}kg'),
@@ -176,21 +186,21 @@ class FichaPdfService {
   }
 
   static pw.Widget _cellHeader(String text) => pw.Padding(
-        padding: const pw.EdgeInsets.all(6),
-        child: pw.Text(
-          text,
-          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-        ),
-      );
+    padding: const pw.EdgeInsets.all(6),
+    child: pw.Text(
+      text,
+      style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+    ),
+  );
 
   static pw.Widget _cellBody(String text, {bool bold = false}) => pw.Padding(
-        padding: const pw.EdgeInsets.all(6),
-        child: pw.Text(
-          text,
-          style: pw.TextStyle(
-            fontSize: 8.5,
-            fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          ),
-        ),
-      );
+    padding: const pw.EdgeInsets.all(6),
+    child: pw.Text(
+      text,
+      style: pw.TextStyle(
+        fontSize: 8.5,
+        fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+      ),
+    ),
+  );
 }

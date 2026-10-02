@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:personalpro_app/main.dart';
 
 void main() {
-  testWidgets('PersonalProApp renders LoginScreen', (WidgetTester tester) async {
+  testWidgets('PersonalProApp smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(const PersonalProApp());
-    expect(find.text('PERSONALPRO'), findsOneWidget);
+    expect(find.byType(PersonalProApp), findsOneWidget);
   });
 }

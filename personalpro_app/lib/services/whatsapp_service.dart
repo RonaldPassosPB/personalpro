@@ -26,7 +26,8 @@ class WhatsAppService {
     required String pixCopiaECola,
     required String nomePersonal,
   }) async {
-    final msg = '''
+    final msg =
+        '''
 Olá, *$nomeAluno*! Tudo bem? 💪🔥
 Passando para enviar o lembrete da sua consultoria *$nomePersonal* referente ao mês *$mesReferencia*.
 
@@ -47,7 +48,8 @@ Assim que realizar o pagamento, me avise por aqui. Vamos pra cima nos treinos! �
     required String formaPagamento,
     required String nomePersonal,
   }) async {
-    final msg = '''
+    final msg =
+        '''
 ✅ *RECIBO DE PAGAMENTO — PERSONALPRO*
 Olá, *$nomeAluno*! Confirmamos o recebimento da sua mensalidade:
 
@@ -66,7 +68,8 @@ Obrigado pela confiança e foco total nos treinos! 💪🔥
     required String nomeAluno,
     required int diasSemTreinar,
   }) async {
-    final msg = '''
+    final msg =
+        '''
 Fala, *$nomeAluno*! Tudo certo por aí? 👀💪
 Vi aqui no nosso sistema *PersonalPro* que já faz *$diasSemTreinar dias* que você não registra treino concluído!
 Aconteceu alguma coisa ou precisa que eu ajuste sua ficha de treino? Bora retomar o foco essa semana! 🚀🔥

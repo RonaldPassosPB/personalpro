@@ -200,7 +200,6 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
-          final isLight = AppTheme.isLight;
           return AlertDialog(
             backgroundColor: AppTheme.surfaceCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -209,7 +208,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
               children: [
                 Icon(
                   Icons.restaurant_menu_rounded,
-                  color: isLight ? const Color(0xFF008744) : AppTheme.neonGreen,
+                  color: AppTheme.primaryAccent,
                 ),
                 const SizedBox(width: 10),
                 const Expanded(
@@ -423,9 +422,9 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                     _carregarDadosAluno();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Dieta atualizada com sucesso!'),
-                        backgroundColor: AppTheme.neonGreen,
+                      SnackBar(
+                        content: const Text('Dieta atualizada com sucesso!'),
+                        backgroundColor: AppTheme.primaryAccent,
                       ),
                     );
                   } catch (e) {
@@ -439,7 +438,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   }
                 },
                 icon: const Icon(Icons.check_circle_outline, size: 18),
-                label: const Text('SALVAR MINHA DIETA'),
+                label: const Text('Salvar Dieta'),
               ),
             ],
           );
@@ -509,7 +508,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                             width: 11,
                             height: 11,
                             decoration: BoxDecoration(
-                              color: AppTheme.neonGreen,
+                              color: AppTheme.primaryAccent,
                               shape: BoxShape.circle,
                               border: Border.all(color: AppTheme.surfaceCard, width: 2),
                             ),
@@ -557,7 +556,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                     ),
                     const BotaoAlternarTema(mostrarTexto: true),
                     const SizedBox(width: 24),
-                    _buildTopNavTab(0, Icons.list_alt_rounded, 'Meus Treinos', isLight),
+                    _buildTopNavTab(0, Icons.fitness_center_rounded, 'Meus Treinos', isLight),
                     _buildTopNavTab(1, Icons.restaurant_menu_rounded, 'Minha Dieta', isLight),
                     _buildTopNavTab(2, Icons.show_chart_rounded, 'Minha Evolução', isLight),
                     _buildTopNavTab(3, Icons.paid_outlined, 'Financeiro PIX', isLight),
@@ -569,7 +568,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                     tooltip: 'Notificações',
                     icon: Icon(
                       Icons.notifications_none_rounded,
-                      color: isLight ? const Color(0xFF008744) : AppTheme.neonGreen,
+                      color: AppTheme.primaryAccent,
                     ),
                     onPressed: () => NotificacoesSheet.abrir(context),
                   ),
@@ -602,28 +601,28 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
           : NavigationBar(
               selectedIndex: _abaAtual,
               backgroundColor: AppTheme.surfaceCard,
-              indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.20),
+              indicatorColor: AppTheme.primaryAccent.withValues(alpha: 0.15),
               onDestinationSelected: (i) => setState(() => _abaAtual = i),
-              destinations: const [
+              destinations: [
                 NavigationDestination(
-                  icon: Icon(Icons.list_alt_outlined),
-                  selectedIcon: Icon(Icons.list_alt_rounded, color: AppTheme.neonGreen),
-                  label: 'Meus Treinos',
+                  icon: const Icon(Icons.fitness_center_outlined),
+                  selectedIcon: Icon(Icons.fitness_center_rounded, color: AppTheme.primaryAccent),
+                  label: 'Treinos',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.restaurant_menu_outlined),
-                  selectedIcon: Icon(Icons.restaurant_menu_rounded, color: AppTheme.neonGreen),
-                  label: 'Minha Dieta',
+                  icon: const Icon(Icons.restaurant_menu_outlined),
+                  selectedIcon: Icon(Icons.restaurant_menu_rounded, color: AppTheme.primaryAccent),
+                  label: 'Dieta',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.show_chart_outlined),
-                  selectedIcon: Icon(Icons.show_chart_rounded, color: AppTheme.neonGreen),
+                  icon: const Icon(Icons.show_chart_outlined),
+                  selectedIcon: Icon(Icons.show_chart_rounded, color: AppTheme.primaryAccent),
                   label: 'Evolução',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.paid_outlined),
-                  selectedIcon: Icon(Icons.paid_rounded, color: AppTheme.neonGreen),
-                  label: 'Financeiro PIX',
+                  icon: const Icon(Icons.paid_outlined),
+                  selectedIcon: Icon(Icons.paid_rounded, color: AppTheme.primaryAccent),
+                  label: 'Financeiro',
                 ),
               ],
             ),
@@ -632,7 +631,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
 
   Widget _buildTopNavTab(int index, IconData icon, String label, bool isLight) {
     final selected = _abaAtual == index;
-    final activeColor = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
+    final activeColor = AppTheme.primaryAccent;
 
     return InkWell(
       onTap: () => setState(() => _abaAtual = index),
@@ -672,96 +671,94 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
 
   // ─── ABA 1: MEUS TREINOS (DIVISÕES A, B, C...) + AGENDA + EXECUÇÃO ANIMADA ────
   Widget _buildAbaMeusTreinos(bool isLight, Color borderSubtle) {
-    final accentGreen = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
+    final accentGreen = AppTheme.primaryAccent;
 
     return RefreshIndicator(
       onRefresh: _carregarDadosAluno,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         children: [
-          // Header de Telemetria de Frequência + Botão Exportar PDF
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 16,
-            runSpacing: 14,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Frequência de Treino',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.7,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: AppTheme.textSecondary,
+          // Header Executivo: Meus Treinos + Resumo de Consistência + Ação PDF
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderSubtle, width: 1.0),
+            ),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: accentGreen.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: Icon(Icons.fitness_center_rounded, color: accentGreen, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextSpan(
-                          text: '$_treinosMes ',
+                        Text(
+                          'Meus Treinos',
                           style: TextStyle(
+                            fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: accentGreen,
+                            letterSpacing: -0.5,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
-                        const TextSpan(
-                          text: 'Treinos no Mês   •   ',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        TextSpan(
-                          text: '$_treinosTotal ',
+                        const SizedBox(height: 2),
+                        Text(
+                          '$_treinosMes treinos no mês • $_treinosTotal concluídos no total',
                           style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: accentGreen,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondary,
                           ),
-                        ),
-                        const TextSpan(
-                          text: 'Acumulados',
-                          style: TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              if (_fichas.isNotEmpty)
-                OutlinedButton.icon(
-                  onPressed: () => FichaPdfService.exportarFichaPdf(
-                    nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
-                    objetivo: _aluno['objetivo']?.toString() ?? 'Hipertrofia',
-                    nomePersonal: _aluno['nomePersonal']?.toString() ?? _nomePersonal,
-                    crefPersonal: _aluno['crefPersonal']?.toString() ?? '',
-                    fichas: _fichas,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.textPrimary,
-                    side: BorderSide(color: borderSubtle, width: 1.2),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  ],
+                ),
+                if (_fichas.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => FichaPdfService.exportarFichaPdf(
+                      nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
+                      objetivo: _aluno['objetivo']?.toString() ?? 'Hipertrofia',
+                      nomePersonal: _aluno['nomePersonal']?.toString() ?? _nomePersonal,
+                      crefPersonal: _aluno['crefPersonal']?.toString() ?? '',
+                      fichas: _fichas,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.textPrimary,
+                      side: BorderSide(color: borderSubtle, width: 1.1),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: Icon(Icons.picture_as_pdf_outlined, size: 17, color: accentGreen),
+                    label: const Text(
+                      'Exportar Ficha',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ),
-                  icon: Icon(Icons.picture_as_pdf_outlined, size: 18, color: AppTheme.textSecondary),
-                  label: const Text(
-                    'Exportar PDF',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
 
           if (_minhasAulasAgenda.isNotEmpty) ...[
-            const SizedBox(height: 22),
+            const SizedBox(height: 18),
             Builder(
               builder: (_) {
                 final ag = _minhasAulasAgenda.first;
@@ -772,12 +769,19 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceCard,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderSubtle, width: 1.1),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderSubtle, width: 1.0),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_today_outlined, size: 18, color: AppTheme.textSecondary),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.electricBlue.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.calendar_today_rounded, size: 16, color: AppTheme.electricBlue),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: RichText(
@@ -788,7 +792,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                               color: AppTheme.textSecondary,
                             ),
                             children: [
-                              const TextSpan(text: 'Próxima sessão agendada com o Personal: '),
+                              const TextSpan(text: 'Próxima sessão com Personal: '),
                               TextSpan(
                                 text: '$fmt — ${ag['tituloTreino']} (${ag['status']})',
                                 style: TextStyle(
@@ -807,33 +811,33 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
             ),
           ],
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           if (_fichas.isEmpty)
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceCard,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: borderSubtle, width: 1.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderSubtle, width: 1.0),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.fitness_center_outlined, size: 48, color: AppTheme.textSecondary),
+                  Icon(Icons.fitness_center_outlined, size: 44, color: AppTheme.textSecondary),
                   const SizedBox(height: 14),
                   Text(
-                    'Nenhuma Ficha de Treino Ativa no Momento',
+                    'Nenhuma ficha ativa no momento',
                     style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Seu Personal Trainer ainda está finalizando a periodização das suas divisões de treino. Assim que publicada, ela aparecerá aqui instantaneamente com vídeos demonstrativos de execução.',
+                    'Seu Personal Trainer está preparando sua periodização. Assim que disponibilizada, você poderá acompanhar seus exercícios e registrar cargas aqui.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13.5, height: 1.5, color: AppTheme.textSecondary),
+                    style: TextStyle(fontSize: 13.5, height: 1.45, color: AppTheme.textSecondary),
                   ),
                 ],
               ),
@@ -846,19 +850,18 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
             final recolhida = _fichasRecolhidas.contains(fichaId);
             final exercicios = (fichaMap['exercicios'] as List<dynamic>?) ?? [];
             final nomeDivisao = fichaMap['nomeDivisao']?.toString() ?? 'Treino';
-
-            // Usuário solicitou: "deixa apenas treino A ou B etc... sem a parte do foco em tensao"
-            final tituloCompleto = nomeDivisao;
+            final letraBadge = nomeDivisao.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
+            final badgeDisplay = letraBadge.isNotEmpty ? letraBadge.substring(letraBadge.length - 1).toUpperCase() : 'T';
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 20),
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceCard,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: borderSubtle, width: 1.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderSubtle, width: 1.0),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(22),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -877,24 +880,48 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
-                            Expanded(
+                            Container(
+                              width: 34,
+                              height: 34,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: accentGreen.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                               child: Text(
-                                tituloCompleto,
+                                badgeDisplay,
                                 style: TextStyle(
-                                  fontSize: 18,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.3,
-                                  color: AppTheme.textPrimary,
+                                  fontSize: 14,
+                                  color: accentGreen,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Text(
-                              '${exercicios.length} exercícios',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: accentGreen,
+                            Expanded(
+                              child: Text(
+                                nomeDivisao,
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceElevated,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${exercicios.length} exercícios',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textSecondary,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -903,6 +930,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                   ? Icons.keyboard_arrow_down_rounded
                                   : Icons.keyboard_arrow_up_rounded,
                               color: AppTheme.textSecondary,
+                              size: 20,
                             ),
                           ],
                         ),
@@ -931,37 +959,19 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: 0.38,
-                          minHeight: 3.5,
-                          color: accentGreen,
-                          backgroundColor: borderSubtle,
-                        ),
-                      ),
                       const SizedBox(height: 18),
                       SizedBox(
                         width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
+                        height: 48,
+                        child: ElevatedButton.icon(
                           onPressed: () => _abrirModoExecucaoTreino(fichaMap),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.neonGreen,
-                            foregroundColor: const Color(0xFF0A0E12),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'INICIAR EXECUÇÃO NA ACADEMIA (VÍDEOS & CRONÔMETRO)',
-                            textAlign: TextAlign.center,
+                          icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                          label: const Text(
+                            'Iniciar Treino',
                             style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ),
@@ -980,7 +990,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
   // ─── ABA 2: MINHA DIETA & MACROS (TMB / GET / REFEIÇÕES) ─────────────────────
   Widget _buildAbaMinhaDietaAluno(bool isLight, Color borderSubtle) {
     final plano = _meuPlanoDieta;
-    final accentGreen = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
+    final accentGreen = AppTheme.primaryAccent;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -990,41 +1000,34 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
               color: AppTheme.surfaceCard,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: borderSubtle, width: 1.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderSubtle, width: 1.0),
             ),
             child: Column(
               children: [
-                Icon(Icons.restaurant_menu_rounded, size: 48, color: AppTheme.textSecondary),
+                Icon(Icons.restaurant_menu_rounded, size: 44, color: AppTheme.textSecondary),
                 const SizedBox(height: 14),
                 Text(
-                  'Você ainda não possui um Plano Alimentar ativo',
+                  'Nenhum plano alimentar ativo',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Você pode cadastrar sua própria rotina alimentar agora mesmo ou aguardar a prescrição do seu Personal Trainer.',
+                  'Você pode cadastrar sua rotina alimentar ou aguardar a prescrição do seu Personal Trainer.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13.5, color: AppTheme.textSecondary, height: 1.45),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: _abrirModalDietaAluno,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.neonGreen,
-                    foregroundColor: const Color(0xFF0A0E12),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
                   icon: const Icon(Icons.add_circle_outline, size: 18),
                   label: const Text(
-                    'CADASTRAR MINHA DIETA AGORA',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                    'Cadastrar Dieta',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                   ),
                 ),
               ],
@@ -1035,8 +1038,8 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               color: AppTheme.surfaceCard,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: borderSubtle, width: 1.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderSubtle, width: 1.0),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1051,10 +1054,11 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          (plano['titulo'] ?? 'Meu Plano Alimentar').toString(),
+                          (plano['titulo'] ?? 'Plano Alimentar').toString(),
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
                             color: AppTheme.textPrimary,
                           ),
                         ),
@@ -1071,17 +1075,10 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                       children: [
                         ElevatedButton.icon(
                           onPressed: _abrirModalDietaAluno,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.neonGreen,
-                            foregroundColor: const Color(0xFF0A0E12),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
                           icon: const Icon(Icons.edit_note_rounded, size: 18),
                           label: const Text(
-                            'Registrar / Editar Minha Dieta',
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                            'Editar Dieta',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                         ),
                         OutlinedButton.icon(
@@ -1093,12 +1090,12 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.textPrimary,
-                            side: BorderSide(color: borderSubtle, width: 1.2),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: BorderSide(color: borderSubtle, width: 1.1),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                          label: const Text('Exportar Dieta PDF'),
+                          icon: Icon(Icons.picture_as_pdf_outlined, size: 16, color: accentGreen),
+                          label: const Text('Exportar PDF'),
                         ),
                       ],
                     ),
@@ -1109,11 +1106,11 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    _statPill('META CALÓRICA', '${plano['metaKcal']} kcal', accentGreen),
-                    _statPill('PROTEÍNAS', '${plano['proteinaG']}g', const Color(0xFFFF5252)),
-                    _statPill('CARBOIDRATOS', '${plano['carboidratoG']}g', AppTheme.warningAmber),
-                    _statPill('GORDURAS', '${plano['gorduraG']}g', Colors.orange),
-                    _statPill('META DE ÁGUA', '${plano['aguaLitros']} Litros', AppTheme.electricBlue),
+                    _statPill('Meta Calórica', '${plano['metaKcal']} kcal', accentGreen),
+                    _statPill('Proteínas', '${plano['proteinaG']}g', const Color(0xFFFF5252)),
+                    _statPill('Carboidratos', '${plano['carboidratoG']}g', AppTheme.warningAmber),
+                    _statPill('Gorduras', '${plano['gorduraG']}g', Colors.orange),
+                    _statPill('Meta de Água', '${plano['aguaLitros']} L', AppTheme.electricBlue),
                   ],
                 ),
                 if ((plano['observacoes'] ?? '').toString().isNotEmpty) ...[
@@ -1122,7 +1119,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                     'Recomendação: ${plano['observacoes']}',
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: AppTheme.textSecondary,
                     ),
                   ),
@@ -1217,7 +1214,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
   // ─── ABA 3: MINHA EVOLUÇÃO, GRÁFICOS & COMPOSIÇÃO CORPORAL ──────────────────
   Widget _buildAbaMinhaEvolucao(bool isLight, Color borderSubtle) {
     final ultimaAval = _avaliacoes.isNotEmpty ? _avaliacoes.first : null;
-    final accentGreen = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
+    final accentGreen = AppTheme.primaryAccent;
     Map<String, dynamic> medidas = {};
     if (ultimaAval != null && ultimaAval['medidasJson'] != null) {
       try {
@@ -1228,53 +1225,72 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       children: [
-        // Header com Botão de Exportar para PDF solicitado pelo usuário (Imagem 1)
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 16,
-          runSpacing: 14,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Minha Evolução',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.7,
-                    color: AppTheme.textPrimary,
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderSubtle, width: 1.0),
+          ),
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: accentGreen.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.show_chart_rounded, color: accentGreen, size: 22),
                   ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Minha Evolução',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Histórico de bioimpedância e progressão de cargas',
+                        style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              OutlinedButton.icon(
+                onPressed: () => EvolucaoPdfService.exportarEvolucaoPdf(
+                  nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
+                  nomePersonal: _aluno['nomePersonal']?.toString() ?? _nomePersonal,
+                  avaliacoes: _avaliacoes,
+                  progressaoCargas: _progressaoCargas,
+                  historicoTreinos: _historicoTreinos,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Histórico de avaliações corporais, bioimpedância e progressão de cargas',
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.textPrimary,
+                  side: BorderSide(color: borderSubtle, width: 1.1),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-              ],
-            ),
-            OutlinedButton.icon(
-              onPressed: () => EvolucaoPdfService.exportarEvolucaoPdf(
-                nomeAluno: _aluno['nome']?.toString() ?? 'Aluno',
-                nomePersonal: _aluno['nomePersonal']?.toString() ?? _nomePersonal,
-                avaliacoes: _avaliacoes,
-                progressaoCargas: _progressaoCargas,
-                historicoTreinos: _historicoTreinos,
+                icon: Icon(Icons.picture_as_pdf_outlined, size: 16, color: accentGreen),
+                label: const Text('Exportar PDF'),
               ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.textPrimary,
-                side: BorderSide(color: borderSubtle, width: 1.2),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              icon: Icon(Icons.picture_as_pdf_outlined, size: 18, color: accentGreen),
-              label: const Text(
-                'Exportar Evolução em PDF',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 20),
 
@@ -1307,10 +1323,10 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   spacing: 16,
                   runSpacing: 12,
                   children: [
-                    _statPill('PESO ATUAL', '${ultimaAval['peso']} kg', accentGreen),
-                    _statPill('ALTURA', '${ultimaAval['altura']} m', AppTheme.electricBlue),
+                    _statPill('Peso Atual', '${ultimaAval['peso']} kg', accentGreen),
+                    _statPill('Altura', '${ultimaAval['altura']} m', AppTheme.electricBlue),
                     _statPill(
-                      '% GORDURA (BF)',
+                      'Gordura Corporal (BF)',
                       '${ultimaAval['percentualGordura'] ?? '-'}%',
                       AppTheme.warningAmber,
                     ),
@@ -1397,7 +1413,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
 
   // ─── ABA 4: FINANCEIRO & PAGAR COM PIX ───────────────────────────────────────
   Widget _buildAbaFinanceiroAluno(bool isLight, Color borderSubtle) {
-    final accentGreen = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
+    final accentGreen = AppTheme.primaryAccent;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -1410,7 +1426,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            leading: Icon(Icons.verified_user_outlined, color: accentGreen, size: 30),
+            leading: Icon(Icons.verified_user_outlined, color: accentGreen, size: 28),
             title: Text(
               'Consultoria: $_nomePersonal',
               style: TextStyle(
@@ -1419,7 +1435,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
               ),
             ),
             subtitle: Text(
-              'Chave PIX Oficial: $_chavePixPersonal',
+              'Chave PIX: $_chavePixPersonal',
               style: TextStyle(color: AppTheme.textSecondary),
             ),
             trailing: OutlinedButton.icon(
@@ -1428,7 +1444,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                 'Olá, Professor! Estou falando pelo app PersonalPro.',
               ),
               icon: Icon(Icons.chat_bubble_outline_rounded, size: 16, color: accentGreen),
-              label: const Text('Falar com Personal'),
+              label: const Text('Falar no WhatsApp'),
             ),
           ),
         ),
@@ -1470,7 +1486,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'R\$ ${valor.toStringAsFixed(2)} • Status: ${pago ? 'EM DIA (PAGO)' : 'PENDENTE'}',
+                        'R\$ ${valor.toStringAsFixed(2)} • ${pago ? 'Pago' : 'Pendente'}',
                         style: TextStyle(
                           color: pago ? accentGreen : AppTheme.warningAmber,
                           fontWeight: FontWeight.w700,
@@ -1489,8 +1505,8 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                       mesReferencia: p['mesReferencia']?.toString() ?? '',
                       pixCopiaECola: p['pixCopiaECola']?.toString() ?? '',
                     ),
-                    icon: const Icon(Icons.pix),
-                    label: const Text('PAGAR COM PIX'),
+                    icon: const Icon(Icons.pix, size: 18),
+                    label: const Text('Pagar com PIX'),
                   ),
               ],
             ),
@@ -1504,26 +1520,28 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: cor.withValues(alpha: 0.10),
+        color: cor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cor.withValues(alpha: 0.35)),
+        border: Border.all(color: cor.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             titulo,
             style: TextStyle(
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
               color: AppTheme.textSecondary,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             valor,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 17,
               fontWeight: FontWeight.w800,
               color: cor,
             ),
@@ -1595,12 +1613,12 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
           corpo: 'Hora da próxima série! Vamos pra cima!',
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: AppTheme.neonGreen,
-            duration: Duration(seconds: 3),
-            content: Text(
-              'TEMPO DE DESCANSO CONCLUÍDO! Hora da próxima série.',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800),
+          SnackBar(
+            backgroundColor: AppTheme.primaryAccent,
+            duration: const Duration(seconds: 3),
+            content: const Text(
+              'Tempo de descanso finalizado. Pronto para a próxima série.',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ),
         );
@@ -1647,16 +1665,16 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
         builder: (ctx) => AlertDialog(
           backgroundColor: AppTheme.surfaceCard,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.emoji_events_outlined, color: AppTheme.neonGreen, size: 30),
-              SizedBox(width: 10),
-              Expanded(child: Text('Treino Finalizado!')),
+              Icon(Icons.emoji_events_outlined, color: AppTheme.primaryAccent, size: 28),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Treino Finalizado!')),
             ],
           ),
           content: Text(
             resp.data['mensagem']?.toString() ??
-                'Seu Personal Trainer acabou de receber a confirmação de conclusão do seu treino!',
+                'Seu Personal Trainer recebeu a confirmação de conclusão do seu treino.',
           ),
           actions: [
             ElevatedButton(
@@ -1664,7 +1682,7 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                 Navigator.pop(ctx);
                 Navigator.pop(context);
               },
-              child: const Text('VOLTAR PARA MEUS TREINOS'),
+              child: const Text('Voltar aos Treinos'),
             ),
           ],
         ),
@@ -1677,7 +1695,7 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
   @override
   Widget build(BuildContext context) {
     final isLight = AppTheme.isLight;
-    final accentGreen = isLight ? const Color(0xFF008744) : AppTheme.neonGreen;
+    final accentGreen = AppTheme.primaryAccent;
     final borderSubtle = isLight
         ? const Color(0xFF0F172A).withValues(alpha: 0.10)
         : Colors.white.withValues(alpha: 0.10);
@@ -1770,10 +1788,10 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                           Flexible(
                             child: Text(
                               _segundosRestantes > 0
-                                  ? 'CRONÔMETRO DE DESCANSO: ${_segundosRestantes}s'
-                                  : 'Cronômetro de Descanso Regressivo:',
+                                  ? 'Descanso: ${_segundosRestantes}s'
+                                  : 'Cronômetro de Descanso:',
                               style: TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 color: _segundosRestantes > 0
                                     ? accentGreen
                                     : AppTheme.textPrimary,
@@ -1845,10 +1863,10 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: videoAberto
                                     ? AppTheme.surfaceElevated
-                                    : AppTheme.neonGreen,
+                                    : AppTheme.primaryAccent,
                                 foregroundColor: videoAberto
                                     ? accentGreen
-                                    : const Color(0xFF0A0E12),
+                                    : Colors.white,
                                 visualDensity: VisualDensity.compact,
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
@@ -1867,7 +1885,7 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                               ),
                               label: Text(
                                 videoAberto ? 'Fechar Vídeo' : 'Ver Vídeo',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                               ),
                             );
 
@@ -1879,8 +1897,8 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                                   children: [
                                     Checkbox(
                                       value: concluido,
-                                      activeColor: AppTheme.neonGreen,
-                                      checkColor: Colors.black,
+                                      activeColor: AppTheme.primaryAccent,
+                                      checkColor: Colors.white,
                                       onChanged: (v) {
                                         setState(() {
                                           if (v == true) {
@@ -2066,9 +2084,9 @@ class _ModoExecucaoTreinoScreenState extends State<ModoExecucaoTreinoScreen> {
                   icon: const Icon(Icons.check_circle_outline_rounded, size: 22),
                   label: Text(
                     _finalizando
-                        ? 'ENVIANDO NOTIFICAÇÃO AO PERSONAL...'
-                        : 'FINALIZAR TREINO DE HOJE',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                        ? 'Concluindo treino...'
+                        : 'Concluir Treino',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

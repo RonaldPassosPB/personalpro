@@ -544,17 +544,17 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 Navigator.pop(ctx);
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: AppTheme.neonGreen,
-                    content: Text(
-                      '📏 Avaliação física + fotos salvas e aluno notificado!',
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  SnackBar(
+                    backgroundColor: AppTheme.primaryAccent,
+                    content: const Text(
+                      'Avaliação física e fotos salvas com sucesso!',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                     ),
                   ),
                 );
               },
               icon: const Icon(Icons.save),
-              label: const Text('SALVAR NOVA AVALIAÇÃO'),
+              label: const Text('Salvar Avaliação'),
             ),
           ],
         ),
@@ -607,7 +607,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               Navigator.pop(ctx);
               _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
             },
-            child: const Text('CRIAR FICHA'),
+            child: const Text('Criar Ficha'),
           ),
         ],
       ),
@@ -942,7 +942,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   Navigator.pop(ctx);
                   _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
                 },
-                child: const Text('ADICIONAR EXERCÍCIO'),
+                child: const Text('Adicionar Exercício'),
               ),
             ],
           );
@@ -1003,18 +1003,18 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 Navigator.pop(ctx);
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: AppTheme.neonGreen,
-                    content: Text(
-                      '📋 Ficha copiada com sucesso!',
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  SnackBar(
+                    backgroundColor: AppTheme.primaryAccent,
+                    content: const Text(
+                      'Ficha copiada com sucesso!',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                     ),
                   ),
                 );
                 _carregarFichasDoAluno(destinoId!);
               },
               icon: const Icon(Icons.copy_all),
-              label: const Text('COPIAR FICHA AGORA'),
+              label: const Text('Copiar Ficha'),
             ),
           ],
         ),
@@ -1727,7 +1727,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           fichas: _fichasDoAlunoSelecionado,
                         ),
                         icon: const Icon(Icons.picture_as_pdf),
-                        label: const Text('EXPORTAR FICHA EM PDF / WHATSAPP'),
+                        label: const Text('Exportar Ficha em PDF'),
                       ),
                   ],
                 ),
@@ -2036,18 +2036,18 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                         });
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            backgroundColor: AppTheme.neonGreen,
-                            content: Text(
-                              '✅ Chave PIX atualizada com sucesso!',
-                              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                          SnackBar(
+                            backgroundColor: AppTheme.primaryAccent,
+                            content: const Text(
+                              'Chave PIX atualizada com sucesso!',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                             ),
                           ),
                         );
                         _carregarTudo();
                       },
                       icon: const Icon(Icons.save),
-                      label: const Text('SALVAR PIX'),
+                      label: const Text('Salvar Chave PIX'),
                     ),
                   ],
                 ),
@@ -2057,7 +2057,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.electricBlue,
-                        foregroundColor: Colors.black,
+                        foregroundColor: Colors.white,
                       ),
                       onPressed: () async {
                         final resp =
@@ -2065,12 +2065,12 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            backgroundColor: AppTheme.neonGreen,
+                            backgroundColor: AppTheme.primaryAccent,
                             content: Text(
                               resp.data['mensagem']?.toString() ?? '',
                               style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),

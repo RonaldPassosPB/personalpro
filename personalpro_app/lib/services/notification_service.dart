@@ -6,11 +6,12 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  static const AndroidNotificationChannel _canalAltaPrioridade =
-      AndroidNotificationChannel(
+  static const AndroidNotificationChannel
+  _canalAltaPrioridade = AndroidNotificationChannel(
     'personalpro_canal_alta_prioridade',
     'PersonalPro Notificações de Treino e PIX',
-    description: 'Canal de alta prioridade para conclusão de treinos e avisos do Personal.',
+    description:
+        'Canal de alta prioridade para conclusão de treinos e avisos do Personal.',
     importance: Importance.max,
     playSound: true,
     enableVibration: true,
@@ -20,7 +21,9 @@ class NotificationService {
     if (kIsWeb) return;
 
     try {
-      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const androidSettings = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
       const iosSettings = DarwinInitializationSettings();
       const initSettings = InitializationSettings(
         android: androidSettings,
@@ -30,7 +33,9 @@ class NotificationService {
       await _localNotifications.initialize(initSettings);
 
       final androidPlugin = _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       await androidPlugin?.createNotificationChannel(_canalAltaPrioridade);
     } catch (e) {
       debugPrint('Aviso inicialização de notificações locais: $e');
@@ -62,7 +67,10 @@ class NotificationService {
 
   static Future<void> registrarTokenDispositivo(String token) async {
     try {
-      await ApiService().dio.post('/api/auth/fcm-token', data: {'token': token});
+      await ApiService().dio.post(
+        '/api/auth/fcm-token',
+        data: {'token': token},
+      );
     } catch (_) {}
   }
 }

@@ -32,27 +32,31 @@ class AppTheme {
     } catch (_) {}
   }
 
-  // Cores de destaque constantes (compatíveis com const widgets)
-  static const Color neonGreen = Color(0xFF00C853);
-  static const Color performanceRed = Color(0xFFE53935);
-  static const Color electricBlue = Color(0xFF0091EA);
-  static const Color warningAmber = Color(0xFFFFA000);
+  // Cores de destaque elegantes e atléticas (inspiradas em WHOOP e Apple Fitness)
+  static const Color neonGreen = Color(0xFF10B981); // Emerald 500 atlético e moderno
+  static const Color primaryGreen = Color(0xFF059669); // Emerald 600 de alto contraste
+  static const Color performanceRed = Color(0xFFEF4444);
+  static const Color electricBlue = Color(0xFF0EA5E9);
+  static const Color warningAmber = Color(0xFFF59E0B);
 
-  // Cores adaptativas dinâmicas (Mudam automaticamente entre Tema Claro e Tema Escuro)
+  // Cores adaptativas dinâmicas (Slate profissional no lugar de cinza escuro genérico)
   static Color get bgDark =>
-      isLight ? const Color(0xFFF1F5F9) : const Color(0xFF121212);
+      isLight ? const Color(0xFFF8FAFC) : const Color(0xFF090D16);
 
   static Color get surfaceCard =>
-      isLight ? const Color(0xFFFFFFFF) : const Color(0xFF1C1F26);
+      isLight ? const Color(0xFFFFFFFF) : const Color(0xFF111827);
 
   static Color get surfaceElevated =>
-      isLight ? const Color(0xFFE2E8F0) : const Color(0xFF252A34);
+      isLight ? const Color(0xFFF1F5F9) : const Color(0xFF1F2937);
 
   static Color get textPrimary =>
-      isLight ? const Color(0xFF0F172A) : const Color(0xFFF5F7FA);
+      isLight ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
 
   static Color get textSecondary =>
-      isLight ? const Color(0xFF475569) : const Color(0xFF9EA7B8);
+      isLight ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+
+  static Color get primaryAccent =>
+      isLight ? const Color(0xFF059669) : const Color(0xFF10B981);
 
   static const List<String> fallbackFonts = [
     'Plus Jakarta Sans',
@@ -79,15 +83,16 @@ class AppTheme {
 
   static ThemeData _buildTheme(Brightness brightness) {
     final light = brightness == Brightness.light;
-    final bg = light ? const Color(0xFFF1F5F9) : const Color(0xFF121212);
-    final card = light ? const Color(0xFFFFFFFF) : const Color(0xFF1C1F26);
-    final elevated = light ? const Color(0xFFE8EEF5) : const Color(0xFF252A34);
-    final txtPrimary = light ? const Color(0xFF0F172A) : const Color(0xFFF5F7FA);
-    final txtSecondary = light ? const Color(0xFF475569) : const Color(0xFF9EA7B8);
-    final appBarBg = light ? const Color(0xFFFFFFFF) : const Color(0xFF16181D);
+    final bg = light ? const Color(0xFFF8FAFC) : const Color(0xFF090D16);
+    final card = light ? const Color(0xFFFFFFFF) : const Color(0xFF111827);
+    final elevated = light ? const Color(0xFFF1F5F9) : const Color(0xFF1F2937);
+    final txtPrimary = light ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final txtSecondary = light ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+    final appBarBg = light ? const Color(0xFFFFFFFF) : const Color(0xFF0D121F);
     final borderCol = light
-        ? Colors.black.withValues(alpha: 0.10)
-        : Colors.white.withValues(alpha: 0.08);
+        ? const Color(0xFFE2E8F0)
+        : const Color(0xFF1E293B);
+    final primary = light ? const Color(0xFF059669) : const Color(0xFF10B981);
 
     final base = light
         ? ThemeData.light(useMaterial3: true)
@@ -119,11 +124,11 @@ class AppTheme {
     return base.copyWith(
       brightness: brightness,
       scaffoldBackgroundColor: bg,
-      primaryColor: neonGreen,
+      primaryColor: primary,
       colorScheme: ColorScheme(
         brightness: brightness,
-        primary: neonGreen,
-        onPrimary: Colors.black,
+        primary: primary,
+        onPrimary: Colors.white,
         secondary: performanceRed,
         onSecondary: Colors.white,
         tertiary: electricBlue,
@@ -241,12 +246,13 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: neonGreen,
-          foregroundColor: Colors.black,
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           textStyle: _withFallback(
-            GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14),
-            Colors.black,
+            GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
+            Colors.white,
           ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
