@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +18,9 @@ class ImageHelper {
       final bytes = await file.readAsBytes();
       if (bytes.isEmpty) return null;
 
-      // Se a imagem for pesada (> 800KB), redimensionamos com o codec nativo do Flutter
-      if (bytes.lengthInBytes > 800 * 1024) {
-        final comprimida = await _redimensionarBytes(bytes, maxDim: 800);
+      // Se a imagem for maior que 300KB, redimensionamos para tamanho ideal de perfil (maxDim: 400)
+      if (bytes.lengthInBytes > 300 * 1024) {
+        final comprimida = await _redimensionarBytes(bytes, maxDim: 400);
         if (comprimida != null) return comprimida;
       }
 
@@ -37,7 +36,7 @@ class ImageHelper {
 
   static Future<String?> _redimensionarBytes(
     Uint8List bytes, {
-    int maxDim = 800,
+    int maxDim = 400,
   }) async {
     try {
       final codec = await ui.instantiateImageCodec(bytes, targetWidth: maxDim);

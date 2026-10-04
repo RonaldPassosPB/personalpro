@@ -16,8 +16,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailCtrl = TextEditingController(text: 'personal@personalpro.com');
-  final _senhaCtrl = TextEditingController(text: 'admin123');
+  final _emailCtrl = TextEditingController();
+  final _senhaCtrl = TextEditingController();
   bool _carregando = false;
   bool _ocultarSenha = true;
   bool _temCredencialSalva = false;
@@ -30,10 +30,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _verificarSessaoSalva() async {
-    final savedEmail = await ApiService().storage.read(key: 'saved_email');
-    if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
-      setState(() => _temCredencialSalva = true);
-    }
+    try {
+      final savedEmail = await ApiService().storage.read(key: 'saved_email');
+      if (savedEmail != null && savedEmail.trim().isNotEmpty && mounted) {
+        setState(() {
+          _temCredencialSalva = true;
+          _emailCtrl.text = savedEmail.trim();
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _entrarComBiometria() async {
@@ -50,8 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       final email = await ApiService().storage.read(key: 'saved_email');
       final senha = await ApiService().storage.read(key: 'saved_password');
-      if (email != null && senha != null) {
+      if (email != null && email.isNotEmpty) {
         _emailCtrl.text = email;
+      }
+      if (senha != null && senha.isNotEmpty) {
         _senhaCtrl.text = senha;
         await _fazerLogin();
       }
@@ -59,10 +66,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _fazerLogin() async {
+    final emailDigitado = _emailCtrl.text.trim();
+    final senhaDigitada = _senhaCtrl.text;
+    if (emailDigitado.isEmpty || senhaDigitada.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, informe seu e-mail e senha.'),
+          backgroundColor: AppTheme.performanceRed,
+        ),
+      );
+      return;
+    }
+
     setState(() => _carregando = true);
     try {
-      final session = await ApiService().login(_emailCtrl.text, _senhaCtrl.text);
+      final session = await ApiService().login(emailDigitado, senhaDigitada);
       if (!mounted) return;
+
+      // Salva último e-mail digitado
+      try {
+        await ApiService().storage.write(key: 'saved_email', value: emailDigitado);
+      } catch (_) {}
       final int perfil = session['perfil'] ?? 2;
 
       Widget telaDestino;
@@ -147,13 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _preencherDemo(String email) {
-    setState(() {
-      _emailCtrl.text = email;
-      _senhaCtrl.text = 'admin123';
-    });
-    _fazerLogin();
-  }
 
   void _abrirModalRecuperarSenha() {
     final emailRecCtrl = TextEditingController(text: _emailCtrl.text.trim());
@@ -532,106 +549,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 26),
-          Center(
-            child: Text(
-              'Acesso Rápido por Perfil (1 Clique)',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _demoChip(
-                  titulo: 'Personal',
-                  subtitulo: '(Coach)',
-                  cor: AppTheme.neonGreen,
-                  isLight: isLight,
-                  onTap: () => _preencherDemo('personal@personalpro.com'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _demoChip(
-                  titulo: 'Aluno',
-                  subtitulo: '(Treino)',
-                  cor: AppTheme.warningAmber,
-                  isLight: isLight,
-                  onTap: () => _preencherDemo('aluno1@personalpro.com'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _demoChip(
-                  titulo: 'SuperAdmin',
-                  subtitulo: '(SaaS)',
-                  cor: AppTheme.electricBlue,
-                  isLight: isLight,
-                  onTap: () => _preencherDemo('superadmin@personalpro.com'),
-                ),
-              ),
-            ],
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _demoChip({
-    required String titulo,
-    required String subtitulo,
-    required Color cor,
-    required bool isLight,
-    required VoidCallback onTap,
-  }) {
-    final borderColor = isLight
-        ? const Color(0xFF0F172A).withValues(alpha: 0.14)
-        : Colors.white.withValues(alpha: 0.14);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 68),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          decoration: BoxDecoration(
-            color: isLight
-                ? const Color(0xFFF8FAFC)
-                : Colors.white.withValues(alpha: 0.025),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1.1),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                titulo,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitulo,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

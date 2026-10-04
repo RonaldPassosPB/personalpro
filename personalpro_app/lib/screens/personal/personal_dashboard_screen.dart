@@ -206,10 +206,32 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                 children: [
                   Row(
                     children: [
-                      ImageHelper.renderAvatarOrImage(
-                        fotoUrlAluno,
-                        radius: 28,
-                        fallbackText: nomeCtrl.text.isNotEmpty ? nomeCtrl.text : 'A',
+                      InkWell(
+                        onTap: () async {
+                          final b64 = await ImageHelper.selecionarImagemBase64();
+                          if (b64 != null) {
+                            setModalState(() => fotoUrlAluno = b64);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(32),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            ImageHelper.renderAvatarOrImage(
+                              fotoUrlAluno,
+                              radius: 30,
+                              fallbackText: nomeCtrl.text.isNotEmpty ? nomeCtrl.text : 'A',
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: AppTheme.neonGreen,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt, size: 12, color: Colors.black),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -359,6 +381,14 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                       '/api/personal/alunos/${alunoExistente['id']}',
                       data: payload,
                     );
+                    if (fotoUrlAluno != null) {
+                      try {
+                        await ApiService().dio.put(
+                          '/api/personal/alunos/${alunoExistente['id']}/foto',
+                          data: {'fotoUrl': fotoUrlAluno},
+                        );
+                      } catch (_) {}
+                    }
                   } else {
                     await ApiService().dio.post('/api/personal/alunos', data: payload);
                   }
@@ -1759,8 +1789,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 10,
           children: [
             Text(
               'CARTEIRA DE ALUNOS (${_alunos.length})',
@@ -1789,18 +1822,33 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       InkWell(
                         onTap: () => _trocarFotoRapidaDoAluno(a),
-                        child: ImageHelper.renderAvatarOrImage(
-                          a['fotoUrl']?.toString(),
-                          radius: 24,
-                          fallbackText: a['nome']?.toString() ?? 'A',
+                        borderRadius: BorderRadius.circular(28),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            ImageHelper.renderAvatarOrImage(
+                              a['fotoUrl']?.toString(),
+                              radius: 26,
+                              fallbackText: a['nome']?.toString() ?? 'A',
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: AppTheme.neonGreen,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt, size: 10, color: Colors.black),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1808,7 +1856,10 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   a['nome']?.toString() ?? 'Aluno',
@@ -1817,7 +1868,6 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
@@ -1833,7 +1883,6 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
@@ -1853,13 +1902,47 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                                 ),
                               ],
                             ),
-                            SizedBox(height: 3),
-                            Text(
-                              '${a['email']} • WhatsApp: ${a['telefone'] ?? '-'} • Mensalidade: R\$ ${((a['valorMensalidade'] ?? 0) as num).toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textSecondary,
-                              ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 4,
+                              children: [
+                                if (a['email'] != null && a['email'].toString().isNotEmpty)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.email_outlined, size: 13, color: AppTheme.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        a['email'].toString(),
+                                        style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                if (a['telefone'] != null && a['telefone'].toString().isNotEmpty)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.phone_iphone, size: 13, color: AppTheme.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        a['telefone'].toString(),
+                                        style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.payments_outlined, size: 13, color: AppTheme.neonGreen),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'R\$ ${((a['valorMensalidade'] ?? 0) as num).toStringAsFixed(2)}/mês',
+                                      style: const TextStyle(fontSize: 11.5, color: AppTheme.neonGreen, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -1877,7 +1960,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           setState(() => _abaAtual = 2);
                         },
                         icon: const Icon(Icons.fitness_center, size: 16),
-                        label: Text('Fichas de Treino (${a['totalFichas'] ?? 0})'),
+                        label: Text('Fichas (${a['totalFichas'] ?? 0})'),
                       ),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
@@ -1889,17 +1972,17 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           _abrirModalAvaliacaoFisica(a);
                         },
                         icon: const Icon(Icons.insights, size: 16),
-                        label: const Text('📊 Gráficos, Carga & Antes/Depois'),
+                        label: const Text('📊 Gráficos & Cargas'),
                       ),
                       OutlinedButton.icon(
                         onPressed: () => setState(() => _abaAtual = 3),
                         icon: const Icon(Icons.restaurant_menu, size: 16, color: AppTheme.neonGreen),
-                        label: const Text('🥗 Dieta & Macros'),
+                        label: const Text('🥗 Dieta'),
                       ),
                       OutlinedButton.icon(
                         onPressed: () => _trocarFotoRapidaDoAluno(a),
                         icon: const Icon(Icons.camera_alt, size: 16, color: AppTheme.neonGreen),
-                        label: const Text('📷 Foto Perfil'),
+                        label: const Text('📷 Foto'),
                       ),
                       OutlinedButton.icon(
                         onPressed: () => _abrirModalAluno(alunoExistente: a),
@@ -1918,7 +2001,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         if (alunoEvolucaoSelecionado != null) ...[
           const SizedBox(height: 24),
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFF151922),
               borderRadius: BorderRadius.circular(18),
@@ -1927,42 +2010,38 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 12,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.auto_graph, color: AppTheme.neonGreen, size: 24),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'CENTRAL DE EVOLUÇÃO, CARGA & ANTES/DEPOIS — ${alunoEvolucaoSelecionado['nome']?.toString().toUpperCase()}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                                color: AppTheme.neonGreen,
-                              ),
+                    const Icon(Icons.auto_graph, color: AppTheme.neonGreen, size: 24),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'CENTRAL DE EVOLUÇÃO — ${alunoEvolucaoSelecionado['nome']?.toString().toUpperCase()}',
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.neonGreen,
                             ),
-                            Text(
-                              'Selecione o aluno abaixo para visualizar gráficos de Peso/Gordura, Progressão de Carga (kg) e Fotos Antes x Depois',
-                              style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () => _abrirModalAvaliacaoFisica(alunoEvolucaoSelecionado),
-                      icon: const Icon(Icons.add_photo_alternate, size: 16),
-                      label: const Text('+ NOVA AVALIAÇÃO / ENVIAR FOTOS ANTES & DEPOIS'),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Gráficos de Peso, Gordura, Cargas e Comparativo Antes x Depois',
+                            style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _abrirModalAvaliacaoFisica(alunoEvolucaoSelecionado),
+                  icon: const Icon(Icons.add_photo_alternate, size: 16),
+                  label: const Text('+ Nova Avaliação / Fotos Antes & Depois'),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -2573,9 +2652,16 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
   }
 
   Widget _kpiBox(String label, String valor, IconData icone, Color cor) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 650;
+    final cardWidth = isMobile
+        ? (screenWidth > 380 ? (screenWidth - 40 - 14) / 2 : double.infinity)
+        : 240.0;
+
     return Container(
-      width: 240,
-      padding: const EdgeInsets.all(16),
+      width: cardWidth,
+      constraints: const BoxConstraints(minWidth: 140),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
         borderRadius: BorderRadius.circular(16),
@@ -2587,21 +2673,33 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textSecondary,
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isMobile ? 10.5 : 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
               ),
-              Icon(icone, color: cor, size: 20),
+              Icon(icone, color: cor, size: isMobile ? 18 : 20),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            valor,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: cor),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              valor,
+              style: TextStyle(
+                fontSize: isMobile ? 19 : 22,
+                fontWeight: FontWeight.w900,
+                color: cor,
+              ),
+            ),
           ),
         ],
       ),
