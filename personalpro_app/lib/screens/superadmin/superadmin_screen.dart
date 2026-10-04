@@ -335,7 +335,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'PERSONALPRO — PAINEL MASTER SAAS',
+                  'COACH CENTER — PAINEL MASTER SAAS',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
                 ),
                 Text(
@@ -558,7 +558,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                                 OutlinedButton.icon(
                                   onPressed: () => WhatsAppService.abrirMensagem(
                                     p['telefone']?.toString(),
-                                    'Olá, ${p['nomeProfissional']}! Tudo bem? Aqui é do suporte Master PersonalPro SaaS.',
+                                    'Olá, ${p['nomeProfissional']}! Tudo bem? Aqui é do suporte Master Coach Center.',
                                   ),
                                   icon: const Icon(Icons.chat, size: 18, color: AppTheme.neonGreen),
                                   label: const Text('Chamar no WhatsApp'),

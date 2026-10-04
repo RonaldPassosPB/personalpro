@@ -8,8 +8,8 @@ class NotificationService {
 
   static const AndroidNotificationChannel
   _canalAltaPrioridade = AndroidNotificationChannel(
-    'personalpro_canal_alta_prioridade',
-    'PersonalPro Notificações de Treino e PIX',
+    'coachcenter_canal_alta_prioridade',
+    'Coach Center Notificações de Treino e PIX',
     description:
         'Canal de alta prioridade para conclusão de treinos e avisos do Personal.',
     importance: Importance.max,

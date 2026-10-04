@@ -37,7 +37,7 @@ namespace PersonalProAPI.Middlewares
                         var json = JsonSerializer.Serialize(new
                         {
                             bloqueadoSaaS = true,
-                            mensagem = "🚫 Acesso Suspenso: A assinatura desta consultoria/personal está temporariamente bloqueada no PersonalPro SaaS. Entre em contato com o administrador."
+                            mensagem = "🚫 Acesso Suspenso: A assinatura desta consultoria/personal está temporariamente bloqueada no Coach Center SaaS. Entre em contato com o administrador."
                         });
                         await context.Response.WriteAsync(json);
                         return;

@@ -22,7 +22,7 @@ class PersonalProApp extends StatelessWidget {
         return KeyedSubtree(
           key: ValueKey(themeMode),
           child: MaterialApp(
-            title: 'PersonalPro SaaS — Consultoria & Academia',
+            title: 'Coach Center — Consultoria Fitness & Gestão',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

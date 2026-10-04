@@ -1700,7 +1700,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   icon: const Icon(Icons.chat, color: AppTheme.neonGreen),
                   onPressed: () => WhatsAppService.abrirMensagem(
                     t['telefoneAluno']?.toString(),
-                    'Parabéns pelo treino de hoje (${t['nomeTreino']}), ${t['nomeAluno']}! Vi aqui no PersonalPro que você mandou muito bem! 💪🔥',
+                    'Parabéns pelo treino de hoje (${t['nomeTreino']}), ${t['nomeAluno']}! Vi aqui no Coach Center que você mandou muito bem! 💪🔥',
                   ),
                 ),
               ),
@@ -2054,7 +2054,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           nomeAluno: alunoAtual['nome']?.toString() ?? 'Aluno',
                           objetivo: alunoAtual['objetivo']?.toString() ?? 'Hipertrofia',
                           nomePersonal:
-                              _personal['nomeProfissional']?.toString() ?? 'PersonalPro',
+                              _personal['nomeProfissional']?.toString() ?? 'Coach Center',
                           crefPersonal: _personal['cref']?.toString() ?? '',
                           fichas: _fichasDoAlunoSelecionado,
                         ),
@@ -2491,7 +2491,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                             valor: valor,
                             pixCopiaECola: p['pixCopiaECola']?.toString() ?? '',
                             nomePersonal:
-                                _personal['nomeProfissional']?.toString() ?? 'PersonalPro',
+                                _personal['nomeProfissional']?.toString() ?? 'Coach Center',
                           ),
                           icon: const Icon(Icons.chat, size: 16, color: AppTheme.neonGreen),
                           label: const Text('Cobrar com PIX no WhatsApp'),
@@ -2500,7 +2500,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           onPressed: () => PixModal.mostrar(
                             context,
                             nomeBeneficiario:
-                                _personal['nomeProfissional']?.toString() ?? 'PersonalPro',
+                                _personal['nomeProfissional']?.toString() ?? 'Coach Center',
                             chavePix: _chavePixPersonal,
                             valor: valor,
                             mesReferencia: p['mesReferencia']?.toString() ?? '',
@@ -2518,7 +2518,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                             valor: valor,
                             formaPagamento: p['formaPagamento']?.toString() ?? 'PIX',
                             nomePersonal:
-                                _personal['nomeProfissional']?.toString() ?? 'PersonalPro',
+                                _personal['nomeProfissional']?.toString() ?? 'Coach Center',
                           ),
                           icon: const Icon(Icons.receipt_long, size: 16, color: AppTheme.neonGreen),
                           label: const Text('Enviar Recibo no WhatsApp'),

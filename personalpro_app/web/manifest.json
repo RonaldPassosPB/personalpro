@@ -1,11 +1,11 @@
 {
-    "name": "personalpro_app",
-    "short_name": "personalpro_app",
+    "name": "Coach Center",
+    "short_name": "Coach Center",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Coach Center — Plataforma de Gestão para Personal Trainers e Alunos.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -35,7 +35,7 @@ class FichaPdfService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'PERSONALPRO — FICHA DE TREINO OFICIAL',
+                      'COACH CENTER — FICHA DE TREINO OFICIAL',
                       style: pw.TextStyle(
                         color: corPrimaria,
                         fontSize: 16,

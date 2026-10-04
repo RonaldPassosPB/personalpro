@@ -114,7 +114,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         if (finData != null && finData is Map) {
           _pagamentos = finData['pagamentos'] ?? [];
           _chavePixPersonal = finData['chavePixPersonal']?.toString() ?? '';
-          _nomePersonal = finData['nomePersonal']?.toString() ?? 'PersonalPro';
+          _nomePersonal = finData['nomePersonal']?.toString() ?? 'Coach Center';
         }
         if (dietaData != null && dietaData is Map && dietaData['plano'] != null) {
           _meuPlanoDieta = Map<String, dynamic>.from(dietaData['plano']);
@@ -1736,7 +1736,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
             trailing: OutlinedButton.icon(
               onPressed: () => WhatsAppService.abrirMensagem(
                 _aluno['telefonePersonal']?.toString(),
-                'Olá, Professor! Estou falando pelo app PersonalPro.',
+                'Olá, Professor! Estou falando pelo app Coach Center.',
               ),
               icon: Icon(Icons.chat_bubble_outline_rounded, size: 16, color: accentGreen),
               label: const Text('Falar no WhatsApp'),

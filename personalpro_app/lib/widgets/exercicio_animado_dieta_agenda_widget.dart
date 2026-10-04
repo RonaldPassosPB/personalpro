@@ -859,7 +859,7 @@ class DietaPdfService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'PERSONALPRO - PLANO ALIMENTAR & MACROS',
+                      'COACH CENTER - PLANO ALIMENTAR & MACROS',
                       style: pw.TextStyle(
                         color: PdfColor.fromHex('#00E676'),
                         fontSize: 16,

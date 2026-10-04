@@ -60,7 +60,7 @@ class StoryCardTreinoModal extends StatelessWidget {
         : '';
 
     final texto = '''
-💪 *TREINO CONCLUÍDO NO PERSONALPRO!*
+💪 *TREINO CONCLUÍDO NO COACH CENTER!*
 🏋️‍♂️ *$nomeAluno* finalizou *$nomeTreino*
 
 ⏱️ *Duração:* $duracaoMinutos minutos
@@ -68,7 +68,7 @@ class StoryCardTreinoModal extends StatelessWidget {
 🔥 *Consistência:* Treino #$treinosNoMes deste mês$prsTexto
 
 Foco e consistência geram resultados! 🚀
-#PersonalPro #TreinoDeElite #Musculacao
+#CoachCenter #TreinoDeElite #Musculacao
 ''';
 
     WhatsAppService.abrirMensagem(null, texto);
@@ -152,7 +152,7 @@ Foco e consistência geram resultados! 🚀
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'PERSONALPRO',
+                            'COACH CENTER',
                             style: TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 13,

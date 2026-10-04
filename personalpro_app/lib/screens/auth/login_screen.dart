@@ -43,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
             await _localAuth.isDeviceSupported();
         if (podeAutenticar) {
           final ok = await _localAuth.authenticate(
-            localizedReason: 'Autentique-se para acessar o PersonalPro',
+            localizedReason: 'Autentique-se para acessar o Coach Center',
           );
           if (!ok) return;
         }
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       final status = e.response?.statusCode;
       final data = e.response?.data;
-      String msg = 'Falha ao conectar com a API PersonalPro. Verifique sua conexão e tente novamente.';
+      String msg = 'Falha ao conectar com a API Coach Center. Verifique sua conexão e tente novamente.';
       bool bloqueadoSaaS = false;
 
       if (data is Map) {
@@ -358,11 +358,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             children: [
               TextSpan(
-                text: 'PERSONAL',
+                text: 'COACH ',
                 style: TextStyle(color: AppTheme.textPrimary),
               ),
               TextSpan(
-                text: 'PRO',
+                text: 'CENTER',
                 style: TextStyle(
                   color: isLight ? const Color(0xFF00A854) : AppTheme.neonGreen,
                 ),

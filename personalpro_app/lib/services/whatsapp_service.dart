@@ -50,7 +50,7 @@ Assim que realizar o pagamento, me avise por aqui. Vamos pra cima nos treinos! �
   }) async {
     final msg =
         '''
-✅ *RECIBO DE PAGAMENTO — PERSONALPRO*
+✅ *RECIBO DE PAGAMENTO — COACH CENTER*
 Olá, *$nomeAluno*! Confirmamos o recebimento da sua mensalidade:
 
 📌 *Referência:* $mesReferencia
@@ -71,7 +71,7 @@ Obrigado pela confiança e foco total nos treinos! 💪🔥
     final msg =
         '''
 Fala, *$nomeAluno*! Tudo certo por aí? 👀💪
-Vi aqui no nosso sistema *PersonalPro* que já faz *$diasSemTreinar dias* que você não registra treino concluído!
+Vi aqui no nosso sistema *Coach Center* que já faz *$diasSemTreinar dias* que você não registra treino concluído!
 Aconteceu alguma coisa ou precisa que eu ajuste sua ficha de treino? Bora retomar o foco essa semana! 🚀🔥
 ''';
     await abrirMensagem(telefoneAluno, msg);

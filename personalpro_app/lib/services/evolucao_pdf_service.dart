@@ -38,7 +38,7 @@ class EvolucaoPdfService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'PERSONALPRO — RELATÓRIO DE EVOLUÇÃO FÍSICA',
+                      'COACH CENTER — RELATÓRIO DE EVOLUÇÃO FÍSICA',
                       style: pw.TextStyle(
                         color: corPrimaria,
                         fontSize: 15,
@@ -286,7 +286,7 @@ class EvolucaoPdfService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                'PersonalPro — Plataforma de Gestão de Treinos & Performance',
+                'Coach Center — Plataforma de Gestão de Treinos & Performance',
                 style: const pw.TextStyle(
                   fontSize: 9,
                   color: PdfColors.grey600,
