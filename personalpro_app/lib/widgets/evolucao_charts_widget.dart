@@ -136,8 +136,9 @@ class ImageHelper {
           Positioned(
             bottom: 8,
             left: 8,
+            right: 8,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.75),
                 borderRadius: BorderRadius.circular(8),
@@ -147,8 +148,10 @@ class ImageHelper {
               ),
               child: Text(
                 label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.neonGreen,
                 ),
@@ -489,15 +492,22 @@ class _EvolucaoCompletaPanelState extends State<EvolucaoCompletaPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
               children: [
-                const Icon(Icons.straighten, color: AppTheme.neonGreen),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'HISTÓRICO COMPLETO DE MEDIDAS & PERIMETRIA',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                  ),
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.straighten, color: AppTheme.neonGreen, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'MEDIDAS & PERIMETRIA',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
+                    ),
+                  ],
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -528,13 +538,17 @@ class _EvolucaoCompletaPanelState extends State<EvolucaoCompletaPanel> {
                       children: [
                         Icon(grp['icone'] as IconData, size: 15, color: grp['cor'] as Color),
                         const SizedBox(width: 6),
-                        Text(
-                          grp['titulo'] as String,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                            color: grp['cor'] as Color,
-                            letterSpacing: 0.4,
+                        Expanded(
+                          child: Text(
+                            grp['titulo'] as String,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: grp['cor'] as Color,
+                              letterSpacing: 0.4,
+                            ),
                           ),
                         ),
                       ],
@@ -549,8 +563,8 @@ class _EvolucaoCompletaPanelState extends State<EvolucaoCompletaPanel> {
                       final diff = valAnt != null ? valAtual - valAnt : null;
 
                       return Container(
-                        constraints: const BoxConstraints(minWidth: 135),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        constraints: const BoxConstraints(minWidth: 105),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                         decoration: BoxDecoration(
                           color: AppTheme.bgDark,
                           borderRadius: BorderRadius.circular(10),

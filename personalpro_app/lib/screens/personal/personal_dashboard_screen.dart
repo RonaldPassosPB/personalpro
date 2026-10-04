@@ -197,6 +197,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         builder: (ctx, setModalState) => AlertDialog(
           backgroundColor: AppTheme.surfaceCard,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
           title: Text(editando ? 'Editar Aluno' : '+ Cadastrar Novo Aluno'),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
@@ -248,8 +249,8 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                               icon: const Icon(Icons.camera_alt, size: 18, color: AppTheme.neonGreen),
                               label: Text(
                                 (fotoUrlAluno != null && fotoUrlAluno!.trim().isNotEmpty)
-                                    ? 'Trocar Foto de Perfil'
-                                    : 'Adicionar Foto de Perfil',
+                                    ? 'Trocar Foto'
+                                    : 'Adicionar Foto',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
                               ),
                             ),
@@ -283,9 +284,9 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   TextField(
                     controller: senhaCtrl,
                     decoration: InputDecoration(
-                      labelText: editando
-                          ? 'Nova Senha (deixe em branco para manter)'
-                          : 'Senha Inicial do Aluno *',
+                      labelText: editando ? 'Nova Senha (opcional)' : 'Senha Inicial *',
+                      helperText: editando ? 'Deixe em branco p/ manter atual' : null,
+                      helperStyle: const TextStyle(fontSize: 11),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -316,6 +317,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     ].contains(objetivo)
                         ? objetivo
                         : 'Hipertrofia',
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Objetivo Principal'),
                     items: const [
                       DropdownMenuItem(value: 'Hipertrofia', child: Text('💪 Hipertrofia Muscular')),
@@ -483,13 +485,17 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           children: [
             Icon(icone, size: 16, color: cor),
             const SizedBox(width: 8),
-            Text(
-              titulo,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 12.5,
-                color: cor,
-                letterSpacing: 0.3,
+            Expanded(
+              child: Text(
+                titulo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11.5,
+                  color: cor,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           ],
@@ -501,11 +507,14 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
       return TextField(
         controller: ctrl,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: const TextStyle(fontSize: 13),
         decoration: InputDecoration(
           labelText: rotulo,
+          labelStyle: const TextStyle(fontSize: 11.5),
           suffixText: sufixo,
+          suffixStyle: const TextStyle(fontSize: 10.5),
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
         ),
       );
     }
@@ -513,124 +522,181 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => AlertDialog(
-          backgroundColor: AppTheme.surfaceCard,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('📏 Avaliação Física Completa — ${aluno['nome']}'),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Painel de Gráficos Visuais + Comparativo Antes x Depois
-                  if (avaliacoes.isNotEmpty || progressaoCargas.isNotEmpty) ...[
-                    EvolucaoCompletaPanel(
-                      avaliacoes: avaliacoes,
-                      progressaoCargas: progressaoCargas,
+      builder: (ctx) {
+        final screenWidth = MediaQuery.of(ctx).size.width;
+        final isMobileModal = screenWidth < 560;
+
+        return StatefulBuilder(
+          builder: (ctx, setModalState) => AlertDialog(
+            backgroundColor: AppTheme.surfaceCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
+            title: Text(
+              '📏 Avaliação Física — ${aluno['nome']}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Painel de Gráficos Visuais + Comparativo Antes x Depois
+                    if (avaliacoes.isNotEmpty || progressaoCargas.isNotEmpty) ...[
+                      EvolucaoCompletaPanel(
+                        avaliacoes: avaliacoes,
+                        progressaoCargas: progressaoCargas,
+                      ),
+                      const Divider(color: Colors.white24, height: 28),
+                    ],
+
+                    const Text(
+                      '➕ NOVA AVALIAÇÃO FÍSICA & PERIMETRIA',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neonGreen, fontSize: 13),
                     ),
-                    const Divider(color: Colors.white24, height: 28),
-                  ],
 
-                  const Text(
-                    '➕ NOVA AVALIAÇÃO FÍSICA & PERIMETRIA COMPLETA',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neonGreen, fontSize: 13.5),
-                  ),
+                    // 1. COMPOSIÇÃO CORPORAL
+                    secaoTitulo('COMPOSIÇÃO & BIOIMPEDÂNCIA', Icons.monitor_weight_outlined, AppTheme.neonGreen),
+                    if (isMobileModal) ...[
+                      Row(
+                        children: [
+                          Expanded(child: campo(pesoCtrl, 'Peso', sufixo: 'kg')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(alturaCtrl, 'Altura', sufixo: 'm')),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: campo(bfCtrl, '% Gordura', sufixo: '%')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(massaMagraCtrl, 'Massa Magra', sufixo: 'kg')),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      campo(massaGordaCtrl, 'Massa Gorda', sufixo: 'kg'),
+                    ] else ...[
+                      Row(
+                        children: [
+                          Expanded(child: campo(pesoCtrl, 'Peso', sufixo: 'kg')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(alturaCtrl, 'Altura', sufixo: 'm')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(bfCtrl, '% Gordura', sufixo: '%')),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: campo(massaMagraCtrl, 'Massa Magra', sufixo: 'kg')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(massaGordaCtrl, 'Massa Gorda', sufixo: 'kg')),
+                        ],
+                      ),
+                    ],
 
-                  // 1. COMPOSIÇÃO CORPORAL
-                  secaoTitulo('COMPOSIÇÃO CORPORAL & BIOIMPEDÂNCIA', Icons.monitor_weight_outlined, AppTheme.neonGreen),
-                  Row(
-                    children: [
-                      Expanded(child: campo(pesoCtrl, 'Peso', sufixo: 'kg')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(alturaCtrl, 'Altura', sufixo: 'm')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(bfCtrl, '% Gordura', sufixo: '%')),
+                    // 2. TRONCO E CIRCUNFERÊNCIAS
+                    secaoTitulo('TRONCO & CIRCUNFERÊNCIAS', Icons.straighten, AppTheme.electricBlue),
+                    if (isMobileModal) ...[
+                      Row(
+                        children: [
+                          Expanded(child: campo(pescocoCtrl, 'Pescoço')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(ombrosCtrl, 'Ombros')),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: campo(peitoCtrl, 'Peitoral/Tórax')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(cinturaCtrl, 'Cintura')),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: campo(abdomenCtrl, 'Abdômen')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(quadrilCtrl, 'Quadril')),
+                        ],
+                      ),
+                    ] else ...[
+                      Row(
+                        children: [
+                          Expanded(child: campo(pescocoCtrl, 'Pescoço')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(ombrosCtrl, 'Ombros')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(peitoCtrl, 'Peitoral/Tórax')),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: campo(cinturaCtrl, 'Cintura')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(abdomenCtrl, 'Abdômen')),
+                          const SizedBox(width: 8),
+                          Expanded(child: campo(quadrilCtrl, 'Quadril')),
+                        ],
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(child: campo(massaMagraCtrl, 'Massa Magra', sufixo: 'kg')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(massaGordaCtrl, 'Massa Gorda', sufixo: 'kg')),
-                    ],
-                  ),
 
-                  // 2. TRONCO E CIRCUNFERÊNCIAS
-                  secaoTitulo('TRONCO & CIRCUNFERÊNCIAS (PERIMETRIA)', Icons.straighten, AppTheme.electricBlue),
-                  Row(
-                    children: [
-                      Expanded(child: campo(pescocoCtrl, 'Pescoço')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(ombrosCtrl, 'Ombros')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(peitoCtrl, 'Peitoral/Tórax')),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(child: campo(cinturaCtrl, 'Cintura')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(abdomenCtrl, 'Abdômen')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(quadrilCtrl, 'Quadril')),
-                    ],
-                  ),
+                    // 3. MEMBROS SUPERIORES (BRAÇOS)
+                    secaoTitulo('MEMBROS SUPERIORES (BRAÇOS)', Icons.fitness_center, AppTheme.warningAmber),
+                    Row(
+                      children: [
+                        Expanded(child: campo(bracoDirCtrl, 'Braço D. (Relax)')),
+                        const SizedBox(width: 8),
+                        Expanded(child: campo(bracoEsqCtrl, 'Braço E. (Relax)')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: campo(bracoDirContrCtrl, 'Braço D. (Contr)')),
+                        const SizedBox(width: 8),
+                        Expanded(child: campo(bracoEsqContrCtrl, 'Braço E. (Contr)')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: campo(antebracoDirCtrl, 'Antebraço D.')),
+                        const SizedBox(width: 8),
+                        Expanded(child: campo(antebracoEsqCtrl, 'Antebraço E.')),
+                      ],
+                    ),
 
-                  // 3. MEMBROS SUPERIORES (BRAÇOS)
-                  secaoTitulo('MEMBROS SUPERIORES (DIREITO & ESQUERDO)', Icons.fitness_center, AppTheme.warningAmber),
-                  Row(
-                    children: [
-                      Expanded(child: campo(bracoDirCtrl, 'Braço D. (Relaxado)')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(bracoEsqCtrl, 'Braço E. (Relaxado)')),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(child: campo(bracoDirContrCtrl, 'Braço D. (Contraído)')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(bracoEsqContrCtrl, 'Braço E. (Contraído)')),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(child: campo(antebracoDirCtrl, 'Antebraço D.')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(antebracoEsqCtrl, 'Antebraço E.')),
-                    ],
-                  ),
+                    // 4. MEMBROS INFERIORES (PERNAS)
+                    secaoTitulo('MEMBROS INFERIORES (PERNAS)', Icons.directions_run, const Color(0xFFE040FB)),
+                    Row(
+                      children: [
+                        Expanded(child: campo(coxaDirCtrl, 'Coxa D. (Alta)')),
+                        const SizedBox(width: 8),
+                        Expanded(child: campo(coxaEsqCtrl, 'Coxa E. (Alta)')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: campo(panturrilhaDirCtrl, 'Panturrilha D.')),
+                        const SizedBox(width: 8),
+                        Expanded(child: campo(panturrilhaEsqCtrl, 'Panturrilha E.')),
+                      ],
+                    ),
 
-                  // 4. MEMBROS INFERIORES (PERNAS)
-                  secaoTitulo('MEMBROS INFERIORES (COXAS & PANTURRILHAS)', Icons.directions_run, const Color(0xFFE040FB)),
-                  Row(
-                    children: [
-                      Expanded(child: campo(coxaDirCtrl, 'Coxa D. (Alta)')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(coxaEsqCtrl, 'Coxa E. (Alta)')),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(child: campo(panturrilhaDirCtrl, 'Panturrilha D.')),
-                      const SizedBox(width: 8),
-                      Expanded(child: campo(panturrilhaEsqCtrl, 'Panturrilha E.')),
-                    ],
-                  ),
-
-                  // 5. FOTOS ANTES E DEPOIS
-                  secaoTitulo('FOTOS DE EVOLUÇÃO (ANTES x DEPOIS)', Icons.camera_alt, AppTheme.neonGreen),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
+                    // 5. FOTOS ANTES E DEPOIS
+                    secaoTitulo('FOTOS ANTES x DEPOIS', Icons.camera_alt, AppTheme.neonGreen),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
                           onPressed: () async {
                             final img = await ImageHelper.selecionarImagemBase64();
                             if (img != null) setModalState(() => fotoFrenteB64 = img);
@@ -638,17 +704,14 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           icon: Icon(
                             fotoFrenteB64 != null ? Icons.check_circle : Icons.add_a_photo,
                             color: AppTheme.neonGreen,
+                            size: 16,
                           ),
                           label: Text(
-                            fotoFrenteB64 != null
-                                ? 'Frente Anexada ✅'
-                                : '📸 Foto Frente',
+                            fotoFrenteB64 != null ? 'Frente Anexada ✅' : '📸 Foto Frente',
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
+                        OutlinedButton.icon(
                           onPressed: () async {
                             final img = await ImageHelper.selecionarImagemBase64();
                             if (img != null) setModalState(() => fotoCostasB64 = img);
@@ -656,16 +719,15 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           icon: Icon(
                             fotoCostasB64 != null ? Icons.check_circle : Icons.add_a_photo,
                             color: AppTheme.electricBlue,
+                            size: 16,
                           ),
                           label: Text(
-                            fotoCostasB64 != null
-                                ? 'Costas Anexada ✅'
-                                : '📸 Foto Costas/Perfil',
+                            fotoCostasB64 != null ? 'Costas Anexada ✅' : '📸 Foto Costas/Perfil',
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
                   // 6. ANAMNESE E OBSERVAÇÕES
                   secaoTitulo('ANAMNESE & OBSERVAÇÕES DO TREINADOR', Icons.notes, Colors.white70),
@@ -761,9 +823,10 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   // ─── CRIAR FICHA OU APLICAR MODELO PRONTO ────────────────────────────────────
   void _abrirModalNovaFicha({List<Map<String, dynamic>>? exerciciosIniciais, String? nomeSugerido}) {
@@ -1645,50 +1708,63 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           : conteudoPrincipal,
       bottomNavigationBar: isDesktop
           ? null
-          : NavigationBar(
-              selectedIndex: _abaAtual,
-              backgroundColor: AppTheme.surfaceCard,
-              indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              onDestinationSelected: (i) => setState(() => _abaAtual = i),
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard, color: AppTheme.neonGreen),
-                  label: 'Frequência',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.people_outline),
-                  selectedIcon: Icon(Icons.people, color: AppTheme.neonGreen),
-                  label: 'Alunos',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.ondemand_video_outlined),
-                  selectedIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
-                  label: 'Treinos',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.restaurant_menu_outlined),
-                  selectedIcon: Icon(Icons.restaurant_menu, color: AppTheme.neonGreen),
-                  label: 'Dieta',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.calendar_month_outlined),
-                  selectedIcon: Icon(Icons.calendar_month, color: AppTheme.neonGreen),
-                  label: 'Agenda',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.pix_outlined),
-                  selectedIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
-                  label: 'PIX',
-                ),
-              ],
+          : NavigationBarTheme(
+              data: NavigationBarThemeData(
+                labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                  final isSelected = states.contains(WidgetState.selected);
+                  return TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? AppTheme.neonGreen : AppTheme.textSecondary,
+                  );
+                }),
+              ),
+              child: NavigationBar(
+                selectedIndex: _abaAtual,
+                backgroundColor: AppTheme.surfaceCard,
+                indicatorColor: AppTheme.neonGreen.withValues(alpha: 0.22),
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                onDestinationSelected: (i) => setState(() => _abaAtual = i),
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.dashboard_outlined),
+                    selectedIcon: Icon(Icons.dashboard, color: AppTheme.neonGreen),
+                    label: 'Início',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.people_outline),
+                    selectedIcon: Icon(Icons.people, color: AppTheme.neonGreen),
+                    label: 'Alunos',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.ondemand_video_outlined),
+                    selectedIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
+                    label: 'Treinos',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.restaurant_menu_outlined),
+                    selectedIcon: Icon(Icons.restaurant_menu, color: AppTheme.neonGreen),
+                    label: 'Dieta',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.calendar_month_outlined),
+                    selectedIcon: Icon(Icons.calendar_month, color: AppTheme.neonGreen),
+                    label: 'Agenda',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.pix_outlined),
+                    selectedIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
+                    label: 'PIX',
+                  ),
+                ],
+              ),
             ),
     );
   }
 
   // ─── ABA 1: VISÃO GERAL & MONITORAMENTO DE FREQUÊNCIA ────────────────────────
   Widget _buildAbaVisaoGeralFrequencia() {
+    final isMobile = MediaQuery.of(context).size.width < 650;
     return RefreshIndicator(
       onRefresh: _carregarTudo,
       child: ListView(
@@ -1795,79 +1871,159 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                               : const Color(0xFF1E293B),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppTheme.warningAmber.withValues(alpha: 0.15),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${dias}d',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppTheme.warningAmber,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
+                      child: isMobile
+                          ? Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  al['nome']?.toString() ?? '',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                    color: AppTheme.textPrimary,
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppTheme.warningAmber.withValues(alpha: 0.15),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${dias}d',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            color: AppTheme.warningAmber,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            al['nome']?.toString() ?? '',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                              color: AppTheme.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'Inativo há $dias dias • ${al['objetivo'] ?? 'Musculação'}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              color: AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryAccent,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    onPressed: () => WhatsAppService.chamarAlunoSumido(
+                                      telefoneAluno: al['telefone']?.toString(),
+                                      nomeAluno: al['nome']?.toString() ?? 'Aluno',
+                                      diasSemTreinar: int.tryParse(dias.toString()) ?? 7,
+                                    ),
+                                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+                                    label: const Text(
+                                      'Reengajar Aluno no WhatsApp',
+                                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Inativo há $dias dias • Objetivo: ${al['objetivo'] ?? 'Musculação'}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.textSecondary,
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppTheme.warningAmber.withValues(alpha: 0.15),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${dias}d',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppTheme.warningAmber,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        al['nome']?.toString() ?? '',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: AppTheme.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Inativo há $dias dias • Objetivo: ${al['objetivo'] ?? 'Musculação'}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryAccent,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 10,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () => WhatsAppService.chamarAlunoSumido(
+                                    telefoneAluno: al['telefone']?.toString(),
+                                    nomeAluno: al['nome']?.toString() ?? 'Aluno',
+                                    diasSemTreinar: int.tryParse(dias.toString()) ?? 7,
+                                  ),
+                                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+                                  label: const Text(
+                                    'Reengajar Aluno',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryAccent,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: () => WhatsAppService.chamarAlunoSumido(
-                              telefoneAluno: al['telefone']?.toString(),
-                              nomeAluno: al['nome']?.toString() ?? 'Aluno',
-                              diasSemTreinar: int.tryParse(dias.toString()) ?? 7,
-                            ),
-                            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-                            label: const Text(
-                              'Reengajar Aluno',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     );
                   }),
                 ],
@@ -1916,6 +2072,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
 
   // ─── ABA 2: GESTÃO DE ALUNOS & AVALIAÇÃO FÍSICA ──────────────────────────────
   Widget _buildAbaGestaoAlunos() {
+    final isMobile = MediaQuery.of(context).size.width < 650;
     final alunoEvolucaoSelecionado = _alunos.firstWhere(
       (a) => a['id'] == _alunoSelecionadoEvolucaoId,
       orElse: () => _alunos.isNotEmpty ? _alunos.first : null,
@@ -2043,16 +2200,23 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                               runSpacing: 4,
                               children: [
                                 if (a['email'] != null && a['email'].toString().isNotEmpty)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.email_outlined, size: 13, color: AppTheme.textSecondary),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        a['email'].toString(),
-                                        style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
-                                      ),
-                                    ],
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(maxWidth: isMobile ? 210 : 320),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.email_outlined, size: 13, color: AppTheme.textSecondary),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            a['email'].toString(),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 if (a['telefone'] != null && a['telefone'].toString().isNotEmpty)
                                   Row(
@@ -2062,6 +2226,8 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                                       const SizedBox(width: 4),
                                       Text(
                                         a['telefone'].toString(),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
                                       ),
                                     ],
@@ -2090,39 +2256,57 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     runSpacing: 8,
                     children: [
                       ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        ),
                         onPressed: () {
                           _carregarFichasDoAluno(a['id']);
                           setState(() => _abaAtual = 2);
                         },
-                        icon: const Icon(Icons.fitness_center, size: 16),
-                        label: Text('Fichas (${a['totalFichas'] ?? 0})'),
+                        icon: const Icon(Icons.fitness_center, size: 15),
+                        label: Text('Fichas (${a['totalFichas'] ?? 0})', style: const TextStyle(fontSize: 12)),
                       ),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF00B0FF),
                           foregroundColor: Colors.black,
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         ),
                         onPressed: () {
                           _carregarEvolucaoDoAluno(a['id']);
                           _abrirModalAvaliacaoFisica(a);
                         },
-                        icon: const Icon(Icons.insights, size: 16),
-                        label: const Text('📊 Gráficos & Cargas'),
+                        icon: const Icon(Icons.insights, size: 15),
+                        label: const Text('📊 Gráficos & Medidas', style: TextStyle(fontSize: 12)),
                       ),
                       OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        ),
                         onPressed: () => setState(() => _abaAtual = 3),
-                        icon: const Icon(Icons.restaurant_menu, size: 16, color: AppTheme.neonGreen),
-                        label: const Text('🥗 Dieta'),
+                        icon: const Icon(Icons.restaurant_menu, size: 15, color: AppTheme.neonGreen),
+                        label: const Text('🥗 Dieta', style: TextStyle(fontSize: 12)),
                       ),
                       OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        ),
                         onPressed: () => _trocarFotoRapidaDoAluno(a),
-                        icon: const Icon(Icons.camera_alt, size: 16, color: AppTheme.neonGreen),
-                        label: const Text('📷 Foto'),
+                        icon: const Icon(Icons.camera_alt, size: 15, color: AppTheme.neonGreen),
+                        label: const Text('📷 Foto', style: TextStyle(fontSize: 12)),
                       ),
                       OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        ),
                         onPressed: () => _abrirModalAluno(alunoExistente: a),
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Editar'),
+                        icon: const Icon(Icons.edit, size: 15),
+                        label: const Text('Editar', style: TextStyle(fontSize: 12)),
                       ),
                     ],
                   ),
@@ -2231,6 +2415,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     Expanded(
                       child: DropdownButtonFormField<int>(
                         initialValue: _alunoSelecionadoTreinoId,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Selecionar Aluno para Prescrever / Editar Fichas',
                           prefixIcon: Icon(Icons.person, color: AppTheme.neonGreen),
@@ -2239,7 +2424,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                             .map(
                               (a) => DropdownMenuItem<int>(
                                 value: a['id'],
-                                child: Text('${a['nome']} — ${a['objetivo']}'),
+                                child: Text(
+                                  '${a['nome']} — ${a['objetivo']}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             )
                             .toList(),
@@ -2331,10 +2520,14 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: AppTheme.neonGreen,
                           borderRadius: BorderRadius.circular(8),
@@ -2344,23 +2537,32 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w900,
-                            fontSize: 14,
+                            fontSize: 13.5,
                           ),
                         ),
                       ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () => _abrirModalDuplicarFicha(ficha),
-                        icon: const Icon(Icons.copy_all, size: 18, color: AppTheme.neonGreen),
-                        label: const Text('Duplicar p/ Aluno'),
-                      ),
-                      IconButton(
-                        tooltip: 'Excluir Ficha',
-                        icon: const Icon(Icons.delete_outline, color: AppTheme.performanceRed),
-                        onPressed: () async {
-                          await ApiService().dio.delete('/api/treinos/fichas/${ficha['id']}');
-                          _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
-                        },
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            ),
+                            onPressed: () => _abrirModalDuplicarFicha(ficha),
+                            icon: const Icon(Icons.copy_all, size: 16, color: AppTheme.neonGreen),
+                            label: const Text('Duplicar', style: TextStyle(fontSize: 12)),
+                          ),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            tooltip: 'Excluir Ficha',
+                            icon: const Icon(Icons.delete_outline, color: AppTheme.performanceRed, size: 20),
+                            onPressed: () async {
+                              await ApiService().dio.delete('/api/treinos/fichas/${ficha['id']}');
+                              _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -2811,12 +3013,13 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               Expanded(
                 child: Text(
                   label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: isMobile ? 10.5 : 11,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.textSecondary,
+                    height: 1.15,
                   ),
                 ),
               ),

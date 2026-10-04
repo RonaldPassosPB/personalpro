@@ -393,8 +393,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildAuthVault(bool isLight, Color borderSubtle) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 500;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 34),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 32,
+        vertical: isMobile ? 24 : 34,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
         borderRadius: BorderRadius.circular(24),
@@ -417,7 +423,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildWordmark(isLight, fontSize: 22),
+              _buildWordmark(isLight, fontSize: isMobile ? 18 : 22),
               const BotaoAlternarTema(mostrarTexto: false),
             ],
           ),
