@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coach Center — A Plataforma Definitiva para Personal Trainers</title>
+  <meta name="description" content="Tenha seu próprio app de consultoria fitness. Fichas com GIFs biomecânicos, dieta inteligente Mifflin-St Jeor, fotos antes x depois e PIX direto na sua conta com ZERO taxa.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="../favicon.png">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              green: '#10B981',
+              darkGreen: '#059669',
+              lightGreen: '#34D399',
+              bgDark: '#090D16',
+              cardDark: '#111827',
+              borderDark: 'rgba(255, 255, 255, 0.08)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #090D16;
+      color: #F3F4F6;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .glow-green {
+      box-shadow: 0 0 50px -10px rgba(16, 185, 129, 0.35);
+    }
+    .glow-green-sm {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #FFFFFF 30%, #10B981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .pulse-subtle {
+      animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+  </style>
+</head>
+<body class="bg-[#090D16] text-gray-100 antialiased selection:bg-emerald-500 selection:text-black">
+
+  <!-- NAVBAR -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#090D16]/85 backdrop-blur-md border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- LOGO -->
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L2 10.57L3.43 12L7 8.43L15.57 17L12 20.57L13.43 22L14.86 20.57L16.29 22L18.43 19.86L19.86 21.29L21.29 19.86L19.86 18.43L22 16.29L20.57 14.86Z"/>
+          </svg>
+        </div>
+        <div class="leading-none">
+          <span class="text-xl font-black tracking-tight text-white">COACH <span class="text-emerald-400">CENTER</span></span>
+          <span class="block text-[10px] uppercase font-bold tracking-widest text-emerald-500/80 mt-0.5">Consultoria de Alta Performance</span>
+        </div>
+      </a>
+
+      <!-- MENU DESKTOP -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-300">
+        <a href="#funcionalidades" class="hover:text-emerald-400 transition-colors">Funcionalidades</a>
+        <a href="#comparativo" class="hover:text-emerald-400 transition-colors">Coach Center vs MFIT</a>
+        <a href="#planos" class="hover:text-emerald-400 transition-colors">Planos & Preços</a>
+        <a href="#faq" class="hover:text-emerald-400 transition-colors">FAQ</a>
+        <a href="#contato" class="hover:text-emerald-400 transition-colors">Contato</a>
+      </nav>
+
+      <!-- BOTOES DE ACAO -->
+      <div class="flex items-center gap-3">
+        <a href="/" class="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-gray-300 hover:text-white border border-white/10 hover:border-white/20 transition-all bg-white/5">
+          🔐 Entrar no Sistema
+        </a>
+        <a href="https://wa.me/5527996234460?text=Ol%C3%A1!%20Gostaria%20de%20testar%20a%20plataforma%20Coach%20Center%20na%20minha%20consultoria." target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold text-black bg-emerald-400 hover:bg-emerald-300 transition-all shadow-lg shadow-emerald-500/20 active:scale-95">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.04 7.5C8.86 7.5 8.57 7.56 8.32 7.83C8.07 8.1 7.37 8.76 7.37 10.1C7.37 11.45 8.35 12.75 8.49 12.94C8.63 13.12 10.42 15.89 13.17 17.07C15.45 18.06 15.92 17.86 16.41 17.81C16.91 17.77 18.02 17.16 18.25 16.51C18.48 15.87 18.48 15.31 18.41 15.2C18.34 15.08 18.16 15.02 17.89 14.88C17.61 14.75 16.27 14.09 16.02 14C15.77 13.91 15.59 13.86 15.41 14.13C15.22 14.41 14.7 15.02 14.54 15.2C14.38 15.39 14.22 15.41 13.95 15.27C13.67 15.14 12.79 14.85 11.75 13.92C10.93 13.19 10.38 12.29 10.22 12.02C10.06 11.74 10.2 11.6 10.34 11.46C10.46 11.34 10.61 11.14 10.75 10.98C10.89 10.82 10.93 10.71 11.03 10.53C11.12 10.34 11.07 10.18 11 10.05C10.93 9.91 10.34 8.46 10.1 7.87C9.86 7.3 9.61 7.38 9.43 7.37C9.26 7.36 9.07 7.5 9.04 7.5Z"/></svg>
+          Falar no WhatsApp
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+    <!-- Glow de fundo -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      
+      <!-- BADGE DE DESTAQUE -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm font-bold mb-6">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        SaaS Nº 1 em Lucro para Personal Trainers • 0% de Taxa no PIX
+      </div>
+
+      <!-- HEADLINE PRINCIPAL -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.1] mb-6">
+        Tenha seu próprio app de consultoria,<br class="hidden sm:block"/>
+        encante alunos e receba via PIX com <span class="gradient-text">ZERO TAXA</span>.
+      </h1>
+
+      <!-- SUBTITLE -->
+      <p class="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
+        Prescreva treinos em minutos com GIFs biomecânicos e vídeos demonstrativos, gere dietas inteligentes pelo método Mifflin-St Jeor, acompanhe fotos antes x depois e receba o dinheiro direto na sua conta bancária sem intermediários.
+      </p>
+
+      <!-- CTAS -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <a href="https://wa.me/5527996234460?text=Ol%C3%A1%20Ronald!%20Quero%20fazer%20um%20teste%20gr%C3%A1tis%20do%20Coach%20Center%20para%20minha%20consultoria." target="_blank" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-extrabold text-black bg-emerald-400 hover:bg-emerald-300 transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-3">
+          <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.04 7.5C8.86 7.5 8.57 7.56 8.32 7.83C8.07 8.1 7.37 8.76 7.37 10.1C7.37 11.45 8.35 12.75 8.49 12.94C8.63 13.12 10.42 15.89 13.17 17.07C15.45 18.06 15.92 17.86 16.41 17.81C16.91 17.77 18.02 17.16 18.25 16.51C18.48 15.87 18.48 15.31 18.41 15.2C18.34 15.08 18.16 15.02 17.89 14.88C17.61 14.75 16.27 14.09 16.02 14C15.77 13.91 15.59 13.86 15.41 14.13C15.22 14.41 14.7 15.02 14.54 15.2C14.38 15.39 14.22 15.41 13.95 15.27C13.67 15.14 12.79 14.85 11.75 13.92C10.93 13.19 10.38 12.29 10.22 12.02C10.06 11.74 10.2 11.6 10.34 11.46C10.46 11.34 10.61 11.14 10.75 10.98C10.89 10.82 10.93 10.71 11.03 10.53C11.12 10.34 11.07 10.18 11 10.05C10.93 9.91 10.34 8.46 10.1 7.87C9.86 7.3 9.61 7.38 9.43 7.37C9.26 7.36 9.07 7.5 9.04 7.5Z"/></svg>
+          Começar Teste Grátis no WhatsApp
+        </a>
+        <a href="#planos" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold text-gray-200 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center gap-2">
+          Ver Tabela de Planos
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </a>
+      </div>
+
+      <!-- BENEFICIOS RAPIDOS -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-6 border-t border-white/10 text-left">
+        <div class="p-3 bg-white/[0.02] rounded-xl border border-white/5">
+          <div class="text-emerald-400 font-extrabold text-lg">0% de Taxa</div>
+          <div class="text-xs text-gray-400">Todo PIX cai direto na sua conta bancária</div>
+        </div>
+        <div class="p-3 bg-white/[0.02] rounded-xl border border-white/5">
+          <div class="text-emerald-400 font-extrabold text-lg">Mifflin-St Jeor</div>
+          <div class="text-xs text-gray-400">Dieta inteligente e cálculo de macros</div>
+        </div>
+        <div class="p-3 bg-white/[0.02] rounded-xl border border-white/5">
+          <div class="text-emerald-400 font-extrabold text-lg">Fotos Antes x Depois</div>
+          <div class="text-xs text-gray-400">Slider interativo de evolução para alunos</div>
+        </div>
+        <div class="p-3 bg-white/[0.02] rounded-xl border border-white/5">
+          <div class="text-emerald-400 font-extrabold text-lg">100% Responsivo</div>
+          <div class="text-xs text-gray-400">Funciona no celular, tablet e computador</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SEÇÃO COMPARATIVO: COACH CENTER VS MFIT -->
+  <section id="comparativo" class="py-20 bg-[#0c121e] border-y border-white/10 relative">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-emerald-400 text-xs uppercase font-extrabold tracking-widest">Matemática Clara</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2 text-white">
+          Por que os Personais estão trocando o MFIT pelo Coach Center?
+        </h2>
+        <p class="text-gray-400 text-sm sm:text-base mt-4">
+          Veja a comparação real entre as duas plataformas e entenda quanto dinheiro você deixa na mesa todos os meses em taxas desnecessárias.
+        </p>
+      </div>
+
+      <!-- TABELA COMPARATIVA RESPONSIVA -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse bg-[#111827] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <thead>
+            <tr class="border-b border-white/10 bg-white/[0.03]">
+              <th class="p-5 font-bold text-gray-400 text-sm">Recurso / Diferencial</th>
+              <th class="p-5 font-black text-emerald-400 text-base bg-emerald-500/10 border-x border-emerald-500/20">
+                COACH CENTER (Nosso App)
+              </th>
+              <th class="p-5 font-bold text-gray-400 text-sm">MFIT Personal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5 text-sm">
+            <tr>
+              <td class="p-5 font-semibold text-white">Taxa sobre o PIX dos alunos</td>
+              <td class="p-5 font-black text-emerald-400 bg-emerald-500/10 border-x border-emerald-500/20 text-base">
+                0% (ZERO TAXA)
+              </td>
+              <td class="p-5 text-red-400 font-medium">2,59% descontado por aluno</td>
+            </tr>
+            <tr>
+              <td class="p-5 font-semibold text-white">Onde o dinheiro cai?</td>
+              <td class="p-5 font-bold text-white bg-emerald-500/10 border-x border-emerald-500/20">
+                Direto na sua conta (Nubank, Inter, Itaú...)
+              </td>
+              <td class="p-5 text-gray-400">Preso na carteira interna deles</td>
+            </tr>
+            <tr>
+              <td class="p-5 font-semibold text-white">Prazo para receber seu dinheiro</td>
+              <td class="p-5 font-bold text-emerald-400 bg-emerald-500/10 border-x border-emerald-500/20">
+                Imediato (0 segundos)
+              </td>
+              <td class="p-5 text-gray-400">1 dia útil de retenção</td>
+            </tr>
+            <tr>
+              <td class="p-5 font-semibold text-white">Dieta Inteligente c/ Macros</td>
+              <td class="p-5 font-bold text-white bg-emerald-500/10 border-x border-emerald-500/20">
+                Sim (Mifflin-St Jeor + Tabela TACO)
+              </td>
+              <td class="p-5 text-gray-400">Apenas cadastro manual básico</td>
+            </tr>
+            <tr>
+              <td class="p-5 font-semibold text-white">Comparador de Fotos Antes x Depois</td>
+              <td class="p-5 font-bold text-white bg-emerald-500/10 border-x border-emerald-500/20">
+                Sim (Slider interativo no app do aluno)
+              </td>
+              <td class="p-5 text-gray-400">Fotos estáticas sem comparação visual</td>
+            </tr>
+            <tr>
+              <td class="p-5 font-semibold text-white">Atendimento e Suporte</td>
+              <td class="p-5 font-bold text-emerald-400 bg-emerald-500/10 border-x border-emerald-500/20">
+                Direto no WhatsApp (27) 99623-4460
+              </td>
+              <td class="p-5 text-gray-400">Chat de robô e tickets demorados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- BOX DE ECONOMIA ESTIMADA -->
+      <div class="mt-10 p-6 rounded-2xl bg-gradient-to-r from-emerald-500/15 to-transparent border border-emerald-500/30 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h4 class="text-xl font-bold text-white">Economia média estimada de R$ 900,00 por ano</h4>
+          <p class="text-sm text-gray-300 mt-1">Com apenas 20 alunos pagando R$ 150/mês, você economiza mais de R$ 75 todos os meses só em taxas de PIX.</p>
+        </div>
+        <a href="https://wa.me/5527996234460?text=Ol%C3%A1!%20Quero%20migrar%20do%20MFIT%20para%20o%20Coach%20Center." target="_blank" class="px-6 py-3 rounded-xl bg-emerald-400 text-black font-black text-sm hover:bg-emerald-300 transition-all whitespace-nowrap shadow-lg">
+          Migrar Minha Consultoria Agora
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FUNCIONALIDADES PODEROSAS -->
+  <section id="funcionalidades" class="py-24 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-emerald-400 text-xs uppercase font-extrabold tracking-widest">Tudo o que você precisa</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2 text-white">
+          Recursos construídos para quem vive de Personal Trainer
+        </h2>
+        <p class="text-gray-400 text-sm sm:text-base mt-4">
+          Chega de planilhas desorganizadas no Excel ou grupos perdidos de WhatsApp. Tenha controle profissional sobre treinos, alunos e faturamento.
+        </p>
+      </div>
+
+      <!-- GRID DE CARDS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- CARD 1 -->
+        <div class="p-8 rounded-2xl bg-[#111827] border border-white/10 hover:border-emerald-500/40 transition-all hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Montagem Rápida de Treinos</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Monte divisões A, B, C, D, E em segundos. Salve seus próprios modelos prontos para reaproveitar nos próximos alunos com 1 clique.
+          </p>
+        </div>
+
+        <!-- CARD 2 -->
+        <div class="p-8 rounded-2xl bg-[#111827] border border-white/10 hover:border-emerald-500/40 transition-all hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">GIFs Biomecânicos & Vídeos</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Mais de 120 exercícios com animações explicativas de movimento e links diretos para demonstrações em vídeo para o aluno nunca errar a postura.
+          </p>
+        </div>
+
+        <!-- CARD 3 -->
+        <div class="p-8 rounded-2xl bg-[#111827] border border-white/10 hover:border-emerald-500/40 transition-all hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Dieta Inteligente (Mifflin-St Jeor)</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Calcule TMB, GET e macros com 1 clique baseado no peso e objetivo do aluno. Calculadora de substituição de alimentos (TACO) e exportação em PDF.
+          </p>
+        </div>
+
+        <!-- CARD 4 -->
+        <div class="p-8 rounded-2xl bg-[#111827] border border-white/10 hover:border-emerald-500/40 transition-all hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Fotos Antes x Depois c/ Slider</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Gere engajamento e retenção instantânea com o comparador visual de fotos antes e depois no próprio app do aluno.
+          </p>
+        </div>
+
+        <!-- CARD 5 -->
+        <div class="p-8 rounded-2xl bg-[#111827] border border-white/10 hover:border-emerald-500/40 transition-all hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Cobranças PIX no WhatsApp</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Gere as cobranças do mês de todos os alunos com 1 toque. O sistema cria o PIX Copia-e-Cola e a mensagem pronta para enviar no WhatsApp com recibo oficial.
+          </p>
+        </div>
+
+        <!-- CARD 6 -->
+        <div class="p-8 rounded-2xl bg-[#111827] border border-white/10 hover:border-emerald-500/40 transition-all hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">App Moderno para o Aluno</h3>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Seus alunos acessam treinos do dia, cronômetro de descanso, dieta e histórico de peso em uma interface escura e refinada.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TABELA DE PLANOS & PREÇOS -->
+  <section id="planos" class="py-24 bg-[#0c121e] border-y border-white/10 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-emerald-400 text-xs uppercase font-extrabold tracking-widest">Preços Transparentes</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2 text-white">
+          Escolha o plano ideal para a sua consultoria
+        </h2>
+        <p class="text-gray-400 text-sm sm:text-base mt-4">
+          Sem taxas ocultas. Sem cobrança sobre as mensalidades dos seus alunos. Comece hoje mesmo.
+        </p>
+      </div>
+
+      <!-- CARDS DE PLANOS -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        
+        <!-- PLANO 1: START -->
+        <div class="p-8 rounded-3xl bg-[#111827] border border-white/10 flex flex-col justify-between hover:border-white/20 transition-all">
+          <div>
+            <div class="text-xs uppercase font-extrabold tracking-wider text-gray-400">Iniciante</div>
+            <h3 class="text-2xl font-black text-white mt-1">Plano START</h3>
+            <p class="text-xs text-gray-400 mt-2">Para quem está dando os primeiros passos na consultoria online.</p>
+
+            <div class="mt-6 pb-6 border-b border-white/10">
+              <span class="text-4xl font-black text-white">R$ 29,90</span>
+              <span class="text-gray-400 text-xs">/mês</span>
+              <div class="text-[11px] text-emerald-400 font-semibold mt-1">ou R$ 249,00 à vista no plano anual</div>
+            </div>
+
+            <ul class="mt-6 space-y-3.5 text-sm text-gray-300">
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Até 5 Alunos Ativos
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Fichas Ilimitadas (A, B, C, D, E)
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Biblioteca com 120+ Exercícios
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Prescrição de Dieta Inteligente
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> 0% de Taxa no PIX Direto
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8">
+            <a href="https://wa.me/5527996234460?text=Ol%C3%A1%20Ronald!%20Quero%20assinar%20o%20Plano%20START%20(R$%2029,90/m%C3%AAs)." target="_blank" class="w-full py-3.5 rounded-xl font-extrabold text-sm text-center block text-white bg-white/10 hover:bg-white/15 border border-white/10 transition-all">
+              Quero o Plano Start
+            </a>
+          </div>
+        </div>
+
+        <!-- PLANO 2: PRO (DESTAQUE) -->
+        <div class="p-8 rounded-3xl bg-[#131d2e] border-2 border-emerald-500 flex flex-col justify-between relative shadow-2xl glow-green-sm">
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-emerald-400 text-black font-black text-xs uppercase tracking-wider shadow-md">
+            ⭐ Mais Vendido (Escolha de 80%)
+          </div>
+
+          <div>
+            <div class="text-xs uppercase font-extrabold tracking-wider text-emerald-400 mt-2">Profissional</div>
+            <h3 class="text-2xl font-black text-white mt-1">Plano PRO</h3>
+            <p class="text-xs text-gray-300 mt-2">Para personais que vivem de consultoria e querem máxima escala.</p>
+
+            <div class="mt-6 pb-6 border-b border-white/10">
+              <span class="text-4xl font-black text-white">R$ 59,90</span>
+              <span class="text-gray-300 text-xs">/mês</span>
+              <div class="text-[11px] text-emerald-400 font-semibold mt-1">ou R$ 499,00 à vista no plano anual (Desconto!)</div>
+            </div>
+
+            <ul class="mt-6 space-y-3.5 text-sm text-gray-200">
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-black">✓</span> <strong>Até 30 Alunos Ativos</strong>
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-black">✓</span> Todas as funções do Plano Start
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-black">✓</span> <strong>Fotos Antes x Depois c/ Slider</strong>
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-black">✓</span> Histórico de Cargas dos Alunos
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-black">✓</span> Cobrança Mensal PIX em Massa
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-black">✓</span> <strong>Suporte VIP no WhatsApp</strong>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8">
+            <a href="https://wa.me/5527996234460?text=Ol%C3%A1%20Ronald!%20Quero%20assinar%20o%20Plano%20PRO%20(R$%2059,90/m%C3%AAs)%20com%2030%20alunos." target="_blank" class="w-full py-4 rounded-xl font-black text-sm text-center block text-black bg-emerald-400 hover:bg-emerald-300 transition-all shadow-lg shadow-emerald-500/30">
+              Escolher Plano PRO
+            </a>
+          </div>
+        </div>
+
+        <!-- PLANO 3: ELITE -->
+        <div class="p-8 rounded-3xl bg-[#111827] border border-white/10 flex flex-col justify-between hover:border-white/20 transition-all">
+          <div>
+            <div class="text-xs uppercase font-extrabold tracking-wider text-gray-400">Escala Total</div>
+            <h3 class="text-2xl font-black text-white mt-1">Plano ELITE</h3>
+            <p class="text-xs text-gray-400 mt-2">Para grandes assessorias esportivas e consultorias consolidadas.</p>
+
+            <div class="mt-6 pb-6 border-b border-white/10">
+              <span class="text-4xl font-black text-white">R$ 89,90</span>
+              <span class="text-gray-400 text-xs">/mês</span>
+              <div class="text-[11px] text-emerald-400 font-semibold mt-1">ou R$ 799,00 à vista no plano anual</div>
+            </div>
+
+            <ul class="mt-6 space-y-3.5 text-sm text-gray-300">
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> <strong>Alunos ILIMITADOS (Sem travas)</strong>
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Todos os recursos desbloqueados
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Gestão de múltiplos personais/estúdio
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Backup e exportação de dados em massa
+              </li>
+              <li class="flex items-center gap-3">
+                <span class="text-emerald-400 font-bold">✓</span> Onboarding dedicado de migração
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-8">
+            <a href="https://wa.me/5527996234460?text=Ol%C3%A1%20Ronald!%20Tenho%20interesse%20no%20Plano%20ELITE%20Ilimitado%20do%20Coach%20Center." target="_blank" class="w-full py-3.5 rounded-xl font-extrabold text-sm text-center block text-white bg-white/10 hover:bg-white/15 border border-white/10 transition-all">
+              Quero o Plano Elite Ilimitado
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CONTATO DIRETO COM O FUNDADOR -->
+  <section id="contato" class="py-20 relative">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      
+      <div class="p-8 sm:p-12 rounded-3xl bg-gradient-to-b from-[#111827] to-[#0d1424] border border-white/10 shadow-2xl relative overflow-hidden">
+        
+        <div class="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center text-emerald-400 mx-auto mb-6">
+          <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        </div>
+
+        <span class="text-emerald-400 text-xs font-extrabold uppercase tracking-widest">Atendimento Humanizado</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white mt-2">Fale Direto com o Especialista</h2>
+        <p class="text-gray-300 text-sm sm:text-base max-w-xl mx-auto mt-4">
+          Tire suas dúvidas técnicas, solicite uma demonstração ao vivo ou ative seu teste gratuito em menos de 2 minutos pelo WhatsApp.
+        </p>
+
+        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="https://wa.me/5527996234460?text=Ol%C3%A1%20Ronald!%20Gostaria%20de%20tirar%20umas%20d%C3%BAvidas%20sobre%20o%20Coach%20Center." target="_blank" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-extrabold text-black bg-emerald-400 hover:bg-emerald-300 transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 active:scale-95">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.04 7.5C8.86 7.5 8.57 7.56 8.32 7.83C8.07 8.1 7.37 8.76 7.37 10.1C7.37 11.45 8.35 12.75 8.49 12.94C8.63 13.12 10.42 15.89 13.17 17.07C15.45 18.06 15.92 17.86 16.41 17.81C16.91 17.77 18.02 17.16 18.25 16.51C18.48 15.87 18.48 15.31 18.41 15.2C18.34 15.08 18.16 15.02 17.89 14.88C17.61 14.75 16.27 14.09 16.02 14C15.77 13.91 15.59 13.86 15.41 14.13C15.22 14.41 14.7 15.02 14.54 15.2C14.38 15.39 14.22 15.41 13.95 15.27C13.67 15.14 12.79 14.85 11.75 13.92C10.93 13.19 10.38 12.29 10.22 12.02C10.06 11.74 10.2 11.6 10.34 11.46C10.46 11.34 10.61 11.14 10.75 10.98C10.89 10.82 10.93 10.71 11.03 10.53C11.12 10.34 11.07 10.18 11 10.05C10.93 9.91 10.34 8.46 10.1 7.87C9.86 7.3 9.61 7.38 9.43 7.37C9.26 7.36 9.07 7.5 9.04 7.5Z"/></svg>
+            Chamar no WhatsApp: (27) 99623-4460
+          </a>
+          <a href="/" class="w-full sm:w-auto px-6 py-4 rounded-xl text-sm font-bold text-gray-300 hover:text-white border border-white/10 hover:border-white/20 transition-all bg-white/5">
+            Já sou cadastrado (Login)
+          </a>
+        </div>
+
+        <div class="mt-6 text-xs text-gray-400">
+          🕒 Atendimento ágil • Horário comercial e plantão de suporte
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-20 bg-[#0c121e] border-t border-white/10">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-14">
+        <span class="text-emerald-400 text-xs uppercase font-extrabold tracking-widest">Dúvidas Frequentes</span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Tudo o que você precisa saber</h2>
+      </div>
+
+      <div class="space-y-4">
+        
+        <details class="p-6 rounded-2xl bg-[#111827] border border-white/10 group">
+          <summary class="font-bold text-white cursor-pointer list-none flex items-center justify-between">
+            <span>Como funciona o PIX com 0% de taxa?</span>
+            <span class="text-emerald-400 font-bold group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <p class="text-sm text-gray-300 mt-4 leading-relaxed">
+            Diferente de outras plataformas que retêm o seu saldo ou cobram 2,59% por pagamento, no Coach Center você cadastra a sua chave PIX pessoal ou da sua empresa. O QR Code gerado transfere o dinheiro diretamente para a sua conta bancária na hora, sem nenhum intermediário.
+          </p>
+        </details>
+
+        <details class="p-6 rounded-2xl bg-[#111827] border border-white/10 group">
+          <summary class="font-bold text-white cursor-pointer list-none flex items-center justify-between">
+            <span>Meus alunos precisam pagar para baixar o aplicativo?</span>
+            <span class="text-emerald-400 font-bold group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <p class="text-sm text-gray-300 mt-4 leading-relaxed">
+            Não! Seus alunos têm acesso 100% gratuito. Você cria o login e senha deles pelo seu painel e eles acessam as fichas, dietas e evolução física direto pelo smartphone ou navegador.
+          </p>
+        </details>
+
+        <details class="p-6 rounded-2xl bg-[#111827] border border-white/10 group">
+          <summary class="font-bold text-white cursor-pointer list-none flex items-center justify-between">
+            <span>Posso migrar meus alunos do MFIT ou planilha?</span>
+            <span class="text-emerald-400 font-bold group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <p class="text-sm text-gray-300 mt-4 leading-relaxed">
+            Sim! O cadastro de alunos leva menos de 1 minuto. Você pode colocar nome, e-mail, objetivo e vincular as fichas rapidamente. Se precisar de ajuda na migração, nossa equipe te auxilia pelo WhatsApp.
+          </p>
+        </details>
+
+        <details class="p-6 rounded-2xl bg-[#111827] border border-white/10 group">
+          <summary class="font-bold text-white cursor-pointer list-none flex items-center justify-between">
+            <span>Como funciona o período de teste grátis?</span>
+            <span class="text-emerald-400 font-bold group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <p class="text-sm text-gray-300 mt-4 leading-relaxed">
+            Basta nos chamar no WhatsApp pelo número <strong>(27) 99623-4460</strong>. Criamos seu acesso de teste imediatamente para você cadastrar seus primeiros alunos e experimentar todos os recursos.
+          </p>
+        </details>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-12 border-t border-white/10 bg-[#090D16]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L2 10.57L3.43 12L7 8.43L15.57 17L12 20.57L13.43 22L14.86 20.57L16.29 22L18.43 19.86L19.86 21.29L21.29 19.86L19.86 18.43L22 16.29L20.57 14.86Z"/></svg>
+        </div>
+        <span class="text-base font-black text-white">COACH <span class="text-emerald-400">CENTER</span></span>
+      </div>
+
+      <div class="text-xs text-gray-400 text-center md:text-left">
+        © 2026 Coach Center. Todos os direitos reservados. • Contato: (27) 99623-4460
+      </div>
+
+      <div class="flex items-center gap-4 text-xs font-semibold text-gray-400">
+        <a href="/" class="hover:text-emerald-400 transition-colors">Acessar Painel</a>
+        <span>•</span>
+        <a href="https://wa.me/5527996234460" target="_blank" class="hover:text-emerald-400 transition-colors">WhatsApp Suporte</a>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- BOTAO FLUTUANTE DO WHATSAPP (CANTO INFERIOR DIREITO) -->
+  <a href="https://wa.me/5527996234460?text=Ol%C3%A1!%20Vi%20o%20site%20do%20Coach%20Center%20e%20quero%20conhecer%20os%20planos." target="_blank" class="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm shadow-2xl shadow-emerald-500/40 hover:scale-105 transition-all">
+    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.04 7.5C8.86 7.5 8.57 7.56 8.32 7.83C8.07 8.1 7.37 8.76 7.37 10.1C7.37 11.45 8.35 12.75 8.49 12.94C8.63 13.12 10.42 15.89 13.17 17.07C15.45 18.06 15.92 17.86 16.41 17.81C16.91 17.77 18.02 17.16 18.25 16.51C18.48 15.87 18.48 15.31 18.41 15.2C18.34 15.08 18.16 15.02 17.89 14.88C17.61 14.75 16.27 14.09 16.02 14C15.77 13.91 15.59 13.86 15.41 14.13C15.22 14.41 14.7 15.02 14.54 15.2C14.38 15.39 14.22 15.41 13.95 15.27C13.67 15.14 12.79 14.85 11.75 13.92C10.93 13.19 10.38 12.29 10.22 12.02C10.06 11.74 10.2 11.6 10.34 11.46C10.46 11.34 10.61 11.14 10.75 10.98C10.89 10.82 10.93 10.71 11.03 10.53C11.12 10.34 11.07 10.18 11 10.05C10.93 9.91 10.34 8.46 10.1 7.87C9.86 7.3 9.61 7.38 9.43 7.37C9.26 7.36 9.07 7.5 9.04 7.5Z"/></svg>
+    <span class="hidden sm:inline">Dúvidas? Fale no WhatsApp</span>
+    <span class="sm:hidden">WhatsApp</span>
+  </a>
+
+</body>
+</html>
+

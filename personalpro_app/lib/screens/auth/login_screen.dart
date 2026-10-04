@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../services/api_service.dart';
+import '../../services/whatsapp_service.dart';
 import '../../theme.dart';
 import '../aluno/aluno_home_screen.dart';
+import '../landing/planos_apresentacao_screen.dart';
 import '../personal/personal_dashboard_screen.dart';
 import '../superadmin/superadmin_screen.dart';
 
@@ -556,6 +558,90 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ],
+          const SizedBox(height: 20),
+          Divider(height: 1, color: borderSubtle),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryAccent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.primaryAccent.withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.workspace_premium_rounded, color: AppTheme.primaryAccent, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Novo por aqui? Conheça os Planos',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryAccent,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PlanosApresentacaoScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.auto_awesome, size: 15),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Ver Planos',
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF25D366),
+                          side: const BorderSide(color: Color(0xFF25D366), width: 1.1),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          WhatsAppService.abrirMensagem(
+                            '27996234460',
+                            'Olá Ronald! Gostaria de conhecer a plataforma Coach Center e ver os planos.',
+                          );
+                        },
+                        icon: const Icon(Icons.chat_bubble_outline, size: 15, color: Color(0xFF25D366)),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'WhatsApp',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

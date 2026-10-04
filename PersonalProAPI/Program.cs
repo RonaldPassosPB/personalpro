@@ -78,10 +78,18 @@ catch (Exception ex)
 // Middleware Global de Captura de Erros em Arquivo Diário
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
-// Redirecionamento amigável caso digite /swagge
+// Redirecionamento amigável para o Swagger e para a Landing Page Comercial de Planos
 app.Use(async (ctx, next) =>
 {
-    if (ctx.Request.Path.Equals("/swagge", StringComparison.OrdinalIgnoreCase))
+    var path = ctx.Request.Path.Value?.TrimEnd('/') ?? "";
+    if (path.Equals("/planos", StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/site", StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/comercial", StringComparison.OrdinalIgnoreCase))
+    {
+        ctx.Response.Redirect("/site/index.html");
+        return;
+    }
+    if (path.Equals("/swagge", StringComparison.OrdinalIgnoreCase))
     {
         ctx.Response.Redirect("/swagger/index.html");
         return;
