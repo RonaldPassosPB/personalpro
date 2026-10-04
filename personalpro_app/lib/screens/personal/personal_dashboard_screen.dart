@@ -8,6 +8,7 @@ import '../../widgets/evolucao_charts_widget.dart';
 import '../../widgets/exercicio_animado_dieta_agenda_widget.dart';
 import '../../widgets/notificacoes_sheet.dart';
 import '../../widgets/pix_modal.dart';
+import '../../widgets/mini_tutorial_dialog.dart';
 import '../auth/login_screen.dart';
 
 class PersonalDashboardScreen extends StatefulWidget {
@@ -43,10 +44,55 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
   String _chavePixPersonal = '';
   final Set<int> _exerciciosPlayerInlineAbertos = {};
 
+  // Modelos de Divisão Salvos pelo Personal
+  List<Map<String, String>> _modelosDivisaoPersonal = [];
+
   @override
   void initState() {
     super.initState();
     _carregarTudo();
+    _carregarModelosDivisao();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MiniTutorialDialog.mostrar(context, isPersonal: true);
+    });
+  }
+
+  Future<void> _carregarModelosDivisao() async {
+    try {
+      final jsonStr = await ApiService().storage.read(key: 'modelos_divisao_personal');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(jsonStr);
+        if (mounted) {
+          setState(() {
+            _modelosDivisaoPersonal = list.map((e) => Map<String, String>.from(e as Map)).toList();
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _salvarModeloDivisao(String nome, String desc) async {
+    if (nome.trim().isEmpty) return;
+    try {
+      _modelosDivisaoPersonal.removeWhere((m) => m['nome']?.trim().toLowerCase() == nome.trim().toLowerCase());
+      _modelosDivisaoPersonal.insert(0, {'nome': nome.trim(), 'desc': desc.trim()});
+      await ApiService().storage.write(
+        key: 'modelos_divisao_personal',
+        value: jsonEncode(_modelosDivisaoPersonal),
+      );
+      if (mounted) setState(() {});
+    } catch (_) {}
+  }
+
+  Future<void> _excluirModeloDivisao(String nome) async {
+    try {
+      _modelosDivisaoPersonal.removeWhere((m) => m['nome'] == nome);
+      await ApiService().storage.write(
+        key: 'modelos_divisao_personal',
+        value: jsonEncode(_modelosDivisaoPersonal),
+      );
+      if (mounted) setState(() {});
+    } catch (_) {}
   }
 
   Future<void> _carregarTudo() async {
@@ -828,54 +874,290 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
   );
 }
 
-  // ─── CRIAR FICHA OU APLICAR MODELO PRONTO ────────────────────────────────────
+  // ─── CRIAR FICHA OU APLICAR MODELO PRONTO (SELETOR DE DIVISÕES + MODELOS SALVOS) ──
   void _abrirModalNovaFicha({List<Map<String, dynamic>>? exerciciosIniciais, String? nomeSugerido}) {
     if (_alunoSelecionadoTreinoId == null) return;
-    final nomeDivCtrl = TextEditingController(
-      text: nomeSugerido ?? 'Treino D - Ombros Completo e Core',
-    );
+
+    final nomeDivCtrl = TextEditingController(text: nomeSugerido ?? '');
     final descCtrl = TextEditingController(
       text: 'Execução controlada, respeitando o intervalo de descanso.',
     );
 
+    final modelosPadrao = [
+      {'nome': 'Treino A — Peito & Tríceps', 'desc': 'Foco em peitoral com ênfase superior e tríceps.'},
+      {'nome': 'Treino B — Costas & Bíceps', 'desc': 'Foco em dorsais, remadas e bíceps.'},
+      {'nome': 'Treino C — Pernas Completo', 'desc': 'Quadríceps, posteriores, glúteos e panturrilha.'},
+      {'nome': 'Treino D — Ombros & Trapézio', 'desc': 'Deltoides anterior, lateral e posterior + trapézio.'},
+      {'nome': 'Treino E — Braços & Core', 'desc': 'Bíceps, tríceps, antebraço e abdômen.'},
+      {'nome': 'Push (Peito, Ombros e Tríceps)', 'desc': 'Padrão empurrar com alta intensidade.'},
+      {'nome': 'Pull (Costas e Bíceps)', 'desc': 'Padrão puxar com ênfase em cadeia posterior.'},
+      {'nome': 'Legs (Inferiores Completo)', 'desc': 'Agachamentos, leg press e isolados de perna.'},
+      {'nome': 'Upper (Membros Superiores)', 'desc': 'Treino completo de tronco e braços.'},
+      {'nome': 'Lower (Membros Inferiores)', 'desc': 'Treino completo de pernas e panturrilhas.'},
+      {'nome': 'Full Body (Corpo Inteiro)', 'desc': 'Estímulo global trabalhando os grandes grupos musculares.'},
+    ];
+
+    bool salvarComoModelo = false;
+    String? modeloSelecionado = nomeSugerido;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surfaceCard,
-        title: const Text('+ Criar Nova Divisão de Treino'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomeDivCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Nome da Divisão (Ex: Treino A - Peito e Tríceps)',
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final isMobile = MediaQuery.of(ctx).size.width < 500;
+          return AlertDialog(
+            backgroundColor: AppTheme.surfaceCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            insetPadding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24, vertical: 20),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.playlist_add_rounded, color: AppTheme.neonGreen, size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    '+ Criar Divisão de Treino',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520, maxHeight: 580),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Seção de Modelos Salvos pelo Personal (se houver)
+                    if (_modelosDivisaoPersonal.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Meus Modelos Salvos (Reutilizáveis):',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _modelosDivisaoPersonal.map((mod) {
+                          final nome = mod['nome'] ?? '';
+                          final selecionado = modeloSelecionado == nome;
+                          return InputChip(
+                            avatar: Icon(
+                              Icons.bookmark_added_rounded,
+                              size: 15,
+                              color: selecionado ? const Color(0xFF0A0E12) : Colors.amber,
+                            ),
+                            label: Text(
+                              nome,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: selecionado ? FontWeight.bold : FontWeight.w500,
+                                color: selecionado ? const Color(0xFF0A0E12) : AppTheme.textPrimary,
+                              ),
+                            ),
+                            selected: selecionado,
+                            selectedColor: Colors.amber,
+                            backgroundColor: AppTheme.bgDark,
+                            onPressed: () {
+                              setModalState(() {
+                                modeloSelecionado = nome;
+                                nomeDivCtrl.text = nome;
+                                if ((mod['desc'] ?? '').isNotEmpty) {
+                                  descCtrl.text = mod['desc']!;
+                                }
+                              });
+                            },
+                            deleteIcon: const Icon(Icons.close, size: 14),
+                            deleteIconColor: AppTheme.textSecondary,
+                            onDeleted: () async {
+                              await _excluirModeloDivisao(nome);
+                              setModalState(() {
+                                if (modeloSelecionado == nome) modeloSelecionado = null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // Seção de Sugestões Padrão
+                    Row(
+                      children: [
+                        const Icon(Icons.flash_on_rounded, size: 16, color: AppTheme.neonGreen),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Sugestões Rápidas de Divisão:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 7,
+                      runSpacing: 7,
+                      children: modelosPadrao.map((mod) {
+                        final nome = mod['nome']!;
+                        final selecionado = modeloSelecionado == nome;
+                        return ChoiceChip(
+                          label: Text(
+                            nome,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: selecionado ? FontWeight.bold : FontWeight.w500,
+                              color: selecionado ? const Color(0xFF0A0E12) : AppTheme.textPrimary,
+                            ),
+                          ),
+                          selected: selecionado,
+                          selectedColor: AppTheme.neonGreen,
+                          backgroundColor: AppTheme.bgDark,
+                          onSelected: (bool selected) {
+                            setModalState(() {
+                              modeloSelecionado = selected ? nome : null;
+                              if (selected) {
+                                nomeDivCtrl.text = nome;
+                                descCtrl.text = mod['desc']!;
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Campos de Texto Editáveis
+                    TextField(
+                      controller: nomeDivCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome da Divisão de Treino',
+                        hintText: 'Ex: Treino A - Peito & Tríceps',
+                        prefixIcon: Icon(Icons.fitness_center_rounded, color: AppTheme.neonGreen, size: 20),
+                      ),
+                      onChanged: (val) {
+                        if (modeloSelecionado != null && modeloSelecionado != val) {
+                          setModalState(() => modeloSelecionado = null);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Instruções Gerais do Treino',
+                        prefixIcon: Icon(Icons.notes_rounded, color: AppTheme.neonGreen, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Checkbox para salvar como modelo reutilizável
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.bgDark.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      ),
+                      child: CheckboxListTile(
+                        value: salvarComoModelo,
+                        activeColor: AppTheme.neonGreen,
+                        checkColor: const Color(0xFF0A0E12),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text(
+                          'Salvar como modelo para próximos alunos',
+                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          'Ficará salvo com 1 toque na lista "Meus Modelos".',
+                          style: TextStyle(fontSize: 10.5, color: AppTheme.textSecondary),
+                        ),
+                        onChanged: (val) => setModalState(() => salvarComoModelo = val ?? false),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              decoration: const InputDecoration(labelText: 'Instruções Gerais do Treino'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
-              await ApiService().dio.post('/api/treinos/fichas', data: {
-                'alunoId': _alunoSelecionadoTreinoId,
-                'nomeDivisao': nomeDivCtrl.text.trim(),
-                'descricao': descCtrl.text.trim(),
-                'exercicios': exerciciosIniciais ?? [],
-              });
-              if (!ctx.mounted) return;
-              Navigator.pop(ctx);
-              _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
-            },
-            child: const Text('Criar Ficha'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.neonGreen,
+                  foregroundColor: const Color(0xFF0A0E12),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                ),
+                onPressed: () async {
+                  final nomeFinal = nomeDivCtrl.text.trim();
+                  if (nomeFinal.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Por favor, informe ou selecione o nome da divisão de treino.'),
+                        backgroundColor: AppTheme.performanceRed,
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (salvarComoModelo) {
+                    await _salvarModeloDivisao(nomeFinal, descCtrl.text.trim());
+                  }
+
+                  await ApiService().dio.post('/api/treinos/fichas', data: {
+                    'alunoId': _alunoSelecionadoTreinoId,
+                    'nomeDivisao': nomeFinal,
+                    'descricao': descCtrl.text.trim(),
+                    'exercicios': exerciciosIniciais ?? [],
+                  });
+
+                  if (!ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
+
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        salvarComoModelo
+                            ? 'Ficha "$nomeFinal" criada e salva nos seus modelos!'
+                            : 'Ficha "$nomeFinal" criada com sucesso!',
+                      ),
+                      backgroundColor: AppTheme.neonGreen,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: const Text('Criar Divisão de Treino'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1640,6 +1922,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         ),
         actions: [
           BotaoAlternarTema(mostrarTexto: !isMobile),
+          IconButton(
+            tooltip: 'Tutorial do Coach / Como Usar',
+            icon: const Icon(Icons.help_outline_rounded, color: AppTheme.neonGreen),
+            onPressed: () => MiniTutorialDialog.mostrar(context, isPersonal: true, forcar: true),
+          ),
           IconButton(
             tooltip: 'Notificações',
             icon: const Icon(Icons.notifications_active_outlined, color: AppTheme.neonGreen),

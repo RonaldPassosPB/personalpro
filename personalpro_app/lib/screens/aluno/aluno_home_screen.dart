@@ -16,6 +16,7 @@ import '../../widgets/story_card_treino_modal.dart';
 import '../../widgets/antes_depois_slider_widget.dart';
 import '../../widgets/calendario_consistencia_widget.dart';
 import '../../widgets/calculadora_equivalencia_dieta_modal.dart';
+import '../../widgets/mini_tutorial_dialog.dart';
 import '../auth/login_screen.dart';
 
 class AlunoHomeScreen extends StatefulWidget {
@@ -52,6 +53,9 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
   void initState() {
     super.initState();
     _carregarDadosAluno();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MiniTutorialDialog.mostrar(context, isPersonal: false);
+    });
   }
 
   Future<void> _carregarDadosAluno() async {
@@ -833,6 +837,14 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   ] else ...[
                     const BotaoAlternarTema(mostrarTexto: false),
                   ],
+                  IconButton(
+                    tooltip: 'Tutorial / Como Usar',
+                    icon: Icon(
+                      Icons.help_outline_rounded,
+                      color: AppTheme.primaryAccent,
+                    ),
+                    onPressed: () => MiniTutorialDialog.mostrar(context, isPersonal: false, forcar: true),
+                  ),
                   IconButton(
                     tooltip: 'Notificações',
                     icon: Icon(
