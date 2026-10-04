@@ -27,4 +27,7 @@ publish/
 PersonalProAPI/publish/
 tab_crop*.png
 scratch*.ps1
+scratch/
+personalpro_app/tool/
+PersonalProAPI/appsettings.Development.json
 

@@ -54,21 +54,66 @@ namespace PersonalProAPI.Controllers
                 new { MesAtual = mesAtual }
             )).ToList();
 
-            decimal receitaPrevista = personais.Where(p => (bool)p.Status).Sum(p => (decimal)p.ValorAssinatura);
-            decimal receitaRecebida = personais.Where(p => (int)p.PagoNoMes == 1).Sum(p => (decimal)p.ValorAssinatura);
-            int totalPersonais = personais.Count;
-            int personaisAtivos = personais.Count(p => (bool)p.Status);
-            int personaisBloqueados = personais.Count(p => !(bool)p.Status);
-            int personaisEmDia = personais.Count(p => (int)p.PagoNoMes == 1);
-            int personaisPendentes = personais.Count(p => (int)p.PagoNoMes == 0);
-            int totalAlunosSaaS = personais.Sum(p => (int)p.TotalAlunos);
+            var listaPersonais = new List<dynamic>();
+            int hojeDia = DateTime.Now.Day;
+
+            foreach (var p in personais)
+            {
+                int diaVenc = p.DiaVencimento != null ? Convert.ToInt32(p.DiaVencimento) : 10;
+                bool pagoNoMes = (int)p.PagoNoMes == 1;
+                bool ativo = (bool)p.Status;
+                int diasAtraso = (!pagoNoMes && hojeDia >= diaVenc) ? (hojeDia - diaVenc) : 0;
+                bool emTolerancia = !pagoNoMes && hojeDia >= diaVenc && diasAtraso <= 5;
+                bool bloqueadoPorAtraso = !pagoNoMes && hojeDia >= diaVenc && diasAtraso > 5;
+                int diasRestantes = emTolerancia ? (5 - diasAtraso) : 0;
+
+                // Auto-bloqueio no banco se ultrapassou mais de 5 dias de tolerância
+                if (bloqueadoPorAtraso && ativo)
+                {
+                    await con.ExecuteAsync("UPDATE PERSONAIS SET STATUS = 0 WHERE ID = @Id", new { Id = (int)p.Id });
+                    ativo = false;
+                }
+
+                listaPersonais.Add(new
+                {
+                    id = (int)p.Id,
+                    nomeProfissional = (string)p.NomeProfissional,
+                    cref = (string?)p.Cref,
+                    cpfCnpj = (string?)p.CpfCnpj,
+                    email = (string)p.Email,
+                    telefone = (string?)p.Telefone,
+                    chavePix = (string?)p.ChavePix,
+                    plano = (string)p.Plano,
+                    status = ativo,
+                    valorAssinatura = (decimal)p.ValorAssinatura,
+                    diaVencimento = diaVenc,
+                    ultimoPagamentoMes = (string?)p.UltimoPagamentoMes,
+                    dataCadastro = p.DataCadastro,
+                    pagoNoMes = pagoNoMes,
+                    diasAtraso = diasAtraso,
+                    emTolerancia = emTolerancia,
+                    diasRestantes = diasRestantes,
+                    bloqueadoPorAtraso = bloqueadoPorAtraso,
+                    totalAlunos = (int)p.TotalAlunos,
+                    totalFichasAtivas = (int)p.TotalFichasAtivas
+                });
+            }
+
+            decimal receitaPrevista = listaPersonais.Where(p => (bool)p.status).Sum(p => (decimal)p.valorAssinatura);
+            decimal receitaRecebida = listaPersonais.Where(p => (bool)p.pagoNoMes).Sum(p => (decimal)p.valorAssinatura);
+            int totalPersonais = listaPersonais.Count;
+            int personaisAtivos = listaPersonais.Count(p => (bool)p.status);
+            int personaisBloqueados = listaPersonais.Count(p => !(bool)p.status);
+            int personaisEmDia = listaPersonais.Count(p => (bool)p.pagoNoMes);
+            int personaisPendentes = listaPersonais.Count(p => !(bool)p.pagoNoMes);
+            int totalAlunosSaaS = listaPersonais.Sum(p => (int)p.totalAlunos);
 
             var filtrados = filtro?.ToUpperInvariant() switch
             {
-                "EM_DIA" => personais.Where(p => (int)p.PagoNoMes == 1).ToList(),
-                "PENDENTE" => personais.Where(p => (int)p.PagoNoMes == 0).ToList(),
-                "BLOQUEADOS" => personais.Where(p => !(bool)p.Status).ToList(),
-                _ => personais
+                "EM_DIA" => listaPersonais.Where(p => (bool)p.pagoNoMes).ToList(),
+                "PENDENTE" => listaPersonais.Where(p => !(bool)p.pagoNoMes).ToList(),
+                "BLOQUEADOS" => listaPersonais.Where(p => !(bool)p.status).ToList(),
+                _ => listaPersonais
             };
 
             return Ok(new
@@ -262,6 +307,87 @@ namespace PersonalProAPI.Controllers
             );
 
             return Ok(new { mensagem = "🔑 Senha do Personal Trainer redefinida com sucesso!" });
+        }
+
+        [HttpDelete("personais/{id}")]
+        public async Task<IActionResult> ExcluirPersonal(int id)
+        {
+            if (!IsSuperAdmin()) return Forbid();
+
+            using var con = _db.CriarConexao();
+            con.Open();
+            using var trans = con.BeginTransaction();
+            try
+            {
+                var personal = await con.QueryFirstOrDefaultAsync<dynamic>(
+                    "SELECT ID, NOME_PROFISSIONAL FROM PERSONAIS WHERE ID = @Id",
+                    new { Id = id },
+                    trans
+                );
+
+                if (personal == null)
+                    return NotFound(new { mensagem = "Personal Trainer não encontrado." });
+
+                // 1. REFEICOES_PLANO
+                await con.ExecuteAsync(@"
+                    DELETE RP
+                    FROM REFEICOES_PLANO RP
+                    INNER JOIN PLANOS_ALIMENTARES PA ON PA.ID = RP.PLANO_ID
+                    WHERE PA.PERSONAL_ID = @Id",
+                    new { Id = id }, trans);
+
+                // 2. PLANOS_ALIMENTARES
+                await con.ExecuteAsync("DELETE FROM PLANOS_ALIMENTARES WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 3. AGENDA_AULAS
+                await con.ExecuteAsync("DELETE FROM AGENDA_AULAS WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 4. PROGRESSAO_CARGAS
+                await con.ExecuteAsync("DELETE FROM PROGRESSAO_CARGAS WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 5. HISTORICO_TREINOS
+                await con.ExecuteAsync("DELETE FROM HISTORICO_TREINOS WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 6. PAGAMENTOS
+                await con.ExecuteAsync("DELETE FROM PAGAMENTOS WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 7. AVALIACOES_FISICAS
+                await con.ExecuteAsync("DELETE FROM AVALIACOES_FISICAS WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 8. FICHA_EXERCICIOS
+                await con.ExecuteAsync(@"
+                    DELETE FE
+                    FROM FICHA_EXERCICIOS FE
+                    INNER JOIN FICHAS_TREINO FT ON FT.ID = FE.FICHA_ID
+                    WHERE FT.PERSONAL_ID = @Id",
+                    new { Id = id }, trans);
+
+                // 9. FICHAS_TREINO
+                await con.ExecuteAsync("DELETE FROM FICHAS_TREINO WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 10. EXERCICIOS_BASE
+                await con.ExecuteAsync("DELETE FROM EXERCICIOS_BASE WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 11. NOTIFICACOES
+                await con.ExecuteAsync("DELETE FROM NOTIFICACOES WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 12. ALUNOS
+                await con.ExecuteAsync("DELETE FROM ALUNOS WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 13. USUARIOS (Personal e Alunos)
+                await con.ExecuteAsync("DELETE FROM USUARIOS WHERE PERSONAL_ID = @Id", new { Id = id }, trans);
+
+                // 14. PERSONAIS
+                await con.ExecuteAsync("DELETE FROM PERSONAIS WHERE ID = @Id", new { Id = id }, trans);
+
+                trans.Commit();
+                return Ok(new { mensagem = $"Personal Trainer '{personal.NOME_PROFISSIONAL}' e todos os seus dados foram excluídos com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                return StatusCode(500, new { mensagem = $"Erro ao excluir Personal Trainer: {ex.Message}" });
+            }
         }
 
         [HttpGet("logs")]

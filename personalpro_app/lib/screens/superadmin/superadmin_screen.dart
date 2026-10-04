@@ -310,6 +310,82 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
     );
   }
 
+  void _confirmarExclusaoPersonal(Map<String, dynamic> personal) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_forever, color: AppTheme.performanceRed, size: 28),
+            SizedBox(width: 10),
+            Expanded(child: Text('Excluir Personal Trainer?')),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tem certeza que deseja excluir permanentemente o Personal Trainer "${personal['nomeProfissional']}"?',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '⚠️ ATENÇÃO: Esta ação é definitiva e removerá em cascata:\n'
+                '• Todos os ${personal['totalAlunos'] ?? 0} alunos vinculados\n'
+                '• Todas as fichas, treinos e histórico de execuções\n'
+                '• Planos alimentares e refeições\n'
+                '• Avaliações físicas e evolução de cargas\n'
+                '• Cobranças PIX e histórico financeiro\n'
+                '• Usuários e acessos do personal e de seus alunos',
+                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.45),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.performanceRed,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final resp = await ApiService().dio.delete('/api/superadmin/personais/${personal['id']}');
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: AppTheme.primaryAccent,
+                    content: Text(resp.data['mensagem']?.toString() ?? 'Personal excluído com sucesso!'),
+                  ),
+                );
+                _carregarDashboard();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: AppTheme.performanceRed,
+                    content: Text('Erro ao excluir personal: $e'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Excluir Definitivamente', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final receitaPrevista = (_resumo['receitaPrevista'] ?? 0).toDouble();
@@ -482,17 +558,19 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                                             plano,
                                             AppTheme.electricBlue,
                                           ),
-                                          _badge(
-                                            pagoNoMes ? 'EM DIA' : 'PAGAMENTO PENDENTE',
-                                            pagoNoMes ? AppTheme.neonGreen : AppTheme.warningAmber,
-                                          ),
+                                          if (pagoNoMes)
+                                            _badge('EM DIA', AppTheme.neonGreen)
+                                          else if (p['emTolerancia'] == true)
+                                            _badge('VENCIDO (TOLERÂNCIA: ${p['diasRestantes']}D)', AppTheme.warningAmber)
+                                          else
+                                            _badge('BLOQUEADO (INADIMPLENTE)', AppTheme.performanceRed),
                                           _badge(
                                             ativo ? 'ACESSO LIBERADO' : 'BLOQUEADO (KILL-SWITCH)',
                                             ativo ? AppTheme.neonGreen : AppTheme.performanceRed,
                                           ),
                                         ],
                                       ),
-                                      SizedBox(height: 6),
+                                      const SizedBox(height: 6),
                                       Text(
                                         'E-mail: ${p['email']} • CREF: ${p['cref'] ?? '-'} • CPF/CNPJ: ${p['cpfCnpj'] ?? '-'}',
                                         style: TextStyle(
@@ -562,6 +640,17 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
                                   ),
                                   icon: const Icon(Icons.chat, size: 18, color: AppTheme.neonGreen),
                                   label: const Text('Chamar no WhatsApp'),
+                                ),
+                                OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.performanceRed,
+                                    side: BorderSide(
+                                      color: AppTheme.performanceRed.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  onPressed: () => _confirmarExclusaoPersonal(p),
+                                  icon: const Icon(Icons.delete_forever, size: 18, color: AppTheme.performanceRed),
+                                  label: const Text('Excluir Perfil'),
                                 ),
                               ],
                             ),

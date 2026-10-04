@@ -30,8 +30,21 @@ namespace PersonalProAPI.Controllers
             using var con = _db.CriarConexao();
             var mesAtual = DateTime.Now.ToString("yyyy-MM");
 
-            var personal = await con.QueryFirstOrDefaultAsync<dynamic>(
-                "SELECT ID AS Id, NOME_PROFISSIONAL AS NomeProfissional, CREF AS Cref, TELEFONE AS Telefone, CHAVE_PIX AS ChavePix, PLANO AS Plano, LOGO_URL AS LogoUrl FROM PERSONAIS WHERE ID = @PersonalId",
+            var personal = await con.QueryFirstOrDefaultAsync<dynamic>(@"
+                SELECT 
+                    ID AS Id, 
+                    NOME_PROFISSIONAL AS NomeProfissional, 
+                    CREF AS Cref, 
+                    TELEFONE AS Telefone, 
+                    CHAVE_PIX AS ChavePix, 
+                    PLANO AS Plano, 
+                    STATUS AS Status,
+                    VALOR_ASSINATURA AS ValorAssinatura,
+                    DIA_VENCIMENTO AS DiaVencimento,
+                    ULTIMO_PAGAMENTO_MES AS UltimoPagamentoMes,
+                    LOGO_URL AS LogoUrl 
+                FROM PERSONAIS 
+                WHERE ID = @PersonalId",
                 new { PersonalId = personalId }
             );
 
@@ -115,9 +128,47 @@ namespace PersonalProAPI.Controllers
                 new { PersonalId = personalId }
             )).ToList();
 
+            // Cálculo de Vencimento e Tolerância de 5 dias do SaaS
+            dynamic? avisoVencimento = null;
+            if (personal != null)
+            {
+                int diaVenc = personal.DiaVencimento != null ? Convert.ToInt32(personal.DiaVencimento) : 10;
+                string? ultimoPagto = (string?)personal.UltimoPagamentoMes;
+                bool pagoNoMes = (ultimoPagto == mesAtual);
+                int hojeDia = DateTime.Now.Day;
+                bool emAtraso = !pagoNoMes && hojeDia >= diaVenc;
+                int diasAtraso = emAtraso ? (hojeDia - diaVenc) : 0;
+                bool emTolerancia = emAtraso && diasAtraso <= 5;
+                bool bloqueadoPorAtraso = emAtraso && diasAtraso > 5;
+                int diasRestantes = emTolerancia ? (5 - diasAtraso) : 0;
+
+                if (bloqueadoPorAtraso && (bool)personal.Status)
+                {
+                    await con.ExecuteAsync("UPDATE PERSONAIS SET STATUS = 0 WHERE ID = @Id", new { Id = personalId });
+                }
+
+                if (emAtraso)
+                {
+                    avisoVencimento = new
+                    {
+                        emAtraso = true,
+                        emTolerancia = emTolerancia,
+                        diasAtraso = diasAtraso,
+                        diasRestantes = diasRestantes,
+                        diaVencimento = diaVenc,
+                        bloqueadoPorAtraso = bloqueadoPorAtraso,
+                        valorAssinatura = (decimal)personal.ValorAssinatura,
+                        mensagem = emTolerancia
+                            ? $"⚠️ ATENÇÃO: Sua mensalidade da consultoria venceu dia {diaVenc:D2}. Você possui {diasRestantes} dia(s) de tolerância antes do bloqueio da sua conta. Efetue o pagamento para evitar o bloqueio do seu painel e dos seus alunos."
+                            : "🚫 Assinatura vencida há mais de 5 dias. O acesso da sua consultoria foi temporariamente bloqueado."
+                    };
+                }
+            }
+
             return Ok(new
             {
                 personal,
+                avisoVencimento,
                 metricas = new
                 {
                     totalAlunosAtivos,
@@ -505,6 +556,86 @@ namespace PersonalProAPI.Controllers
                 new { Id = id, PersonalId = personalId }
             );
             return Ok(new { mensagem = "Avaliação removida." });
+        }
+
+        [HttpDelete("alunos/{id}")]
+        public async Task<IActionResult> ExcluirAluno(int id)
+        {
+            var personalId = UsuarioContexto.GetPersonalId(User);
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+            using var con = _db.CriarConexao();
+            con.Open();
+
+            var aluno = await con.QueryFirstOrDefaultAsync<dynamic>(
+                "SELECT A.ID, A.USUARIO_ID, U.NOME FROM ALUNOS A INNER JOIN USUARIOS U ON U.ID = A.USUARIO_ID WHERE A.ID = @Id " +
+                (isSuperAdmin ? "" : "AND A.PERSONAL_ID = @PersonalId"),
+                new { Id = id, PersonalId = personalId }
+            );
+
+            if (aluno == null)
+                return NotFound(new { mensagem = "Aluno não encontrado ou não pertence a este Personal." });
+
+            int usuarioId = (int)aluno.USUARIO_ID;
+            string nomeAluno = (string)aluno.NOME;
+
+            using var trans = con.BeginTransaction();
+            try
+            {
+                // 1. REFEICOES_PLANO (vinculadas aos planos do aluno)
+                await con.ExecuteAsync(@"
+                    DELETE RP
+                    FROM REFEICOES_PLANO RP
+                    INNER JOIN PLANOS_ALIMENTARES PA ON PA.ID = RP.PLANO_ID
+                    WHERE PA.ALUNO_ID = @Id",
+                    new { Id = id }, trans);
+
+                // 2. PLANOS_ALIMENTARES
+                await con.ExecuteAsync("DELETE FROM PLANOS_ALIMENTARES WHERE ALUNO_ID = @Id", new { Id = id }, trans);
+
+                // 3. AGENDA_AULAS
+                await con.ExecuteAsync("DELETE FROM AGENDA_AULAS WHERE ALUNO_ID = @Id", new { Id = id }, trans);
+
+                // 4. PROGRESSAO_CARGAS
+                await con.ExecuteAsync("DELETE FROM PROGRESSAO_CARGAS WHERE ALUNO_ID = @Id", new { Id = id }, trans);
+
+                // 5. HISTORICO_TREINOS
+                await con.ExecuteAsync("DELETE FROM HISTORICO_TREINOS WHERE ALUNO_ID = @Id", new { Id = id }, trans);
+
+                // 6. PAGAMENTOS
+                await con.ExecuteAsync("DELETE FROM PAGAMENTOS WHERE ALUNO_ID = @Id", new { Id = id }, trans);
+
+                // 7. AVALIACOES_FISICAS
+                await con.ExecuteAsync("DELETE FROM AVALIACOES_FISICAS WHERE ALUNO_ID = @Id", new { Id = id }, trans);
+
+                // 8. FICHA_EXERCICIOS
+                await con.ExecuteAsync(@"
+                    DELETE FE
+                    FROM FICHA_EXERCICIOS FE
+                    INNER JOIN FICHAS_TREINO FT ON FT.ID = FE.FICHA_ID
+                    WHERE FT.ALUNO_ID = @Id",
+                    new { Id = id }, trans);
+
+                // 9. FICHAS_TREINO
+                await con.ExecuteAsync("DELETE FROM FICHAS_TREINO WHERE ALUNO_ID = @Id", new { Id = id }, trans);
+
+                // 10. NOTIFICACOES
+                await con.ExecuteAsync("DELETE FROM NOTIFICACOES WHERE USUARIO_ID = @UsuarioId", new { UsuarioId = usuarioId }, trans);
+
+                // 11. ALUNOS
+                await con.ExecuteAsync("DELETE FROM ALUNOS WHERE ID = @Id", new { Id = id }, trans);
+
+                // 12. USUARIOS
+                await con.ExecuteAsync("DELETE FROM USUARIOS WHERE ID = @UsuarioId", new { UsuarioId = usuarioId }, trans);
+
+                trans.Commit();
+                return Ok(new { mensagem = $"Aluno '{nomeAluno}' e todos os seus registros foram excluídos com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                return StatusCode(500, new { mensagem = $"Erro ao excluir aluno: {ex.Message}" });
+            }
         }
 
         public class PerfilPersonalDto

@@ -137,6 +137,61 @@ namespace PersonalProAPI.Services
                 );
             }
 
+            // 3. Verifica assinaturas dos Personais Trainers no Coach Center SaaS (Tolerância de 5 dias e Auto-Bloqueio)
+            var personais = (await con.QueryAsync<dynamic>(@"
+                SELECT 
+                    P.ID AS Id,
+                    P.NOME_PROFISSIONAL AS NomeProfissional,
+                    P.DIA_VENCIMENTO AS DiaVencimento,
+                    P.ULTIMO_PAGAMENTO_MES AS UltimoPagamentoMes,
+                    P.STATUS AS Status,
+                    U.ID AS UsuarioPersonalId
+                FROM PERSONAIS P
+                INNER JOIN USUARIOS U ON U.PERSONAL_ID = P.ID AND U.PERFIL = 1
+                WHERE P.STATUS = 1")).ToList();
+
+            int hojeDia = DateTime.Now.Day;
+            foreach (var p in personais)
+            {
+                int personalId = (int)p.Id;
+                int usuarioPersonalId = (int)p.UsuarioPersonalId;
+                int diaVenc = p.DiaVencimento != null ? Convert.ToInt32(p.DiaVencimento) : 10;
+                string? ultimoPagto = (string?)p.UltimoPagamentoMes;
+                bool pagoNoMes = (ultimoPagto == mesAtual);
+
+                if (!pagoNoMes && hojeDia >= diaVenc)
+                {
+                    int diasAtraso = hojeDia - diaVenc;
+                    if (diasAtraso > 5)
+                    {
+                        // Mais de 5 dias de atraso: Bloqueia o Personal
+                        await con.ExecuteAsync("UPDATE PERSONAIS SET STATUS = 0 WHERE ID = @Id", new { Id = personalId });
+                        string nomeProf = (string)p.NomeProfissional;
+                        _logger.LogWarning("[PagamentoBackgroundService] Personal {Id} ({Nome}) BLOQUEADO por atraso de {Dias} dias no SaaS.", personalId, nomeProf, diasAtraso);
+
+                        await notificacao.EnviarNotificacaoAsync(
+                            personalId,
+                            usuarioPersonalId,
+                            "🚫 Assinatura SaaS Bloqueada por Inadimplência",
+                            $"Sua assinatura no Coach Center SaaS ultrapassou os 5 dias de tolerância ({diasAtraso} dias de atraso). Seu acesso e o app dos seus alunos foram suspensos. Entre em contato com o suporte para regularizar.",
+                            "SAAS_BLOQUEIO"
+                        );
+                    }
+                    else
+                    {
+                        // Dentro do prazo de 5 dias de tolerância: Alerta diário de tolerância
+                        int diasRestantes = 5 - diasAtraso;
+                        await notificacao.EnviarNotificacaoAsync(
+                            personalId,
+                            usuarioPersonalId,
+                            "⚠️ Aviso de Vencimento da Assinatura SaaS",
+                            $"Sua mensalidade do Coach Center SaaS venceu no dia {diaVenc:D2}. Você possui mais {diasRestantes} dia(s) de tolerância antes do bloqueio da sua conta. Efetue o pagamento com a administração.",
+                            "SAAS_AVISO"
+                        );
+                    }
+                }
+            }
+
             if (vencidas.Count > 0 || alunosSemCobranca.Count > 0)
             {
                 _logger.LogInformation(

@@ -16,7 +16,7 @@ import '../../widgets/story_card_treino_modal.dart';
 import '../../widgets/antes_depois_slider_widget.dart';
 import '../../widgets/calendario_consistencia_widget.dart';
 import '../../widgets/calculadora_equivalencia_dieta_modal.dart';
-import '../../widgets/mini_tutorial_dialog.dart';
+import '../../widgets/tutorial_dinamico_overlay.dart';
 import '../auth/login_screen.dart';
 
 class AlunoHomeScreen extends StatefulWidget {
@@ -54,7 +54,11 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     super.initState();
     _carregarDadosAluno();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      MiniTutorialDialog.mostrar(context, isPersonal: false);
+      TutorialDinamicoOverlay.verificarEExibirSePrimeiraVez(
+        context,
+        isPersonal: false,
+        onMudarAba: (aba) => setState(() => _abaAtual = aba),
+      );
     });
   }
 
@@ -147,72 +151,110 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     );
   }
 
-  void _abrirModalDietaAluno() {
+  void _abrirModalDietaAluno({bool autoGerar = false}) {
     final plano = _meuPlanoDieta;
     final tituloCtrl = TextEditingController(text: plano?['titulo'] ?? 'Minha Dieta Personalizada');
-    final metaKcalCtrl = TextEditingController(text: (plano?['metaKcal'] ?? 2600).toString());
+    final metaKcalCtrl = TextEditingController(text: (plano?['metaKcal'] ?? 2400).toString());
     final aguaCtrl = TextEditingController(text: (plano?['aguaLitros'] ?? 3.5).toString());
     final protCtrl = TextEditingController(text: (plano?['proteinaG'] ?? 160).toString());
-    final carbCtrl = TextEditingController(text: (plano?['carboidratoG'] ?? 280).toString());
-    final gordCtrl = TextEditingController(text: (plano?['gorduraG'] ?? 65).toString());
+    final carbCtrl = TextEditingController(text: (plano?['carboidratoG'] ?? 250).toString());
+    final gordCtrl = TextEditingController(text: (plano?['gorduraG'] ?? 60).toString());
     final obsCtrl = TextEditingController(text: plano?['observacoes'] ?? '');
-    String objetivo = plano?['objetivo'] ?? 'Hipertrofia';
+    String objetivo = plano?['objetivo'] ?? (_aluno['objetivo']?.toString() ?? 'Hipertrofia');
 
     List<Map<String, dynamic>> refeicoesTemp = [];
     if (_minhasRefeicoes.isNotEmpty) {
       refeicoesTemp = _minhasRefeicoes.map((r) => Map<String, dynamic>.from(r as Map)).toList();
-    } else {
-      refeicoesTemp = [
-        {
-          'horario': '07:30',
-          'nomeRefeicao': 'Refeição 1 — Café da Manhã',
-          'alimentosDescricao': '• 3 Ovos mexidos + 2 fatias de pão integral\n• 1 Banana com aveia\n• Café preto',
-          'substituicoes': 'Crepioca (2 ovos + 30g tapioca)',
-          'kcalEstimada': 500,
-          'proteinaG': 30,
-          'carboG': 50,
-          'gorduraG': 15,
-        },
-        {
-          'horario': '12:30',
-          'nomeRefeicao': 'Refeição 2 — Almoço',
-          'alimentosDescricao': '• 180g Frango grelhado\n• 200g Arroz + 100g Feijão\n• Salada à vontade',
-          'substituicoes': '180g Patinho moído + 200g Batata doce',
-          'kcalEstimada': 700,
-          'proteinaG': 50,
-          'carboG': 70,
-          'gorduraG': 18,
-        },
-        {
-          'horario': '16:30',
-          'nomeRefeicao': 'Refeição 3 — Lanche / Pré-Treino',
-          'alimentosDescricao': '• 40g Whey Protein + 40g Aveia\n• 1 Banana + 15g Pasta de amendoim',
-          'substituicoes': 'Iogurte natural com frutas e chia',
-          'kcalEstimada': 450,
-          'proteinaG': 35,
-          'carboG': 45,
-          'gorduraG': 12,
-        },
-        {
-          'horario': '20:30',
-          'nomeRefeicao': 'Refeição 4 — Jantar',
-          'alimentosDescricao': '• 180g Carne magra ou Peixe\n• 150g Mandioca ou Batata\n• Legumes no vapor',
-          'substituicoes': 'Omelete de 3 ovos com legumes',
-          'kcalEstimada': 550,
-          'proteinaG': 45,
-          'carboG': 45,
-          'gorduraG': 15,
-        },
-      ];
+    }
+
+    void preencherDietaInteligente(void Function(void Function()) setModalState) {
+      final peso = double.tryParse((_aluno['pesoKg'] ?? 75).toString().replaceAll(',', '.')) ?? 75.0;
+      final altura = double.tryParse((_aluno['alturaCm'] ?? 175).toString().replaceAll(',', '.')) ?? 175.0;
+      final idade = int.tryParse((_aluno['idade'] ?? 25).toString()) ?? 25;
+      final sexo = _aluno['sexo']?.toString().toUpperCase() == 'F' ? 'F' : 'M';
+
+      final tmbCalc = sexo == 'M'
+          ? (10 * peso) + (6.25 * altura) - (5 * idade) + 5
+          : (10 * peso) + (6.25 * altura) - (5 * idade) - 161;
+      final getCalc = tmbCalc * 1.55;
+
+      int meta = getCalc.round();
+      if (objetivo == 'Hipertrofia') meta += 350;
+      if (objetivo == 'Emagrecimento' || objetivo == 'Definição') meta -= 450;
+
+      final prot = (peso * 2.2).round();
+      final gord = (peso * 0.9).round();
+      final kcalRestante = ((meta - (prot * 4) - (gord * 9))).clamp(400, 4000);
+      final carb = (kcalRestante / 4).round();
+      final agua = double.parse(((peso * 0.045)).toStringAsFixed(1));
+
+      setModalState(() {
+        tituloCtrl.text = 'Plano $objetivo — Nutrição Inteligente';
+        metaKcalCtrl.text = meta.toString();
+        aguaCtrl.text = agua.toString();
+        protCtrl.text = prot.toString();
+        carbCtrl.text = carb.toString();
+        gordCtrl.text = gord.toString();
+        obsCtrl.text = 'Protocolo sugerido calculado para o objetivo $objetivo (${peso.toStringAsFixed(1)} kg, meta $meta kcal). Beba $agua L de água fracionada ao dia.';
+        refeicoesTemp = [
+          {
+            'horario': '07:30',
+            'nomeRefeicao': 'Refeição 1 — Café da Manhã Proteico',
+            'alimentosDescricao': '• 3 Ovos mexidos + 2 fatias de pão 100% integral\n• 1 Banana prata com aveia (35g)\n• Café preto sem açúcar',
+            'substituicoes': 'Crepioca (2 ovos + 35g goma de tapioca + 1 fatia de queijo branco)',
+            'kcalEstimada': (meta * 0.22).round(),
+            'proteinaG': (prot * 0.22).round(),
+            'carboG': (carb * 0.22).round(),
+            'gorduraG': (gord * 0.25).round(),
+          },
+          {
+            'horario': '12:30',
+            'nomeRefeicao': 'Refeição 2 — Almoço Base',
+            'alimentosDescricao': '• 180g Peito de frango grelhado ou Patinho moído\n• 180g Arroz branco/integral + 90g Feijão\n• Salada de folhas verdes à vontade + 1 fio de azeite',
+            'substituicoes': '180g Filé de tilápia grelhado + 200g Mandioca ou Batata doce',
+            'kcalEstimada': (meta * 0.32).round(),
+            'proteinaG': (prot * 0.32).round(),
+            'carboG': (carb * 0.32).round(),
+            'gorduraG': (gord * 0.28).round(),
+          },
+          {
+            'horario': '16:30',
+            'nomeRefeicao': 'Refeição 3 — Lanche / Pré-Treino',
+            'alimentosDescricao': '• 35g Whey Protein + 40g Aveia em flocos\n• 1 Fruta + 15g Pasta de amendoim integral\n• 5g Creatina Monohidratada',
+            'substituicoes': 'Iogurte proteico desnatado (160g) + 30g granola sem açúcar e chia',
+            'kcalEstimada': (meta * 0.20).round(),
+            'proteinaG': (prot * 0.22).round(),
+            'carboG': (carb * 0.22).round(),
+            'gorduraG': (gord * 0.22).round(),
+          },
+          {
+            'horario': '20:30',
+            'nomeRefeicao': 'Refeição 4 — Jantar Regenerativo',
+            'alimentosDescricao': '• 180g Carne bovina magra ou Peito de frango\n• 160g Mandioca, Batata inglesa ou Arroz\n• Legumes cozidos no vapor (brócolis e cenoura)',
+            'substituicoes': 'Omelete de 3 ovos com legumes salteados e queijo cottage',
+            'kcalEstimada': (meta * 0.26).round(),
+            'proteinaG': (prot * 0.24).round(),
+            'carboG': (carb * 0.24).round(),
+            'gorduraG': (gord * 0.25).round(),
+          },
+        ];
+      });
     }
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
+          final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
+          if (autoGerar && refeicoesTemp.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              preencherDietaInteligente(setModalState);
+            });
+          }
           return AlertDialog(
             backgroundColor: AppTheme.surfaceCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            alignment: isKeyboardOpen ? Alignment.topCenter : Alignment.center,
             insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             title: Row(
               children: [
@@ -236,13 +278,57 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryAccent.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.primaryAccent.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.auto_awesome, color: AppTheme.primaryAccent, size: 22),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Dieta Inteligente Sob Demanda',
+                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                ),
+                                Text(
+                                  'Gere um cardápio completo de acordo com o seu objetivo e medidas.',
+                                  style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryAccent,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            ),
+                            onPressed: () => preencherDietaInteligente(setModalState),
+                            icon: const Icon(Icons.bolt, size: 16),
+                            label: const Text('Gerar Agora', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
                     TextField(
                       controller: tituloCtrl,
+                      scrollPadding: const EdgeInsets.only(bottom: 140),
                       decoration: const InputDecoration(labelText: 'Título da Dieta'),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: objetivo,
+                      initialValue: ['Hipertrofia', 'Emagrecimento', 'Definição', 'Manutenção'].contains(objetivo)
+                          ? objetivo
+                          : 'Hipertrofia',
                       decoration: const InputDecoration(labelText: 'Objetivo Nutricional'),
                       items: const [
                         DropdownMenuItem(value: 'Hipertrofia', child: Text('Hipertrofia')),
@@ -250,7 +336,9 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         DropdownMenuItem(value: 'Definição', child: Text('Definição Muscular')),
                         DropdownMenuItem(value: 'Manutenção', child: Text('Manutenção')),
                       ],
-                      onChanged: (v) => setModalState(() => objetivo = v ?? 'Hipertrofia'),
+                      onChanged: (v) {
+                        setModalState(() => objetivo = v ?? 'Hipertrofia');
+                      },
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -258,6 +346,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         Expanded(
                           child: TextField(
                             controller: metaKcalCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(labelText: 'Meta Calórica (kcal)'),
                           ),
@@ -266,6 +355,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         Expanded(
                           child: TextField(
                             controller: aguaCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             decoration: const InputDecoration(labelText: 'Meta de Água (L)'),
                           ),
@@ -278,6 +368,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         Expanded(
                           child: TextField(
                             controller: protCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(labelText: 'Proteínas (g)'),
                           ),
@@ -286,6 +377,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         Expanded(
                           child: TextField(
                             controller: carbCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(labelText: 'Carboidratos (g)'),
                           ),
@@ -294,6 +386,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                         Expanded(
                           child: TextField(
                             controller: gordCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(labelText: 'Gorduras (g)'),
                           ),
@@ -838,12 +931,16 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                     const BotaoAlternarTema(mostrarTexto: false),
                   ],
                   IconButton(
-                    tooltip: 'Tutorial / Como Usar',
+                    tooltip: 'Tutorial / Tour Interativo',
                     icon: Icon(
                       Icons.help_outline_rounded,
                       color: AppTheme.primaryAccent,
                     ),
-                    onPressed: () => MiniTutorialDialog.mostrar(context, isPersonal: false, forcar: true),
+                    onPressed: () => TutorialDinamicoOverlay.exibir(
+                      context,
+                      isPersonal: false,
+                      onMudarAba: (aba) => setState(() => _abaAtual = aba),
+                    ),
                   ),
                   IconButton(
                     tooltip: 'Notificações',
@@ -1303,13 +1400,33 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   style: TextStyle(fontSize: 13.5, color: AppTheme.textSecondary, height: 1.45),
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: _abrirModalDietaAluno,
-                  icon: const Icon(Icons.add_circle_outline, size: 18),
-                  label: const Text(
-                    'Cadastrar Dieta',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                  ),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryAccent,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      ),
+                      onPressed: () => _abrirModalDietaAluno(autoGerar: true),
+                      icon: const Icon(Icons.auto_awesome, size: 18),
+                      label: const Text(
+                        '🪄 Gerar Minha Dieta Inteligente',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _abrirModalDietaAluno(autoGerar: false),
+                      icon: const Icon(Icons.add_circle_outline, size: 18),
+                      label: const Text(
+                        'Cadastrar Manualmente',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

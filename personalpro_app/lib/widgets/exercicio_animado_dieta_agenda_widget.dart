@@ -1002,24 +1002,22 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
   int? _alunoIdSelecionado;
   bool _carregando = false;
 
-  final _tituloCtrl = TextEditingController(text: 'Protocolo Hipertrofia Limpa & Definição');
+  final _tituloCtrl = TextEditingController();
   String _objetivo = 'Hipertrofia';
-  final _pesoCtrl = TextEditingController(text: '81.4');
-  final _alturaCtrl = TextEditingController(text: '178');
-  final _idadeCtrl = TextEditingController(text: '26');
+  final _pesoCtrl = TextEditingController(text: '80.0');
+  final _alturaCtrl = TextEditingController(text: '175');
+  final _idadeCtrl = TextEditingController(text: '25');
   String _sexo = 'M';
   double _fatorAtividade = 1.55;
 
-  int _tmb = 1825;
-  int _get = 2450;
-  int _metaKcal = 2750;
-  int _protG = 185;
-  int _carbG = 320;
-  int _gordG = 72;
-  double _aguaLitros = 3.6;
-  final _obsCtrl = TextEditingController(
-    text: 'Beber 3.6L de água por dia (45ml/kg). Creatina 5g todos os dias.',
-  );
+  int _tmb = 1800;
+  int _get = 2400;
+  int _metaKcal = 2600;
+  int _protG = 175;
+  int _carbG = 290;
+  int _gordG = 65;
+  double _aguaLitros = 3.5;
+  final _obsCtrl = TextEditingController();
 
   List<Map<String, dynamic>> _refeicoes = [];
 
@@ -1059,7 +1057,12 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
         _obsCtrl.text = (plano['observacoes'] ?? '').toString();
         _refeicoes = refs.map((r) => Map<String, dynamic>.from(r as Map)).toList();
       } else {
-        _calcularMifflinStJeorGerarCardapio();
+        // NÃO pré-preenche mais a dieta! Mantém vazio até o Personal ou Aluno pedir para gerar.
+        final aluno = widget.alunos.firstWhere((a) => a['id'] == alunoId, orElse: () => {});
+        _objetivo = aluno['objetivo']?.toString() ?? 'Hipertrofia';
+        _tituloCtrl.clear();
+        _obsCtrl.clear();
+        _refeicoes = [];
       }
     } catch (_) {}
     if (mounted) setState(() => _carregando = false);
@@ -1395,37 +1398,83 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           ),
           const SizedBox(height: 20),
 
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              Text(
-                '🍽️ REFEIÇÕES DO DIA (${_refeicoes.length})',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          if (_refeicoes.isEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(26),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white12),
               ),
-              OutlinedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _refeicoes.add({
-                      'horario': '15:00',
-                      'nomeRefeicao': 'Nova Refeição / Lanche Proteico',
-                      'alimentosDescricao': '• 170g Iogurte Natural + 30g Whey + 1 Fruta',
-                      'substituicoes': '2 Ovos cozidos + 1 fatia de pão integral',
-                      'kcalEstimada': 320,
-                      'proteinaG': 28,
-                      'carboG': 32,
-                      'gorduraG': 8,
+              child: Column(
+                children: [
+                  const Icon(Icons.restaurant_menu_rounded, size: 48, color: AppTheme.neonGreen),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Nenhum plano alimentar prescrito para este aluno',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Este aluno ainda não possui uma dieta salva. Você pode prescrever do zero ou clicar no botão abaixo para gerar uma dieta inteligente baseada no objetivo dele ($_objetivo) e medidas.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.neonGreen,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _calcularMifflinStJeorGerarCardapio,
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '🪄 GERAR DIETA INTELIGENTE (BASEADA NO OBJETIVO E MEDIDAS)',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                Text(
+                  '🍽️ REFEIÇÕES DO DIA (${_refeicoes.length})',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _refeicoes.add({
+                        'horario': '15:00',
+                        'nomeRefeicao': 'Nova Refeição / Lanche Proteico',
+                        'alimentosDescricao': '• 170g Iogurte Natural + 30g Whey + 1 Fruta',
+                        'substituicoes': '2 Ovos cozidos + 1 fatia de pão integral',
+                        'kcalEstimada': 320,
+                        'proteinaG': 28,
+                        'carboG': 32,
+                        'gorduraG': 8,
+                      });
                     });
-                  });
-                },
-                icon: const Icon(Icons.add, size: 16, color: AppTheme.neonGreen),
-                label: const Text('+ Adicionar Refeição'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                  },
+                  icon: const Icon(Icons.add, size: 16, color: AppTheme.neonGreen),
+                  label: const Text('+ Adicionar Refeição'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
           ..._refeicoes.asMap().entries.map((entry) {
             final idx = entry.key;
             final r = entry.value;
@@ -1502,8 +1551,9 @@ class _PainelDietaPersonalWidgetState extends State<PainelDietaPersonalWidget> {
           }),
         ],
       ],
-    );
-  }
+    ],
+  );
+}
 
   Widget _macroBadge(String label, String val, Color color) {
     return Container(

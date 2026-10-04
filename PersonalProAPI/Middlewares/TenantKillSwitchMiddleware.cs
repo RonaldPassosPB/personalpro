@@ -25,22 +25,40 @@ namespace PersonalProAPI.Middlewares
                 if (perfil != 3 && personalId > 0)
                 {
                     using var con = db.CriarConexao();
-                    var ativo = await con.ExecuteScalarAsync<bool?>(
-                        "SELECT STATUS FROM PERSONAIS WHERE ID = @Id",
+                    var personal = await con.QueryFirstOrDefaultAsync<dynamic>(
+                        "SELECT STATUS, DIA_VENCIMENTO, ULTIMO_PAGAMENTO_MES FROM PERSONAIS WHERE ID = @Id",
                         new { Id = personalId }
                     );
 
-                    if (ativo == false)
+                    if (personal != null)
                     {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        context.Response.ContentType = "application/json";
-                        var json = JsonSerializer.Serialize(new
+                        bool ativo = personal.STATUS != null && (bool)personal.STATUS;
+                        int diaVenc = personal.DIA_VENCIMENTO != null ? Convert.ToInt32(personal.DIA_VENCIMENTO) : 10;
+                        string? ultimoPagto = (string?)personal.ULTIMO_PAGAMENTO_MES;
+                        var mesAtual = DateTime.Now.ToString("yyyy-MM");
+                        bool pagoNoMes = (ultimoPagto == mesAtual);
+                        int hojeDia = DateTime.Now.Day;
+                        bool emAtraso = !pagoNoMes && hojeDia >= diaVenc;
+                        int diasAtraso = emAtraso ? (hojeDia - diaVenc) : 0;
+
+                        if (emAtraso && diasAtraso > 5 && ativo)
                         {
-                            bloqueadoSaaS = true,
-                            mensagem = "🚫 Acesso Suspenso: A assinatura desta consultoria/personal está temporariamente bloqueada no Coach Center SaaS. Entre em contato com o administrador."
-                        });
-                        await context.Response.WriteAsync(json);
-                        return;
+                            await con.ExecuteAsync("UPDATE PERSONAIS SET STATUS = 0 WHERE ID = @Id", new { Id = personalId });
+                            ativo = false;
+                        }
+
+                        if (!ativo)
+                        {
+                            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                            context.Response.ContentType = "application/json";
+                            var json = JsonSerializer.Serialize(new
+                            {
+                                bloqueadoSaaS = true,
+                                mensagem = "🚫 Acesso Suspenso: A assinatura desta consultoria/personal está bloqueada no Coach Center SaaS por inadimplência ou decisão administrativa. Entre em contato com o suporte."
+                            });
+                            await context.Response.WriteAsync(json);
+                            return;
+                        }
                     }
                 }
             }

@@ -46,6 +46,8 @@ namespace PersonalProAPI.Controllers
                     P.NOME_PROFISSIONAL AS NomePersonal,
                     P.STATUS AS PersonalStatus,
                     P.PLANO AS PlanoPersonal,
+                    P.DIA_VENCIMENTO AS DiaVencimentoPersonal,
+                    P.ULTIMO_PAGAMENTO_MES AS UltimoPagamentoMesPersonal,
                     A.ID AS AlunoId
                 FROM USUARIOS U
                 LEFT JOIN PERSONAIS P ON P.ID = U.PERSONAL_ID
@@ -82,18 +84,36 @@ namespace PersonalProAPI.Controllers
             int perfil = Convert.ToInt32(usuario.Perfil);
             int personalId = Convert.ToInt32(usuario.PersonalId);
 
-            // KILL-SWITCH MULTI-TENANT: Se o Personal estiver bloqueado (STATUS = 0), bloqueia tanto o Personal quanto TODOS os alunos dele!
+            // KILL-SWITCH MULTI-TENANT & TOLERÂNCIA DE 5 DIAS:
             if (perfil != 3 && personalId > 0)
             {
                 bool personalAtivo = usuario.PersonalStatus != null && (bool)usuario.PersonalStatus;
+                var mesAtual = DateTime.Now.ToString("yyyy-MM");
+                string? ultimoPagto = (string?)usuario.UltimoPagamentoMesPersonal;
+                int diaVenc = usuario.DiaVencimentoPersonal != null ? Convert.ToInt32(usuario.DiaVencimentoPersonal) : 10;
+                int hojeDia = DateTime.Now.Day;
+                bool pagoNoMes = (ultimoPagto == mesAtual);
+                bool emAtraso = !pagoNoMes && hojeDia >= diaVenc;
+                int diasAtraso = emAtraso ? (hojeDia - diaVenc) : 0;
+
+                // Se passou mais de 5 dias do vencimento sem pagamento, bloqueia o Personal e todos os alunos
+                if (emAtraso && diasAtraso > 5)
+                {
+                    if (personalAtivo)
+                    {
+                        await con.ExecuteAsync("UPDATE PERSONAIS SET STATUS = 0 WHERE ID = @Id", new { Id = personalId });
+                        personalAtivo = false;
+                    }
+                }
+
                 if (!personalAtivo)
                 {
                     return StatusCode(403, new
                     {
                         bloqueadoSaaS = true,
                         mensagem = perfil == 1
-                            ? "🚫 Acesso Suspenso: Sua assinatura no PersonalPro SaaS encontra-se bloqueada por pendência financeira. Regularize com o suporte para liberar seu painel e o app dos seus alunos."
-                            : "🚫 Acesso Temporariamente Suspenso: O acesso da consultoria do seu Personal Trainer encontra-se suspenso no sistema. Entre em contato com seu professor."
+                            ? "🚫 Acesso Suspenso: Sua assinatura no Coach Center SaaS encontra-se bloqueada por inadimplência (mais de 5 dias de atraso). Regularize com o suporte para liberar seu painel e o app dos seus alunos."
+                            : "🚫 Acesso Temporariamente Suspenso: O acesso da consultoria do seu Personal Trainer encontra-se bloqueado no sistema. Entre em contato com seu professor."
                     });
                 }
             }

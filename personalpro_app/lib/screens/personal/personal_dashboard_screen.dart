@@ -8,7 +8,7 @@ import '../../widgets/evolucao_charts_widget.dart';
 import '../../widgets/exercicio_animado_dieta_agenda_widget.dart';
 import '../../widgets/notificacoes_sheet.dart';
 import '../../widgets/pix_modal.dart';
-import '../../widgets/mini_tutorial_dialog.dart';
+import '../../widgets/tutorial_dinamico_overlay.dart';
 import '../auth/login_screen.dart';
 
 class PersonalDashboardScreen extends StatefulWidget {
@@ -26,6 +26,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
   // Dados Dashboard
   Map<String, dynamic> _personal = {};
   Map<String, dynamic> _metricas = {};
+  Map<String, dynamic>? _avisoVencimento;
   List<dynamic> _alunosSumidos = [];
   List<dynamic> _ultimosTreinos = [];
 
@@ -53,7 +54,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     _carregarTudo();
     _carregarModelosDivisao();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      MiniTutorialDialog.mostrar(context, isPersonal: true);
+      TutorialDinamicoOverlay.verificarEExibirSePrimeiraVez(
+        context,
+        isPersonal: true,
+        onMudarAba: (aba) => setState(() => _abaAtual = aba),
+      );
     });
   }
 
@@ -135,6 +140,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
       setState(() {
         _personal = Map<String, dynamic>.from(dashData['personal'] ?? {});
         _metricas = Map<String, dynamic>.from(dashData['metricas'] ?? {});
+        _avisoVencimento = dashData['avisoVencimento'] != null ? Map<String, dynamic>.from(dashData['avisoVencimento']) : null;
         _alunosSumidos = dashData['alunosSumidos'] ?? [];
         _ultimosTreinos = dashData['ultimosTreinos'] ?? [];
         _alunos = listaAlunos;
@@ -240,159 +246,174 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => AlertDialog(
-          backgroundColor: AppTheme.surfaceCard,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
-          title: Text(editando ? 'Editar Aluno' : '+ Cadastrar Novo Aluno'),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: () async {
-                          final b64 = await ImageHelper.selecionarImagemBase64();
-                          if (b64 != null) {
-                            setModalState(() => fotoUrlAluno = b64);
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(32),
-                        child: Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            ImageHelper.renderAvatarOrImage(
-                              fotoUrlAluno,
-                              radius: 30,
-                              fallbackText: nomeCtrl.text.isNotEmpty ? nomeCtrl.text : 'A',
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: AppTheme.neonGreen,
-                                shape: BoxShape.circle,
+        builder: (ctx, setModalState) {
+          final isKeyboardOpen = MediaQuery.of(ctx).viewInsets.bottom > 0;
+
+          return AlertDialog(
+            backgroundColor: AppTheme.surfaceCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            alignment: isKeyboardOpen ? Alignment.topCenter : Alignment.center,
+            insetPadding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: isKeyboardOpen ? 10 : 20,
+            ),
+            title: Text(editando ? 'Editar Aluno' : '+ Cadastrar Novo Aluno'),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () async {
+                            final b64 = await ImageHelper.selecionarImagemBase64();
+                            if (b64 != null) {
+                              setModalState(() => fotoUrlAluno = b64);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(32),
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              ImageHelper.renderAvatarOrImage(
+                                fotoUrlAluno,
+                                radius: 30,
+                                fallbackText: nomeCtrl.text.isNotEmpty ? nomeCtrl.text : 'A',
                               ),
-                              child: const Icon(Icons.camera_alt, size: 12, color: Colors.black),
-                            ),
-                          ],
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.neonGreen,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.camera_alt, size: 12, color: Colors.black),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: () async {
-                                final b64 = await ImageHelper.selecionarImagemBase64();
-                                if (b64 != null) {
-                                  setModalState(() => fotoUrlAluno = b64);
-                                }
-                              },
-                              icon: const Icon(Icons.camera_alt, size: 18, color: AppTheme.neonGreen),
-                              label: Text(
-                                (fotoUrlAluno != null && fotoUrlAluno!.trim().isNotEmpty)
-                                    ? 'Trocar Foto'
-                                    : 'Adicionar Foto',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
-                              ),
-                            ),
-                            if (fotoUrlAluno != null && fotoUrlAluno!.trim().isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: InkWell(
-                                  onTap: () => setModalState(() => fotoUrlAluno = ''),
-                                  child: const Text(
-                                    '🗑️ Remover foto',
-                                    style: TextStyle(color: AppTheme.performanceRed, fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () async {
+                                  final b64 = await ImageHelper.selecionarImagemBase64();
+                                  if (b64 != null) {
+                                    setModalState(() => fotoUrlAluno = b64);
+                                  }
+                                },
+                                icon: const Icon(Icons.camera_alt, size: 18, color: AppTheme.neonGreen),
+                                label: Text(
+                                  (fotoUrlAluno != null && fotoUrlAluno!.trim().isNotEmpty)
+                                      ? 'Trocar Foto'
+                                      : 'Adicionar Foto',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
                                 ),
                               ),
-                          ],
+                              if (fotoUrlAluno != null && fotoUrlAluno!.trim().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: InkWell(
+                                    onTap: () => setModalState(() => fotoUrlAluno = ''),
+                                    child: const Text(
+                                      '🗑️ Remover foto',
+                                      style: TextStyle(color: AppTheme.performanceRed, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: nomeCtrl,
-                    decoration: const InputDecoration(labelText: 'Nome Completo do Aluno *'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: emailCtrl,
-                    decoration: const InputDecoration(labelText: 'E-mail de Login do Aluno *'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: senhaCtrl,
-                    decoration: InputDecoration(
-                      labelText: editando ? 'Nova Senha (opcional)' : 'Senha Inicial *',
-                      helperText: editando ? 'Deixe em branco p/ manter atual' : null,
-                      helperStyle: const TextStyle(fontSize: 11),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: cpfCtrl,
-                          decoration: const InputDecoration(labelText: 'CPF'),
-                        ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nomeCtrl,
+                      scrollPadding: const EdgeInsets.only(bottom: 140),
+                      decoration: const InputDecoration(labelText: 'Nome Completo do Aluno *'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: emailCtrl,
+                      scrollPadding: const EdgeInsets.only(bottom: 140),
+                      decoration: const InputDecoration(labelText: 'E-mail de Login do Aluno *'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: senhaCtrl,
+                      scrollPadding: const EdgeInsets.only(bottom: 140),
+                      decoration: InputDecoration(
+                        labelText: editando ? 'Nova Senha (opcional)' : 'Senha Inicial *',
+                        helperText: editando ? 'Deixe em branco p/ manter atual' : null,
+                        helperStyle: const TextStyle(fontSize: 11),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: whatsCtrl,
-                          decoration: const InputDecoration(labelText: 'WhatsApp'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: cpfCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
+                            decoration: const InputDecoration(labelText: 'CPF'),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: [
-                      'Hipertrofia',
-                      'Emagrecimento',
-                      'Condicionamento',
-                      'Força'
-                    ].contains(objetivo)
-                        ? objetivo
-                        : 'Hipertrofia',
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Objetivo Principal'),
-                    items: const [
-                      DropdownMenuItem(value: 'Hipertrofia', child: Text('💪 Hipertrofia Muscular')),
-                      DropdownMenuItem(value: 'Emagrecimento', child: Text('🔥 Emagrecimento / Definição')),
-                      DropdownMenuItem(value: 'Condicionamento', child: Text('⚡ Condicionamento Físico')),
-                      DropdownMenuItem(value: 'Força', child: Text('🏋️ Ganho de Força Pura')),
-                    ],
-                    onChanged: (v) => setModalState(() => objetivo = v ?? 'Hipertrofia'),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: valorCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Mensalidade (R\$)'),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: whatsCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
+                            decoration: const InputDecoration(labelText: 'WhatsApp'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: diaCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Dia Vencimento'),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: [
+                        'Hipertrofia',
+                        'Emagrecimento',
+                        'Condicionamento',
+                        'Força'
+                      ].contains(objetivo)
+                          ? objetivo
+                          : 'Hipertrofia',
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Objetivo Principal'),
+                      items: const [
+                        DropdownMenuItem(value: 'Hipertrofia', child: Text('💪 Hipertrofia Muscular')),
+                        DropdownMenuItem(value: 'Emagrecimento', child: Text('🔥 Emagrecimento / Definição')),
+                        DropdownMenuItem(value: 'Condicionamento', child: Text('⚡ Condicionamento Físico')),
+                        DropdownMenuItem(value: 'Força', child: Text('🏋️ Ganho de Força Pura')),
+                      ],
+                      onChanged: (v) => setModalState(() => objetivo = v ?? 'Hipertrofia'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: valorCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Mensalidade (R\$)'),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: diaCtrl,
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Dia Vencimento'),
+                          ),
+                        ),
+                      ],
+                    ),
                   if (editando) ...[
                     const SizedBox(height: 10),
                     SwitchListTile(
@@ -463,7 +484,80 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
               child: Text(editando ? 'SALVAR' : 'CADASTRAR ALUNO'),
             ),
           ],
+        );
+      },
+    ),
+  );
+}
+
+  void _confirmarExclusaoAluno(Map<String, dynamic> aluno) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_forever, color: AppTheme.performanceRed, size: 26),
+            SizedBox(width: 10),
+            Expanded(child: Text('Excluir Aluno?')),
+          ],
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tem certeza que deseja excluir permanentemente o aluno "${aluno['nome']}"?',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '⚠️ Esta ação é irreversível e excluirá em cascata:\n'
+              '• Usuário e credenciais de acesso do aluno\n'
+              '• Todas as fichas de treino e histórico de execuções\n'
+              '• Todos os planos alimentares e refeições\n'
+              '• Avaliações físicas, fotos e progressão de cargas\n'
+              '• Cobranças PIX e histórico financeiro',
+              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.performanceRed,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final resp = await ApiService().dio.delete('/api/personal/alunos/${aluno['id']}');
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: AppTheme.primaryAccent,
+                    content: Text(resp.data['mensagem']?.toString() ?? 'Aluno excluído com sucesso!'),
+                  ),
+                );
+                _carregarTudo();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: AppTheme.performanceRed,
+                    content: Text('Erro ao excluir aluno: $e'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Excluir Definitivamente', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -1906,11 +2000,17 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                             ),
                           ],
                         ),
-                        Text(
-                          'CREF: ${_personal['cref'] ?? 'Ativo'} • Plano ${_personal['plano'] ?? 'ELITE'}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                        Builder(
+                          builder: (_) {
+                            final rawCref = (_personal['cref']?.toString() ?? 'Ativo').trim();
+                            final crefLimpo = rawCref.replaceAll(RegExp(r'^cref:?\s*', caseSensitive: false), '');
+                            return Text(
+                              'CREF: $crefLimpo • Plano ${_personal['plano'] ?? 'ELITE'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -1923,9 +2023,13 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         actions: [
           BotaoAlternarTema(mostrarTexto: !isMobile),
           IconButton(
-            tooltip: 'Tutorial do Coach / Como Usar',
+            tooltip: 'Tutorial Interativo das Abas',
             icon: const Icon(Icons.help_outline_rounded, color: AppTheme.neonGreen),
-            onPressed: () => MiniTutorialDialog.mostrar(context, isPersonal: true, forcar: true),
+            onPressed: () => TutorialDinamicoOverlay.exibir(
+              context,
+              isPersonal: true,
+              onMudarAba: (aba) => setState(() => _abaAtual = aba),
+            ),
           ),
           IconButton(
             tooltip: 'Notificações',
@@ -2057,6 +2161,67 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // BANNER DE AVISO DE VENCIMENTO & TOLERÂNCIA DE 5 DIAS DO SAAS
+          if (_avisoVencimento != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 18),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E1C00),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.warningAmber, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.warningAmber.withValues(alpha: 0.15),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: AppTheme.warningAmber, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _avisoVencimento!['emTolerancia'] == true
+                              ? '⚠️ AVISO DE VENCIMENTO: TOLERÂNCIA DE ${_avisoVencimento!['diasRestantes']} DIA(S)'
+                              : '🚫 ASSINATURA SUSPENSA',
+                          style: const TextStyle(
+                            color: AppTheme.warningAmber,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _avisoVencimento!['mensagem']?.toString() ?? '',
+                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.warningAmber,
+                            foregroundColor: Colors.black,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () => WhatsAppService.abrirMensagem(
+                            '5511999999999',
+                            'Olá! Gostaria de confirmar o pagamento da minha assinatura SaaS no Coach Center.',
+                          ),
+                          icon: const Icon(Icons.chat, size: 16),
+                          label: const Text('Falar com Suporte p/ Regularizar', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Wrap(
             spacing: 14,
             runSpacing: 14,
@@ -2595,6 +2760,17 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                         icon: const Icon(Icons.edit, size: 15),
                         label: const Text('Editar', style: TextStyle(fontSize: 12)),
                       ),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: AppTheme.performanceRed,
+                          side: BorderSide(color: AppTheme.performanceRed.withValues(alpha: 0.5)),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        ),
+                        onPressed: () => _confirmarExclusaoAluno(a),
+                        icon: const Icon(Icons.delete_forever, size: 15, color: AppTheme.performanceRed),
+                        label: const Text('Excluir', style: TextStyle(fontSize: 12, color: AppTheme.performanceRed)),
+                      ),
                     ],
                   ),
                 ],
@@ -3048,6 +3224,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
 
   // ─── ABA 4: CONTROLE FINANCEIRO DO PERSONAL & CHAVE PIX ──────────────────────
   Widget _buildAbaFinanceiroPersonal() {
+    final isMobile = MediaQuery.of(context).size.width < 650;
     final pixCtrl = TextEditingController(text: _chavePixPersonal);
     final totalRecebido = (_resumoFinanceiro['totalRecebido'] ?? 0).toDouble();
     final totalPendente = (_resumoFinanceiro['totalPendente'] ?? 0).toDouble();
@@ -3076,6 +3253,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         const SizedBox(height: 16),
         // Card de Configuração da Chave PIX do Personal
         Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -3085,20 +3263,19 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   '⚡ CONFIGURAÇÃO DA SUA CHAVE PIX (GERAÇÃO AUTOMÁTICA DE QR CODE)',
                   style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neonGreen),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: pixCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Sua Chave PIX (CPF, CNPJ, E-mail, Celular ou Aleatória)',
-                          prefixIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
-                        ),
-                      ),
+                const SizedBox(height: 12),
+                if (isMobile) ...[
+                  TextField(
+                    controller: pixCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Sua Chave PIX (CPF, Celular, E-mail ou Aleatória)',
+                      prefixIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
                     ),
-                    const SizedBox(width: 10),
-                    ElevatedButton.icon(
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
                       onPressed: () async {
                         await ApiService().dio.put('/api/personal/meu-perfil', data: {
                           'nomeProfissional':
@@ -3122,38 +3299,83 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                       icon: const Icon(Icons.save),
                       label: const Text('Salvar Chave PIX'),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.electricBlue,
-                        foregroundColor: Colors.white,
+                  ),
+                ] else ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: pixCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Sua Chave PIX (CPF, CNPJ, E-mail, Celular ou Aleatória)',
+                            prefixIcon: Icon(Icons.pix, color: AppTheme.neonGreen),
+                          ),
+                        ),
                       ),
-                      onPressed: () async {
-                        final resp =
-                            await ApiService().dio.post('/api/financeiro/gerar-mensalidades-mes');
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: AppTheme.primaryAccent,
-                            content: Text(
-                              resp.data['mensagem']?.toString() ?? '',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await ApiService().dio.put('/api/personal/meu-perfil', data: {
+                            'nomeProfissional':
+                                _personal['nomeProfissional']?.toString() ?? 'Personal',
+                            'cref': _personal['cref']?.toString() ?? '',
+                            'telefone': _personal['telefone']?.toString() ?? '',
+                            'chavePix': pixCtrl.text.trim(),
+                          });
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppTheme.primaryAccent,
+                              content: const Text(
+                                'Chave PIX atualizada com sucesso!',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                               ),
                             ),
-                          ),
-                        );
-                        _carregarTudo();
-                      },
-                      icon: const Icon(Icons.autorenew),
-                      label: const Text('Gerar Cobranças PIX do Mês p/ Todos Alunos'),
+                          );
+                          _carregarTudo();
+                        },
+                        icon: const Icon(Icons.save),
+                        label: const Text('Salvar Chave PIX'),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.electricBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     ),
-                  ],
+                    onPressed: () async {
+                      final resp =
+                          await ApiService().dio.post('/api/financeiro/gerar-mensalidades-mes');
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppTheme.primaryAccent,
+                          content: Text(
+                            resp.data['mensagem']?.toString() ?? '',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      );
+                      _carregarTudo();
+                    },
+                    icon: const Icon(Icons.autorenew),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Gerar Cobranças PIX do Mês p/ Todos Alunos',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
