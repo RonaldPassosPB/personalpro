@@ -21,3 +21,10 @@ database/backups/*.log
 .gemini/
 .agents/
 
+# Deploy archives & Temp
+deploy.zip
+publish/
+PersonalProAPI/publish/
+tab_crop*.png
+scratch*.ps1
+

@@ -139,18 +139,8 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     if (b64 == null) return;
     try {
       await ApiService().dio.put(
-        '/api/personal/alunos/${a['id']}',
-        data: {
-          'nome': a['nome'],
-          'email': a['email'],
-          'cpf': a['cpf'],
-          'telefone': a['telefone'],
-          'objetivo': a['objetivo'] ?? 'Hipertrofia',
-          'fotoUrl': b64,
-          'valorMensalidade': a['valorMensalidade'] ?? 250.0,
-          'diaVencimento': a['diaVencimento'] ?? 10,
-          'status': a['status'] ?? true,
-        },
+        '/api/personal/alunos/${a['id']}/foto',
+        data: {'fotoUrl': b64},
       );
       await _carregarTudo();
       if (!mounted) return;
@@ -160,7 +150,15 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           backgroundColor: AppTheme.neonGreen,
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao atualizar foto: $e'),
+          backgroundColor: AppTheme.performanceRed,
+        ),
+      );
+    }
   }
 
   // ─── MODAL CADASTRO / EDIÇÃO DE ALUNO ─────────────────────────────────────────
@@ -213,16 +211,39 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                         radius: 28,
                         fallbackText: nomeCtrl.text.isNotEmpty ? nomeCtrl.text : 'A',
                       ),
-                      const SizedBox(width: 12),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          final b64 = await ImageHelper.selecionarImagemBase64();
-                          if (b64 != null) {
-                            setModalState(() => fotoUrlAluno = b64);
-                          }
-                        },
-                        icon: const Icon(Icons.camera_alt, size: 18, color: AppTheme.neonGreen),
-                        label: const Text('Foto de Perfil do Aluno'),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                final b64 = await ImageHelper.selecionarImagemBase64();
+                                if (b64 != null) {
+                                  setModalState(() => fotoUrlAluno = b64);
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt, size: 18, color: AppTheme.neonGreen),
+                              label: Text(
+                                (fotoUrlAluno != null && fotoUrlAluno!.trim().isNotEmpty)
+                                    ? 'Trocar Foto de Perfil'
+                                    : 'Adicionar Foto de Perfil',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                              ),
+                            ),
+                            if (fotoUrlAluno != null && fotoUrlAluno!.trim().isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: InkWell(
+                                  onTap: () => setModalState(() => fotoUrlAluno = ''),
+                                  child: const Text(
+                                    '🗑️ Remover foto',
+                                    style: TextStyle(color: AppTheme.performanceRed, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -319,30 +340,47 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
             ElevatedButton(
               onPressed: () async {
-                final payload = {
-                  'nome': nomeCtrl.text.trim(),
-                  'email': emailCtrl.text.trim(),
-                  'senha': senhaCtrl.text.trim(),
-                  'cpf': cpfCtrl.text.trim(),
-                  'telefone': whatsCtrl.text.trim(),
-                  'objetivo': objetivo,
-                  'fotoUrl': fotoUrlAluno,
-                  'valorMensalidade':
-                      double.tryParse(valorCtrl.text.replaceAll(',', '.')) ?? 200.0,
-                  'diaVencimento': int.tryParse(diaCtrl.text) ?? 10,
-                  'status': statusAtivo,
-                };
-                if (editando) {
-                  await ApiService().dio.put(
-                    '/api/personal/alunos/${alunoExistente['id']}',
-                    data: payload,
+                try {
+                  final payload = {
+                    'nome': nomeCtrl.text.trim(),
+                    'email': emailCtrl.text.trim(),
+                    'senha': senhaCtrl.text.trim(),
+                    'cpf': cpfCtrl.text.trim(),
+                    'telefone': whatsCtrl.text.trim(),
+                    'objetivo': objetivo,
+                    'fotoUrl': fotoUrlAluno,
+                    'valorMensalidade':
+                        double.tryParse(valorCtrl.text.replaceAll(',', '.')) ?? 200.0,
+                    'diaVencimento': int.tryParse(diaCtrl.text) ?? 10,
+                    'status': statusAtivo,
+                  };
+                  if (editando) {
+                    await ApiService().dio.put(
+                      '/api/personal/alunos/${alunoExistente['id']}',
+                      data: payload,
+                    );
+                  } else {
+                    await ApiService().dio.post('/api/personal/alunos', data: payload);
+                  }
+                  if (!ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(editando ? 'Dados e foto do aluno atualizados com sucesso!' : 'Aluno cadastrado com sucesso!'),
+                      backgroundColor: AppTheme.neonGreen,
+                    ),
                   );
-                } else {
-                  await ApiService().dio.post('/api/personal/alunos', data: payload);
+                  _carregarTudo();
+                } catch (e) {
+                  if (!ctx.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao salvar aluno: $e'),
+                      backgroundColor: AppTheme.performanceRed,
+                    ),
+                  );
                 }
-                if (!ctx.mounted) return;
-                Navigator.pop(ctx);
-                _carregarTudo();
               },
               child: Text(editando ? 'SALVAR' : 'CADASTRAR ALUNO'),
             ),

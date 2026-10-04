@@ -342,14 +342,14 @@ namespace PersonalProAPI.Controllers
                     TELEFONE = @Telefone,
                     DATA_NASCIMENTO = @DataNascimento,
                     OBJETIVO = @Objetivo,
-                    FOTO_URL = ISNULL(@FotoUrl, FOTO_URL),
+                    FOTO_URL = CASE WHEN @FotoUrl IS NOT NULL THEN (CASE WHEN @FotoUrl = '' THEN NULL ELSE @FotoUrl END) ELSE FOTO_URL END,
                     VALOR_MENSALIDADE = @ValorMensalidade,
                     DIA_VENCIMENTO = @DiaVencimento
                 WHERE ID = @Id AND PERSONAL_ID = @PersonalId;
 
                 UPDATE USUARIOS
-                SET NOME = @Nome,
-                    EMAIL = @Email,
+                SET NOME = ISNULL(NULLIF(@Nome, ''), NOME),
+                    EMAIL = ISNULL(NULLIF(@Email, ''), EMAIL),
                     STATUS = @Status
                 WHERE ID = @UsuarioId AND PERSONAL_ID = @PersonalId;",
                 new
@@ -357,8 +357,8 @@ namespace PersonalProAPI.Controllers
                     Id = id,
                     PersonalId = personalId,
                     UsuarioId = (int)aluno.UsuarioId,
-                    dto.Nome,
-                    Email = dto.Email.Trim(),
+                    Nome = dto.Nome?.Trim() ?? string.Empty,
+                    Email = dto.Email?.Trim() ?? string.Empty,
                     dto.Cpf,
                     dto.Telefone,
                     DataNascimento = string.IsNullOrWhiteSpace(dto.DataNascimento) ? (DateTime?)null : DateTime.Parse(dto.DataNascimento),
@@ -380,6 +380,23 @@ namespace PersonalProAPI.Controllers
             }
 
             return Ok(new { mensagem = "Dados e foto do aluno atualizados com sucesso!" });
+        }
+
+        [HttpPut("alunos/{id}/foto")]
+        public async Task<IActionResult> AtualizarFotoAluno(int id, [FromBody] AtualizarFotoAlunoDto dto)
+        {
+            var personalId = UsuarioContexto.GetPersonalId(User);
+            using var con = _db.CriarConexao();
+
+            var fotoUrlLimpa = string.IsNullOrWhiteSpace(dto.FotoUrl) ? null : dto.FotoUrl.Trim();
+            var rows = await con.ExecuteAsync(
+                "UPDATE ALUNOS SET FOTO_URL = @FotoUrl WHERE ID = @Id AND PERSONAL_ID = @PersonalId",
+                new { Id = id, PersonalId = personalId, FotoUrl = fotoUrlLimpa }
+            );
+
+            if (rows == 0) return NotFound(new { mensagem = "Aluno não encontrado." });
+
+            return Ok(new { mensagem = "Foto de perfil do aluno atualizada com sucesso!" });
         }
 
         // ─── AVALIAÇÕES FÍSICAS, MEDIDAS E FOTOS ANTES x DEPOIS ───────────────────────
@@ -527,6 +544,11 @@ namespace PersonalProAPI.Controllers
             public int DiaVencimento { get; set; } = 10;
             public bool Status { get; set; } = true;
             public string? NovaSenha { get; set; }
+        }
+
+        public class AtualizarFotoAlunoDto
+        {
+            public string? FotoUrl { get; set; }
         }
 
         public class NovaAvaliacaoDto

@@ -8,8 +8,14 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Escuta simultaneamente nas portas 5250 e 5255!
-builder.WebHost.UseUrls("http://0.0.0.0:5250", "http://0.0.0.0:5255");
+// Se estiver rodando localmente (sem porta configurada pelo Azure/IIS), escuta nas portas 5250 e 5255
+var isAzure = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME")) ||
+              !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_PORT")) ||
+              !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HTTP_PLATFORM_PORT"));
+if (!isAzure)
+{
+    builder.WebHost.UseUrls("http://0.0.0.0:5250", "http://0.0.0.0:5255");
+}
 
 // Serviços Singleton e Scoped (Padrão FightCenter)
 builder.Services.AddSingleton<DbConnection>();
@@ -59,8 +65,15 @@ builder.Services.AddHostedService<PagamentoBackgroundService>();
 var app = builder.Build();
 
 // Garante que as senhas dos usuários de demonstração ('admin123') estejam sincronizadas com BCrypt
-var dbConn = app.Services.GetRequiredService<DbConnection>();
-await DatabaseSeeder.GarantirHashesDemoAsync(dbConn);
+try
+{
+    var dbConn = app.Services.GetRequiredService<DbConnection>();
+    await DatabaseSeeder.GarantirHashesDemoAsync(dbConn);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[AVISO BANCO DE DADOS NA INICIALIZAÇÃO] {ex.Message}");
+}
 
 // Middleware Global de Captura de Erros em Arquivo Diário
 app.UseMiddleware<ErrorHandlingMiddleware>();
@@ -80,9 +93,25 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("PersonalProCors");
 
-// Serve o Painel/App Flutter Web compilado diretamente em http://localhost:5250 e http://localhost:5255
+// Serve o Painel/App Flutter Web compilado (wwwroot em produção ou build/web em desenvolvimento)
+var wwwrootDir = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
 var flutterWebBuildDir = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "personalpro_app", "build", "web"));
-if (Directory.Exists(flutterWebBuildDir))
+
+if (Directory.Exists(wwwrootDir))
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        ServeUnknownFileTypes = true,
+        OnPrepareResponse = ctx =>
+        {
+            ctx.Context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+            ctx.Context.Response.Headers["Pragma"] = "no-cache";
+            ctx.Context.Response.Headers["Expires"] = "0";
+        }
+    });
+}
+else if (Directory.Exists(flutterWebBuildDir))
 {
     var fileProvider = new PhysicalFileProvider(flutterWebBuildDir);
     app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = fileProvider });

@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
@@ -10,18 +13,46 @@ class ImageHelper {
   /// Seleciona imagem da galeria/computador ou câmera e retorna Data URI Base64
   static Future<String?> selecionarImagemBase64() async {
     try {
-      final XFile? file = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 78,
-      );
+      // Sem passar maxWidth/maxHeight/imageQuality para evitar travamentos de canvas.toBlob no Web
+      final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
       if (file == null) return null;
       final bytes = await file.readAsBytes();
-      return 'data:image/jpeg;base64,${base64Encode(bytes)}';
-    } catch (_) {
+      if (bytes.isEmpty) return null;
+
+      // Se a imagem for pesada (> 800KB), redimensionamos com o codec nativo do Flutter
+      if (bytes.lengthInBytes > 800 * 1024) {
+        final comprimida = await _redimensionarBytes(bytes, maxDim: 800);
+        if (comprimida != null) return comprimida;
+      }
+
+      final mime = (file.mimeType != null && file.mimeType!.isNotEmpty)
+          ? file.mimeType!
+          : 'image/jpeg';
+      return 'data:$mime;base64,${base64Encode(bytes)}';
+    } catch (e) {
+      debugPrint('Erro ao selecionar imagem: $e');
       return null;
     }
+  }
+
+  static Future<String?> _redimensionarBytes(
+    Uint8List bytes, {
+    int maxDim = 800,
+  }) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes, targetWidth: maxDim);
+      final frame = await codec.getNextFrame();
+      final byteData = await frame.image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      if (byteData != null) {
+        final outBytes = byteData.buffer.asUint8List();
+        return 'data:image/png;base64,${base64Encode(outBytes)}';
+      }
+    } catch (e) {
+      debugPrint('Falha ao redimensionar bytes de imagem: $e');
+    }
+    return null;
   }
 
   static Widget renderAvatarOrImage(
@@ -32,17 +63,21 @@ class ImageHelper {
   }) {
     if (source != null && source.trim().isNotEmpty) {
       try {
-        if (source.startsWith('data:image')) {
-          final b64 = source.split(',').last;
+        final cleanSource = source.trim();
+        if (cleanSource.startsWith('data:image')) {
+          final b64 = cleanSource
+              .split(',')
+              .last
+              .replaceAll(RegExp(r'\s+'), '');
           final bytes = base64Decode(b64);
           return CircleAvatar(
             radius: radius,
             backgroundImage: MemoryImage(bytes),
           );
-        } else if (source.startsWith('http')) {
+        } else if (cleanSource.startsWith('http')) {
           return CircleAvatar(
             radius: radius,
-            backgroundImage: NetworkImage(source),
+            backgroundImage: NetworkImage(cleanSource),
           );
         }
       } catch (_) {}

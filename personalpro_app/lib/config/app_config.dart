@@ -21,12 +21,19 @@ class AppConfig {
   static const String serverPort = '5250';
 
   static String get baseUrl {
+    if (kIsWeb) {
+      final origin = Uri.base.origin;
+      if (origin.contains('localhost') || origin.contains('127.0.0.1')) {
+        return 'http://localhost:$serverPort';
+      }
+      return origin;
+    }
+
     if (ambiente == AppEnvironment.producao) {
       return producaoUrl;
     }
 
-    if (kIsWeb ||
-        defaultTargetPlatform == TargetPlatform.windows ||
+    if (defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.linux) {
       return 'http://localhost:$serverPort';
