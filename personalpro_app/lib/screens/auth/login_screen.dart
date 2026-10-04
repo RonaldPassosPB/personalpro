@@ -87,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         await ApiService().storage.write(key: 'saved_email', value: emailDigitado);
       } catch (_) {}
+      if (!mounted) return;
       final int perfil = session['perfil'] ?? 2;
 
       Widget telaDestino;

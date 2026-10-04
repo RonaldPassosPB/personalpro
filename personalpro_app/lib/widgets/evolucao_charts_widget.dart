@@ -402,7 +402,7 @@ class _EvolucaoCompletaPanelState extends State<EvolucaoCompletaPanel> {
                               avalAntes['fotoFrenteUrl']?.toString(),
                               height: 185,
                               label:
-                                  'ANTES (${avalAntes['dataAvaliacao'].toString().split('T').first})\n${avalAntes['peso']}kg • BF ${avalAntes['percentualGordura'] ?? '-'}%',
+                                   'ANTES (${avalAntes['dataAvaliacao'].toString().split('T').first})\n${avalAntes['peso']}kg • BF ${avalAntes['percentualGordura'] ?? '-'}%',
                             ),
                           ],
                         ),
@@ -426,9 +426,195 @@ class _EvolucaoCompletaPanelState extends State<EvolucaoCompletaPanel> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
         ],
+
+        // 4. QUADRO COMPLETO DE PERIMETRIA & MEDIDAS (PADRÃO MFIT)
+        if (widget.avaliacoes.isNotEmpty)
+          _buildCardPerimetriaCompleta(widget.avaliacoes),
       ],
     );
+  }
+
+  Widget _buildCardPerimetriaCompleta(List<dynamic> avals) {
+    final recente = avals.first;
+    final anterior = avals.length > 1 ? avals[1] : null;
+
+    final medRecente = _extrairMedidasMap(recente);
+    final medAnterior = anterior != null ? _extrairMedidasMap(anterior) : <String, double>{};
+
+    final grupos = [
+      {
+        'titulo': 'TRONCO & CIRCUNFERÊNCIAS',
+        'icone': Icons.straighten,
+        'cor': AppTheme.electricBlue,
+        'itens': [
+          {'k': 'pescoco', 'label': 'Pescoço'},
+          {'k': 'ombros', 'label': 'Ombros'},
+          {'k': 'peitoral', 'label': 'Peitoral/Tórax'},
+          {'k': 'cintura', 'label': 'Cintura'},
+          {'k': 'abdomen', 'label': 'Abdômen'},
+          {'k': 'quadril', 'label': 'Quadril'},
+        ]
+      },
+      {
+        'titulo': 'MEMBROS SUPERIORES (BRAÇOS)',
+        'icone': Icons.fitness_center,
+        'cor': AppTheme.neonGreen,
+        'itens': [
+          {'k': 'bracoDireito', 'label': 'Braço D. (Relax)'},
+          {'k': 'bracoDireitoContraido', 'label': 'Braço D. (Contr)'},
+          {'k': 'bracoEsquerdo', 'label': 'Braço E. (Relax)'},
+          {'k': 'bracoEsquerdoContraido', 'label': 'Braço E. (Contr)'},
+          {'k': 'antebracoDireito', 'label': 'Antebraço D.'},
+          {'k': 'antebracoEsquerdo', 'label': 'Antebraço E.'},
+        ]
+      },
+      {
+        'titulo': 'MEMBROS INFERIORES (PERNAS)',
+        'icone': Icons.directions_run,
+        'cor': const Color(0xFFE040FB),
+        'itens': [
+          {'k': 'coxaDireita', 'label': 'Coxa D. (Alta)'},
+          {'k': 'coxaEsquerda', 'label': 'Coxa E. (Alta)'},
+          {'k': 'panturrilhaDireita', 'label': 'Panturrilha D.'},
+          {'k': 'panturrilhaEsquerda', 'label': 'Panturrilha E.'},
+        ]
+      },
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.straighten, color: AppTheme.neonGreen),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'HISTÓRICO COMPLETO DE MEDIDAS & PERIMETRIA',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Última: ${recente['dataAvaliacao'].toString().split('T').first}',
+                    style: const TextStyle(color: AppTheme.neonGreen, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            ...grupos.map((grp) {
+              final itens = (grp['itens'] as List<Map<String, String>>)
+                  .where((item) => medRecente.containsKey(item['k']))
+                  .toList();
+              if (itens.isEmpty) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(grp['icone'] as IconData, size: 15, color: grp['cor'] as Color),
+                        const SizedBox(width: 6),
+                        Text(
+                          grp['titulo'] as String,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: grp['cor'] as Color,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: itens.map((item) {
+                      final valAtual = medRecente[item['k']]!;
+                      final valAnt = medAnterior[item['k']];
+                      final diff = valAnt != null ? valAtual - valAnt : null;
+
+                      return Container(
+                        constraints: const BoxConstraints(minWidth: 135),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.bgDark,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item['label']!,
+                              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${valAtual.toStringAsFixed(1)} cm',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                                if (diff != null && diff != 0) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    diff > 0 ? '+${diff.toStringAsFixed(1)}' : diff.toStringAsFixed(1),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: diff > 0 ? AppTheme.neonGreen : AppTheme.performanceRed,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 6),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, double> _extrairMedidasMap(dynamic aval) {
+    final map = <String, double>{};
+    if (aval == null) return map;
+    try {
+      final raw = aval['medidasJson'];
+      if (raw != null) {
+        final parsed = raw is Map ? raw : jsonDecode(raw.toString());
+        if (parsed is Map) {
+          parsed.forEach((k, v) {
+            final numVal = double.tryParse(v.toString());
+            if (numVal != null) map[k.toString()] = numVal;
+          });
+        }
+      }
+    } catch (_) {}
+    return map;
   }
 
   Widget _buildDeltaBadge(dynamic primeira, dynamic ultima) {

@@ -431,17 +431,84 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         ? (dataResp['progressaoCargas'] ?? [])
         : [];
 
-    final pesoCtrl = TextEditingController(text: '81.5');
-    final alturaCtrl = TextEditingController(text: '1.78');
-    final bfCtrl = TextEditingController(text: '13.8');
-    final bracoCtrl = TextEditingController(text: '39.5');
-    final peitoCtrl = TextEditingController(text: '107.0');
-    final cinturaCtrl = TextEditingController(text: '79.0');
-    final coxaCtrl = TextEditingController(text: '61.0');
-    final lesoesCtrl = TextEditingController(text: 'Sem restrições articulares.');
-    final obsCtrl = TextEditingController(text: 'Ótima evolução estética e ganho de força.');
+    final ultima = avaliacoes.isNotEmpty ? avaliacoes.first : null;
+    Map<String, dynamic> ultMedidas = {};
+    if (ultima != null && ultima['medidasJson'] != null) {
+      try {
+        final raw = ultima['medidasJson'];
+        ultMedidas = raw is Map
+            ? Map<String, dynamic>.from(raw)
+            : Map<String, dynamic>.from(jsonDecode(raw.toString()));
+      } catch (_) {}
+    }
+
+    // Composição Corporal
+    final pesoCtrl = TextEditingController(text: ultima?['peso']?.toString() ?? '80.0');
+    final alturaCtrl = TextEditingController(text: ultima?['altura']?.toString() ?? '1.75');
+    final bfCtrl = TextEditingController(text: ultima?['percentualGordura']?.toString() ?? '15.0');
+    final massaMagraCtrl = TextEditingController(text: ultMedidas['massaMagra']?.toString() ?? '');
+    final massaGordaCtrl = TextEditingController(text: ultMedidas['massaGorda']?.toString() ?? '');
+
+    // Tronco
+    final pescocoCtrl = TextEditingController(text: ultMedidas['pescoco']?.toString() ?? '');
+    final ombrosCtrl = TextEditingController(text: ultMedidas['ombros']?.toString() ?? '');
+    final peitoCtrl = TextEditingController(text: (ultMedidas['peitoral'] ?? ultMedidas['peito'])?.toString() ?? '');
+    final cinturaCtrl = TextEditingController(text: ultMedidas['cintura']?.toString() ?? '');
+    final abdomenCtrl = TextEditingController(text: ultMedidas['abdomen']?.toString() ?? '');
+    final quadrilCtrl = TextEditingController(text: ultMedidas['quadril']?.toString() ?? '');
+
+    // Membros Superiores (Braços e Antebraços)
+    final bracoDirCtrl = TextEditingController(text: ultMedidas['bracoDireito']?.toString() ?? '');
+    final bracoDirContrCtrl = TextEditingController(text: ultMedidas['bracoDireitoContraido']?.toString() ?? '');
+    final bracoEsqCtrl = TextEditingController(text: ultMedidas['bracoEsquerdo']?.toString() ?? '');
+    final bracoEsqContrCtrl = TextEditingController(text: ultMedidas['bracoEsquerdoContraido']?.toString() ?? '');
+    final antebracoDirCtrl = TextEditingController(text: ultMedidas['antebracoDireito']?.toString() ?? '');
+    final antebracoEsqCtrl = TextEditingController(text: ultMedidas['antebracoEsquerdo']?.toString() ?? '');
+
+    // Membros Inferiores (Coxas e Panturrilhas)
+    final coxaDirCtrl = TextEditingController(text: ultMedidas['coxaDireita']?.toString() ?? '');
+    final coxaEsqCtrl = TextEditingController(text: ultMedidas['coxaEsquerda']?.toString() ?? '');
+    final panturrilhaDirCtrl = TextEditingController(text: ultMedidas['panturrilhaDireita']?.toString() ?? '');
+    final panturrilhaEsqCtrl = TextEditingController(text: ultMedidas['panturrilhaEsquerda']?.toString() ?? '');
+
+    final lesoesCtrl = TextEditingController(text: ultima?['restricoesLesoes']?.toString() ?? 'Sem restrições articulares.');
+    final obsCtrl = TextEditingController(text: ultima?['observacoes']?.toString() ?? 'Evolução constante.');
     String? fotoFrenteB64;
     String? fotoCostasB64;
+
+    Widget secaoTitulo(String titulo, IconData icone, Color cor) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 14, bottom: 8),
+        child: Row(
+          children: [
+            Icon(icone, size: 16, color: cor),
+            const SizedBox(width: 8),
+            Text(
+              titulo,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 12.5,
+                color: cor,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget campo(TextEditingController ctrl, String rotulo, {String sufixo = 'cm'}) {
+      return TextField(
+        controller: ctrl,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          labelText: rotulo,
+          suffixText: sufixo,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        ),
+      );
+    }
 
     if (!mounted) return;
     showDialog(
@@ -450,9 +517,9 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         builder: (ctx, setModalState) => AlertDialog(
           backgroundColor: AppTheme.surfaceCard,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('📏 Avaliação Física, Gráficos & Fotos — ${aluno['nome']}'),
+          title: Text('📏 Avaliação Física Completa — ${aluno['nome']}'),
           content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
+            constraints: const BoxConstraints(maxWidth: 720),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,67 +535,98 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   ],
 
                   const Text(
-                    '➕ REGISTRAR NOVA AVALIAÇÃO FÍSICA + FOTOS ANTES/DEPOIS:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neonGreen),
+                    '➕ NOVA AVALIAÇÃO FÍSICA & PERIMETRIA COMPLETA',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.neonGreen, fontSize: 13.5),
                   ),
-                  const SizedBox(height: 10),
+
+                  // 1. COMPOSIÇÃO CORPORAL
+                  secaoTitulo('COMPOSIÇÃO CORPORAL & BIOIMPEDÂNCIA', Icons.monitor_weight_outlined, AppTheme.neonGreen),
                   Row(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: pesoCtrl,
-                          decoration: const InputDecoration(labelText: 'Peso (kg)'),
-                        ),
-                      ),
+                      Expanded(child: campo(pesoCtrl, 'Peso', sufixo: 'kg')),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: alturaCtrl,
-                          decoration: const InputDecoration(labelText: 'Altura (m)'),
-                        ),
-                      ),
+                      Expanded(child: campo(alturaCtrl, 'Altura', sufixo: 'm')),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: bfCtrl,
-                          decoration: const InputDecoration(labelText: '% Gordura'),
-                        ),
-                      ),
+                      Expanded(child: campo(bfCtrl, '% Gordura', sufixo: '%')),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: bracoCtrl,
-                          decoration: const InputDecoration(labelText: 'Braço (cm)'),
-                        ),
-                      ),
+                      Expanded(child: campo(massaMagraCtrl, 'Massa Magra', sufixo: 'kg')),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: peitoCtrl,
-                          decoration: const InputDecoration(labelText: 'Peitoral (cm)'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: cinturaCtrl,
-                          decoration: const InputDecoration(labelText: 'Cintura (cm)'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: coxaCtrl,
-                          decoration: const InputDecoration(labelText: 'Coxa (cm)'),
-                        ),
-                      ),
+                      Expanded(child: campo(massaGordaCtrl, 'Massa Gorda', sufixo: 'kg')),
                     ],
                   ),
-                  const SizedBox(height: 10),
+
+                  // 2. TRONCO E CIRCUNFERÊNCIAS
+                  secaoTitulo('TRONCO & CIRCUNFERÊNCIAS (PERIMETRIA)', Icons.straighten, AppTheme.electricBlue),
+                  Row(
+                    children: [
+                      Expanded(child: campo(pescocoCtrl, 'Pescoço')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(ombrosCtrl, 'Ombros')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(peitoCtrl, 'Peitoral/Tórax')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: campo(cinturaCtrl, 'Cintura')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(abdomenCtrl, 'Abdômen')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(quadrilCtrl, 'Quadril')),
+                    ],
+                  ),
+
+                  // 3. MEMBROS SUPERIORES (BRAÇOS)
+                  secaoTitulo('MEMBROS SUPERIORES (DIREITO & ESQUERDO)', Icons.fitness_center, AppTheme.warningAmber),
+                  Row(
+                    children: [
+                      Expanded(child: campo(bracoDirCtrl, 'Braço D. (Relaxado)')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(bracoEsqCtrl, 'Braço E. (Relaxado)')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: campo(bracoDirContrCtrl, 'Braço D. (Contraído)')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(bracoEsqContrCtrl, 'Braço E. (Contraído)')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: campo(antebracoDirCtrl, 'Antebraço D.')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(antebracoEsqCtrl, 'Antebraço E.')),
+                    ],
+                  ),
+
+                  // 4. MEMBROS INFERIORES (PERNAS)
+                  secaoTitulo('MEMBROS INFERIORES (COXAS & PANTURRILHAS)', Icons.directions_run, const Color(0xFFE040FB)),
+                  Row(
+                    children: [
+                      Expanded(child: campo(coxaDirCtrl, 'Coxa D. (Alta)')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(coxaEsqCtrl, 'Coxa E. (Alta)')),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: campo(panturrilhaDirCtrl, 'Panturrilha D.')),
+                      const SizedBox(width: 8),
+                      Expanded(child: campo(panturrilhaEsqCtrl, 'Panturrilha E.')),
+                    ],
+                  ),
+
+                  // 5. FOTOS ANTES E DEPOIS
+                  secaoTitulo('FOTOS DE EVOLUÇÃO (ANTES x DEPOIS)', Icons.camera_alt, AppTheme.neonGreen),
                   Row(
                     children: [
                       Expanded(
@@ -543,8 +641,8 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           ),
                           label: Text(
                             fotoFrenteB64 != null
-                                ? 'Foto Frente Anexada ✅'
-                                : '📸 Anexar Foto Frente (Antes/Depois)',
+                                ? 'Frente Anexada ✅'
+                                : '📸 Foto Frente',
                           ),
                         ),
                       ),
@@ -561,14 +659,16 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           ),
                           label: Text(
                             fotoCostasB64 != null
-                                ? 'Foto Costas Anexada ✅'
-                                : '📸 Anexar Foto Costas/Perfil',
+                                ? 'Costas Anexada ✅'
+                                : '📸 Foto Costas/Perfil',
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+
+                  // 6. ANAMNESE E OBSERVAÇÕES
+                  secaoTitulo('ANAMNESE & OBSERVAÇÕES DO TREINADOR', Icons.notes, Colors.white70),
                   TextField(
                     controller: lesoesCtrl,
                     decoration: const InputDecoration(
@@ -588,12 +688,46 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar')),
             ElevatedButton.icon(
               onPressed: () async {
-                final medidasJson = jsonEncode({
-                  'bracoDireito': double.tryParse(bracoCtrl.text) ?? 38.0,
-                  'peitoral': double.tryParse(peitoCtrl.text) ?? 102.0,
-                  'cintura': double.tryParse(cinturaCtrl.text) ?? 80.0,
-                  'coxaDireita': double.tryParse(coxaCtrl.text) ?? 58.0,
-                });
+                final medidasMap = <String, dynamic>{
+                  if (pescocoCtrl.text.trim().isNotEmpty)
+                    'pescoco': double.tryParse(pescocoCtrl.text.replaceAll(',', '.')),
+                  if (ombrosCtrl.text.trim().isNotEmpty)
+                    'ombros': double.tryParse(ombrosCtrl.text.replaceAll(',', '.')),
+                  if (peitoCtrl.text.trim().isNotEmpty)
+                    'peitoral': double.tryParse(peitoCtrl.text.replaceAll(',', '.')),
+                  if (cinturaCtrl.text.trim().isNotEmpty)
+                    'cintura': double.tryParse(cinturaCtrl.text.replaceAll(',', '.')),
+                  if (abdomenCtrl.text.trim().isNotEmpty)
+                    'abdomen': double.tryParse(abdomenCtrl.text.replaceAll(',', '.')),
+                  if (quadrilCtrl.text.trim().isNotEmpty)
+                    'quadril': double.tryParse(quadrilCtrl.text.replaceAll(',', '.')),
+                  if (bracoDirCtrl.text.trim().isNotEmpty)
+                    'bracoDireito': double.tryParse(bracoDirCtrl.text.replaceAll(',', '.')),
+                  if (bracoDirContrCtrl.text.trim().isNotEmpty)
+                    'bracoDireitoContraido': double.tryParse(bracoDirContrCtrl.text.replaceAll(',', '.')),
+                  if (bracoEsqCtrl.text.trim().isNotEmpty)
+                    'bracoEsquerdo': double.tryParse(bracoEsqCtrl.text.replaceAll(',', '.')),
+                  if (bracoEsqContrCtrl.text.trim().isNotEmpty)
+                    'bracoEsquerdoContraido': double.tryParse(bracoEsqContrCtrl.text.replaceAll(',', '.')),
+                  if (antebracoDirCtrl.text.trim().isNotEmpty)
+                    'antebracoDireito': double.tryParse(antebracoDirCtrl.text.replaceAll(',', '.')),
+                  if (antebracoEsqCtrl.text.trim().isNotEmpty)
+                    'antebracoEsquerdo': double.tryParse(antebracoEsqCtrl.text.replaceAll(',', '.')),
+                  if (coxaDirCtrl.text.trim().isNotEmpty)
+                    'coxaDireita': double.tryParse(coxaDirCtrl.text.replaceAll(',', '.')),
+                  if (coxaEsqCtrl.text.trim().isNotEmpty)
+                    'coxaEsquerda': double.tryParse(coxaEsqCtrl.text.replaceAll(',', '.')),
+                  if (panturrilhaDirCtrl.text.trim().isNotEmpty)
+                    'panturrilhaDireita': double.tryParse(panturrilhaDirCtrl.text.replaceAll(',', '.')),
+                  if (panturrilhaEsqCtrl.text.trim().isNotEmpty)
+                    'panturrilhaEsquerda': double.tryParse(panturrilhaEsqCtrl.text.replaceAll(',', '.')),
+                  if (massaMagraCtrl.text.trim().isNotEmpty)
+                    'massaMagra': double.tryParse(massaMagraCtrl.text.replaceAll(',', '.')),
+                  if (massaGordaCtrl.text.trim().isNotEmpty)
+                    'massaGorda': double.tryParse(massaGordaCtrl.text.replaceAll(',', '.')),
+                };
+                final medidasJson = jsonEncode(medidasMap);
+
                 await ApiService().dio.post(
                   '/api/personal/alunos/${aluno['id']}/avaliacoes',
                   data: {
@@ -615,11 +749,12 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   SnackBar(
                     backgroundColor: AppTheme.primaryAccent,
                     content: const Text(
-                      'Avaliação física e fotos salvas com sucesso!',
+                      'Avaliação física completa e fotos salvas com sucesso!',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                     ),
                   ),
                 );
+                _carregarEvolucaoDoAluno(aluno['id']);
               },
               icon: const Icon(Icons.save),
               label: const Text('Salvar Avaliação'),
