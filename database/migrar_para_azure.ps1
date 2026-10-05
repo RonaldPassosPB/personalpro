@@ -3,8 +3,14 @@
 # ==============================================================================
 $ErrorActionPreference = "Stop"
 
-$localConnStr = "Server=localhost;Database=PersonalPro;User Id=sa;Password=Soore1020.;TrustServerCertificate=True;"
-$azureConnStr = "Server=tcp:coachcenter-srv-ronald.database.windows.net,1433;Initial Catalog=coachcenter-db;User Id=coachadmin;Password=Soore1020.;Encrypt=True;TrustServerCertificate=False;Connect Timeout=60;ConnectRetryCount=3;ConnectRetryInterval=10;"
+# As connection strings vêm de variáveis de ambiente (nunca versionar senhas):
+#   $env:PERSONALPRO_LOCAL_CONN = "Server=localhost;Database=PersonalPro;Trusted_Connection=True;TrustServerCertificate=True;"
+#   $env:PERSONALPRO_AZURE_CONN = "Server=tcp:<servidor>.database.windows.net,1433;Initial Catalog=<banco>;User Id=<usuario>;Password=<senha>;Encrypt=True;"
+$localConnStr = $env:PERSONALPRO_LOCAL_CONN
+$azureConnStr = $env:PERSONALPRO_AZURE_CONN
+if (-not $localConnStr -or -not $azureConnStr) {
+    throw "Defina PERSONALPRO_LOCAL_CONN e PERSONALPRO_AZURE_CONN antes de executar."
+}
 
 Write-Output "--- INICIANDO MIGRAÇÃO PARA AZURE SQL (coachcenter-db) ---"
 

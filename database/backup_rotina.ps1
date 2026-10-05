@@ -6,7 +6,7 @@ param(
     [string]$Server = "localhost",
     [string]$Database = "PersonalPro",
     [string]$User = "sa",
-    [string]$Password = "Soore1020.",
+    [string]$Password = $env:PERSONALPRO_SA_PASSWORD,
     [int]$RetencaoDias = 15
 )
 

@@ -35,7 +35,9 @@ builder.Services.AddCors(options =>
 });
 
 // Autenticação JWT com Claims (usuarioId, perfil, personalId)
-var jwtKey = builder.Configuration["Jwt:Key"]!;
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("Jwt:Key não configurada (Jwt__Key no Azure ou appsettings.Development.json local).");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -65,14 +67,18 @@ builder.Services.AddHostedService<PagamentoBackgroundService>();
 var app = builder.Build();
 
 // Garante que as senhas dos usuários de demonstração ('admin123') estejam sincronizadas com BCrypt
-try
+// Somente em desenvolvimento: em produção isso resetaria as senhas a cada reinício da aplicação
+if (app.Environment.IsDevelopment())
 {
-    var dbConn = app.Services.GetRequiredService<DbConnection>();
-    await DatabaseSeeder.GarantirHashesDemoAsync(dbConn);
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"[AVISO BANCO DE DADOS NA INICIALIZAÇÃO] {ex.Message}");
+    try
+    {
+        var dbConn = app.Services.GetRequiredService<DbConnection>();
+        await DatabaseSeeder.GarantirHashesDemoAsync(dbConn);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[AVISO BANCO DE DADOS NA INICIALIZAÇÃO] {ex.Message}");
+    }
 }
 
 // Middleware Global de Captura de Erros em Arquivo Diário

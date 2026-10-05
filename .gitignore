@@ -31,3 +31,8 @@ scratch/
 personalpro_app/tool/
 PersonalProAPI/appsettings.Development.json
 
+
+# Configuração local / segredos
+.claude/settings.local.json
+appsettings.*.local.json
+*.publishsettings
