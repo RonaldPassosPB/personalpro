@@ -23,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _carregando = false;
   bool _ocultarSenha = true;
   bool _temCredencialSalva = false;
+  bool _lembrarSessao = true;
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   @override
@@ -34,37 +35,128 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _verificarSessaoSalva() async {
     try {
       final savedEmail = await ApiService().storage.read(key: 'saved_email');
-      if (savedEmail != null && savedEmail.trim().isNotEmpty && mounted) {
+      final savedPassword = await ApiService().storage.read(key: 'saved_password');
+      final savedSession = await ApiService().getSavedSession();
+      if (mounted) {
         setState(() {
-          _temCredencialSalva = true;
-          _emailCtrl.text = savedEmail.trim();
+          if (savedEmail != null && savedEmail.trim().isNotEmpty) {
+            _emailCtrl.text = savedEmail.trim();
+          }
+          if (savedPassword != null && savedPassword.trim().isNotEmpty) {
+            _senhaCtrl.text = savedPassword.trim();
+          }
+          _temCredencialSalva = (savedEmail != null && savedEmail.trim().isNotEmpty) ||
+              (savedSession != null && savedSession['token'] != null);
         });
       }
     } catch (_) {}
   }
 
-  Future<void> _entrarComBiometria() async {
+  Future<void> _entrarComSessaoSalva() async {
+    setState(() => _carregando = true);
     try {
-      if (!kIsWeb) {
-        final podeAutenticar = await _localAuth.canCheckBiometrics ||
-            await _localAuth.isDeviceSupported();
-        if (podeAutenticar) {
-          final ok = await _localAuth.authenticate(
-            localizedReason: 'Autentique-se para acessar o Coach Center',
-          );
-          if (!ok) return;
-        }
+      final savedSession = await ApiService().getSavedSession();
+      if (savedSession != null && savedSession['token'] != null) {
+        final int perfil = savedSession['perfil'] ?? 2;
+        Widget destino = perfil == 3
+            ? SuperAdminScreen(session: savedSession)
+            : (perfil == 1
+                ? PersonalDashboardScreen(session: savedSession)
+                : AlunoHomeScreen(session: savedSession));
+        if (!mounted) return;
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => destino));
+        return;
       }
+
       final email = await ApiService().storage.read(key: 'saved_email');
       final senha = await ApiService().storage.read(key: 'saved_password');
-      if (email != null && email.isNotEmpty) {
+      if (email != null && email.isNotEmpty && senha != null && senha.isNotEmpty) {
         _emailCtrl.text = email;
-      }
-      if (senha != null && senha.isNotEmpty) {
         _senhaCtrl.text = senha;
         await _fazerLogin();
+      } else {
+        setState(() => _carregando = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nenhuma sessão salva encontrada. Digite seu e-mail e senha.'),
+            backgroundColor: AppTheme.warningAmber,
+          ),
+        );
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  Future<void> _entrarComBiometria() async {
+    try {
+      final podeAutenticar = await _localAuth.canCheckBiometrics ||
+          await _localAuth.isDeviceSupported();
+      if (!podeAutenticar) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Biometria ou digital não configurada neste aparelho celular.'),
+            backgroundColor: AppTheme.warningAmber,
+          ),
+        );
+        return;
+      }
+
+      final ok = await _localAuth.authenticate(
+        localizedReason: 'Autentique-se com biometria ou digital para acessar o Coach Center',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+          useErrorDialogs: true,
+        ),
+      );
+      if (!ok) return;
+
+      setState(() => _carregando = true);
+
+      // 1. Tenta restaurar sessão ativa salva
+      final savedSession = await ApiService().getSavedSession();
+      if (savedSession != null && savedSession['token'] != null) {
+        final int perfil = savedSession['perfil'] ?? 2;
+        Widget destino = perfil == 3
+            ? SuperAdminScreen(session: savedSession)
+            : (perfil == 1
+                ? PersonalDashboardScreen(session: savedSession)
+                : AlunoHomeScreen(session: savedSession));
+        if (!mounted) return;
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => destino));
+        return;
+      }
+
+      // 2. Tenta login com credenciais seguras salvas
+      final email = await ApiService().storage.read(key: 'saved_email');
+      final senha = await ApiService().storage.read(key: 'saved_password');
+      if (email != null && email.isNotEmpty && senha != null && senha.isNotEmpty) {
+        _emailCtrl.text = email;
+        _senhaCtrl.text = senha;
+        await _fazerLogin();
+      } else {
+        setState(() => _carregando = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Faça o primeiro login com e-mail e senha para ativar a biometria.'),
+            backgroundColor: AppTheme.neonGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _carregando = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao autenticar com biometria: $e'),
+          backgroundColor: AppTheme.performanceRed,
+        ),
+      );
+    }
   }
 
   Future<void> _fazerLogin() async {
@@ -85,9 +177,15 @@ class _LoginScreenState extends State<LoginScreen> {
       final session = await ApiService().login(emailDigitado, senhaDigitada);
       if (!mounted) return;
 
-      // Salva último e-mail digitado
+      // Salva ou remove credenciais de acordo com a opção de lembrar sessão
       try {
-        await ApiService().storage.write(key: 'saved_email', value: emailDigitado);
+        if (_lembrarSessao) {
+          await ApiService().storage.write(key: 'saved_email', value: emailDigitado);
+          await ApiService().storage.write(key: 'saved_password', value: senhaDigitada);
+        } else {
+          await ApiService().storage.delete(key: 'saved_email');
+          await ApiService().storage.delete(key: 'saved_password');
+        }
       } catch (_) {}
       if (!mounted) return;
       final int perfil = session['perfil'] ?? 2;
@@ -508,7 +606,41 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          // Checkbox para salvar sessão
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _lembrarSessao,
+                    activeColor: AppTheme.neonGreen,
+                    checkColor: const Color(0xFF0A0E12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    side: BorderSide(
+                      color: isLight ? Colors.black38 : Colors.white38,
+                    ),
+                    onChanged: (v) => setState(() => _lembrarSessao = v ?? true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => setState(() => _lembrarSessao = !_lembrarSessao),
+                  child: Text(
+                    kIsWeb ? 'Salvar sessão neste navegador' : 'Lembrar credenciais no aparelho',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -545,17 +677,39 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 12),
             SizedBox(
               height: 48,
-              child: OutlinedButton.icon(
-                onPressed: _entrarComBiometria,
-                icon: const Icon(Icons.fingerprint, color: AppTheme.neonGreen),
-                label: Text(
-                  'Entrar com Biometria / Sessão Salva',
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              child: kIsWeb
+                  ? OutlinedButton.icon(
+                      onPressed: _carregando ? null : _entrarComSessaoSalva,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppTheme.neonGreen, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.lock_open_rounded, color: AppTheme.neonGreen, size: 20),
+                      label: Text(
+                        'Entrar com Sessão Salva',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    )
+                  : OutlinedButton.icon(
+                      onPressed: _carregando ? null : _entrarComBiometria,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppTheme.neonGreen, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.fingerprint, color: AppTheme.neonGreen, size: 22),
+                      label: Text(
+                        'Entrar com Biometria',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
             ),
           ],
           const SizedBox(height: 20),

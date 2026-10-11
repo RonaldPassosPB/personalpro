@@ -29,6 +29,7 @@ class AlunoHomeScreen extends StatefulWidget {
 
 class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
   int _abaAtual = 0;
+  int _notificacoesNaoLidas = 0;
   bool _carregando = true;
   final Set<int> _fichasRecolhidas = {};
 
@@ -131,6 +132,13 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
         _minhasAulasAgenda = agendaData;
         _carregando = false;
       });
+
+      // Carrega notificações não lidas
+      try {
+        final respNotif = await ApiService().dio.get('/api/notificacoes');
+        final count = (respNotif.data['naoLidas'] as num?)?.toInt() ?? 0;
+        if (mounted) setState(() => _notificacoesNaoLidas = count);
+      } catch (_) {}
     } catch (_) {
       if (mounted) setState(() => _carregando = false);
     }
@@ -944,11 +952,26 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   ),
                   IconButton(
                     tooltip: 'Notificações',
-                    icon: Icon(
-                      Icons.notifications_none_rounded,
-                      color: AppTheme.primaryAccent,
+                    icon: Badge(
+                      isLabelVisible: _notificacoesNaoLidas > 0,
+                      label: Text(
+                        '$_notificacoesNaoLidas',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0A0E12),
+                        ),
+                      ),
+                      backgroundColor: AppTheme.neonGreen,
+                      child: Icon(
+                        Icons.notifications_none_rounded,
+                        color: AppTheme.primaryAccent,
+                      ),
                     ),
-                    onPressed: () => NotificacoesSheet.abrir(context),
+                    onPressed: () async {
+                      await NotificacoesSheet.abrir(context);
+                      if (mounted) setState(() => _notificacoesNaoLidas = 0);
+                    },
                   ),
                   IconButton(
                     tooltip: 'Sair da conta',

@@ -13,8 +13,8 @@ class AppConfig {
   /// Alterne para AppEnvironment.producao quando gerar o APK de produção
   static const AppEnvironment ambiente = AppEnvironment.local;
 
-  /// URL oficial em produção
-  static const String producaoUrl = 'https://api.personalpro.com.br';
+  /// URL oficial em produção (Azure App Service)
+  static const String producaoUrl = 'https://coachcenter-bxdugvdgg6akhxhh.canadacentral-01.azurewebsites.net';
 
   /// IP e porta da API C# .NET local
   static const String serverIp = '192.168.1.20';
@@ -29,7 +29,7 @@ class AppConfig {
       return origin;
     }
 
-    if (ambiente == AppEnvironment.producao) {
+    if (kReleaseMode || ambiente == AppEnvironment.producao) {
       return producaoUrl;
     }
 

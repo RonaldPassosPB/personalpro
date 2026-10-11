@@ -36,3 +36,6 @@ PersonalProAPI/appsettings.Development.json
 .claude/settings.local.json
 appsettings.*.local.json
 *.publishsettings
+*.apk
+*.aab
+credenciais.html

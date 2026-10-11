@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'screens/auth/login_screen.dart';
+import 'screens/intro/intro_splash_screen.dart';
 import 'services/notification_service.dart';
 import 'theme.dart';
 
@@ -35,7 +35,7 @@ class PersonalProApp extends StatelessWidget {
             supportedLocales: const [
               Locale('pt', 'BR'),
             ],
-            home: const LoginScreen(),
+            home: const IntroSplashScreen(),
           ),
         );
       },

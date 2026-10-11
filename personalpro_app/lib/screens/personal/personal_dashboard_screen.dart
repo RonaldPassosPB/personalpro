@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/api_service.dart';
 import '../../services/ficha_pdf_service.dart';
 import '../../services/whatsapp_service.dart';
@@ -21,6 +22,7 @@ class PersonalDashboardScreen extends StatefulWidget {
 
 class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
   int _abaAtual = 0;
+  int _notificacoesNaoLidas = 0;
   bool _carregando = true;
 
   // Dados Dashboard
@@ -155,6 +157,13 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
         _chavePixPersonal = finData['chavePixPersonal']?.toString() ?? '';
         _carregando = false;
       });
+
+      // Carrega notificações não lidas
+      try {
+        final respNotif = await ApiService().dio.get('/api/notificacoes');
+        final count = (respNotif.data['naoLidas'] as num?)?.toInt() ?? 0;
+        if (mounted) setState(() => _notificacoesNaoLidas = count);
+      } catch (_) {}
     } catch (_) {
       if (mounted) setState(() => _carregando = false);
     }
@@ -1315,229 +1324,504 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
             return matchGrupo && matchBusca;
           }).toList();
 
+          Widget rotuloCampo(String texto, {String? dica, IconData? icone}) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icone != null) ...[
+                    Icon(icone, size: 13, color: AppTheme.neonGreen),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                    texto,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white70,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                  if (dica != null) ...[
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        dica,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.normal,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }
+
+          InputDecoration campoDecoracao({String? hintText, Widget? prefixIcon}) {
+            return InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                fontSize: 12.5,
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+              prefixIcon: prefixIcon,
+              filled: true,
+              fillColor: AppTheme.bgDark.withValues(alpha: 0.55),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.white12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.white12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.neonGreen, width: 1.4),
+              ),
+            );
+          }
+
+          final isMobileModal = MediaQuery.of(ctx).size.width < 500;
+
           return AlertDialog(
             backgroundColor: AppTheme.surfaceCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            titlePadding: const EdgeInsets.fromLTRB(16, 16, 12, 10),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
             title: Row(
               children: [
-                const Icon(Icons.fitness_center, color: AppTheme.neonGreen),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '+ Adicionar Exercício (${_exerciciosBiblioteca.length}+ na Biblioteca)',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: const Icon(Icons.fitness_center_rounded, color: AppTheme.neonGreen, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Adicionar Exercício',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                      ),
+                      Text(
+                        '${_exerciciosBiblioteca.length}+ na biblioteca ou crie um novo',
+                        style: TextStyle(fontSize: 11.5, color: Colors.white.withValues(alpha: 0.45)),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white54),
+                  onPressed: () => Navigator.pop(ctx),
+                  tooltip: 'Fechar',
                 ),
               ],
             ),
             content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: 540),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DropdownButtonFormField<String>(
-                      initialValue: grupoFiltro,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        labelText:
-                            '1. Filtrar por Grupo Muscular (${_exerciciosBiblioteca.length} exercícios)',
+                    // ── SEÇÃO 1: BUSCA E BIBLIOTECA ───────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white10),
                       ),
-                      items: [
-                        DropdownMenuItem(
-                          value: 'Todos',
-                          child: Text('Todos os Grupos (${_exerciciosBiblioteca.length} exercícios)'),
-                        ),
-                        ...gruposDisponiveis.map(
-                          (g) => DropdownMenuItem(
-                            value: g,
-                            child: Text(
-                              '$g (${_exerciciosBiblioteca.where((x) => x['grupoMuscular'] == g).length} exercícios)',
-                            ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.auto_stories_rounded, size: 14, color: AppTheme.neonGreen),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'BIBLIOTECA (${_exerciciosBiblioteca.length} EXERCÍCIOS)',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                    color: AppTheme.neonGreen,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                      onChanged: (g) {
-                        if (g != null) {
-                          setModalState(() {
-                            grupoFiltro = g;
-                            final novaLista = _exerciciosBiblioteca.where((e) {
-                              return (g == 'Todos' || e['grupoMuscular'] == g) &&
-                                  (termoBusca.isEmpty ||
+                          const SizedBox(height: 10),
+
+                          rotuloCampo('1. Filtrar por Grupo', icone: Icons.filter_list_rounded),
+                          DropdownButtonFormField<String>(
+                            initialValue: grupoFiltro,
+                            isExpanded: true,
+                            dropdownColor: AppTheme.surfaceCard,
+                            decoration: campoDecoracao(),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'Todos',
+                                child: Text('Todos os Grupos (${_exerciciosBiblioteca.length})'),
+                              ),
+                              ...gruposDisponiveis.map(
+                                (g) => DropdownMenuItem(
+                                  value: g,
+                                  child: Text(
+                                    '$g (${_exerciciosBiblioteca.where((x) => x['grupoMuscular'] == g).length})',
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (g) {
+                              if (g != null) {
+                                setModalState(() {
+                                  grupoFiltro = g;
+                                  final novaLista = _exerciciosBiblioteca.where((e) {
+                                    return (g == 'Todos' || e['grupoMuscular'] == g) &&
+                                        (termoBusca.isEmpty ||
+                                            (e['nome'] ?? '')
+                                                .toString()
+                                                .toLowerCase()
+                                                .contains(termoBusca.toLowerCase()));
+                                  }).toList();
+                                  if (novaLista.isNotEmpty) {
+                                    exercicioSelecionado = novaLista.first;
+                                    nomeCtrl.text = exercicioSelecionado['nome']?.toString() ?? '';
+                                    grupoCtrl.text =
+                                        exercicioSelecionado['grupoMuscular']?.toString() ?? '';
+                                    videoCtrl.text =
+                                        exercicioSelecionado['videoUrl']?.toString() ?? '';
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 10),
+
+                          rotuloCampo('Pesquisar pelo Nome', dica: '(ex: Búlgaro...)', icone: Icons.search_rounded),
+                          TextField(
+                            controller: buscaCtrl,
+                            decoration: campoDecoracao(
+                              hintText: 'Digite o nome do exercício...',
+                              prefixIcon: const Icon(Icons.search, size: 17, color: AppTheme.neonGreen),
+                            ),
+                            onChanged: (val) {
+                              setModalState(() {
+                                termoBusca = val.trim();
+                                final novaLista = _exerciciosBiblioteca.where((e) {
+                                  final matchGrupo =
+                                      grupoFiltro == 'Todos' || e['grupoMuscular'] == grupoFiltro;
+                                  final matchBusca = termoBusca.isEmpty ||
                                       (e['nome'] ?? '')
                                           .toString()
                                           .toLowerCase()
-                                          .contains(termoBusca.toLowerCase()));
-                            }).toList();
-                            if (novaLista.isNotEmpty) {
-                              exercicioSelecionado = novaLista.first;
-                              nomeCtrl.text = exercicioSelecionado['nome']?.toString() ?? '';
-                              grupoCtrl.text =
-                                  exercicioSelecionado['grupoMuscular']?.toString() ?? '';
-                              videoCtrl.text =
-                                  exercicioSelecionado['videoUrl']?.toString() ?? '';
-                            }
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: buscaCtrl,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search, color: AppTheme.neonGreen),
-                        labelText: '🔍 Pesquisar exercício pelo nome (ex: Búlgaro, Polia, Halter...)',
+                                          .contains(termoBusca.toLowerCase());
+                                  return matchGrupo && matchBusca;
+                                }).toList();
+                                if (novaLista.isNotEmpty) {
+                                  exercicioSelecionado = novaLista.first;
+                                  nomeCtrl.text = exercicioSelecionado['nome']?.toString() ?? '';
+                                  grupoCtrl.text =
+                                      exercicioSelecionado['grupoMuscular']?.toString() ?? '';
+                                  videoCtrl.text = exercicioSelecionado['videoUrl']?.toString() ?? '';
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 10),
+
+                          rotuloCampo('2. Selecionar Exercício', dica: '(${filtrados.length})', icone: Icons.checklist_rounded),
+                          DropdownButtonFormField<dynamic>(
+                            initialValue: filtrados.contains(exercicioSelecionado)
+                                ? exercicioSelecionado
+                                : (filtrados.isNotEmpty ? filtrados.first : null),
+                            isExpanded: true,
+                            dropdownColor: AppTheme.surfaceCard,
+                            decoration: campoDecoracao(),
+                            items: filtrados
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text(
+                                      '${e['nome']} (${e['grupoMuscular']})',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (e) {
+                              if (e != null) {
+                                setModalState(() {
+                                  exercicioSelecionado = e;
+                                  nomeCtrl.text = e['nome']?.toString() ?? '';
+                                  grupoCtrl.text = e['grupoMuscular']?.toString() ?? '';
+                                  videoCtrl.text = e['videoUrl']?.toString() ?? '';
+                                });
+                              }
+                            },
+                          ),
+                        ],
                       ),
-                      onChanged: (val) {
-                        setModalState(() {
-                          termoBusca = val.trim();
-                          final novaLista = _exerciciosBiblioteca.where((e) {
-                            final matchGrupo =
-                                grupoFiltro == 'Todos' || e['grupoMuscular'] == grupoFiltro;
-                            final matchBusca = termoBusca.isEmpty ||
-                                (e['nome'] ?? '')
-                                    .toString()
-                                    .toLowerCase()
-                                    .contains(termoBusca.toLowerCase());
-                            return matchGrupo && matchBusca;
-                          }).toList();
-                          if (novaLista.isNotEmpty) {
-                            exercicioSelecionado = novaLista.first;
-                            nomeCtrl.text = exercicioSelecionado['nome']?.toString() ?? '';
-                            grupoCtrl.text =
-                                exercicioSelecionado['grupoMuscular']?.toString() ?? '';
-                            videoCtrl.text = exercicioSelecionado['videoUrl']?.toString() ?? '';
-                          }
-                        });
-                      },
                     ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<dynamic>(
-                      initialValue: filtrados.contains(exercicioSelecionado)
-                          ? exercicioSelecionado
-                          : (filtrados.isNotEmpty ? filtrados.first : null),
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        labelText: '2. Escolher da Biblioteca (${filtrados.length} encontrados)',
+                    const SizedBox(height: 14),
+
+                    // ── SEÇÃO 2: DADOS DO EXERCÍCIO (RESPONSIVO) ───────────
+                    if (isMobileModal) ...[
+                      rotuloCampo('Nome do Exercício', dica: '(editável)'),
+                      TextField(
+                        controller: nomeCtrl,
+                        decoration: campoDecoracao(hintText: 'Nome do exercício'),
                       ),
-                      items: filtrados
-                          .map(
-                            (e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(
-                                '${e['nome']} (${e['grupoMuscular']})',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (e) {
-                        if (e != null) {
-                          setModalState(() {
-                            exercicioSelecionado = e;
-                            nomeCtrl.text = e['nome']?.toString() ?? '';
-                            grupoCtrl.text = e['grupoMuscular']?.toString() ?? '';
-                            videoCtrl.text = e['videoUrl']?.toString() ?? '';
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: TextField(
-                            controller: nomeCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Nome do Exercício (ou digite um novo)',
+                      const SizedBox(height: 10),
+                      rotuloCampo('Grupo Muscular'),
+                      TextField(
+                        controller: grupoCtrl,
+                        decoration: campoDecoracao(hintText: 'Ex: Peito, Costas, Abdômen...'),
+                      ),
+                    ] else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Nome do Exercício', dica: '(editável)'),
+                                TextField(
+                                  controller: nomeCtrl,
+                                  decoration: campoDecoracao(hintText: 'Nome do exercício'),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: grupoCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Grupo Muscular',
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Grupo Muscular'),
+                                TextField(
+                                  controller: grupoCtrl,
+                                  decoration: campoDecoracao(hintText: 'Ex: Peito, Costas'),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: seriesCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Séries (ex: 4)'),
+                        ],
+                      ),
+                    const SizedBox(height: 12),
+
+                    // ── SEÇÃO 3: PRESCRIÇÃO (RESPONSIVO: 2x2 NO CELULAR) ───
+                    if (isMobileModal) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Séries', dica: 'ex: 4'),
+                                TextField(
+                                  controller: seriesCtrl,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '4'),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: repsCtrl,
-                            decoration: const InputDecoration(labelText: 'Repetições (10 a 12)'),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Repetições', dica: 'ex: 10 a 12'),
+                                TextField(
+                                  controller: repsCtrl,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '10-12'),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: cargaCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Carga Sugerida (kg)'),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Carga (kg)', dica: 'ex: 30'),
+                                TextField(
+                                  controller: cargaCtrl,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '30 kg'),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: descansoCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Descanso (segundos)'),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Descanso (seg)', dica: 'ex: 60'),
+                                TextField(
+                                  controller: descansoCtrl,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '60s'),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
+                        ],
+                      ),
+                    ] else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Séries', dica: 'ex: 4'),
+                                TextField(
+                                  controller: seriesCtrl,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '4'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Repetições', dica: '10 a 12'),
+                                TextField(
+                                  controller: repsCtrl,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '10-12'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Carga', dica: 'kg'),
+                                TextField(
+                                  controller: cargaCtrl,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '30'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                rotuloCampo('Descanso', dica: 'segundos'),
+                                TextField(
+                                  controller: descansoCtrl,
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  decoration: campoDecoracao(hintText: '60'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 12),
+
+                    // ── SEÇÃO 4: DETALHES TÉCNICOS & VÍDEO ────────────────
+                    rotuloCampo('Técnica Avançada / Observação', dica: '(opcional)'),
                     TextField(
                       controller: obsCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Técnica Avançada / Observação (Drop-set, Cadência...)',
+                      decoration: campoDecoracao(
+                        hintText: 'Ex: Drop-set na última série, Cadência controlada...',
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
+
+                    rotuloCampo('Link do Vídeo Demonstrativo', dica: '(YouTube / MP4 opcional)'),
                     TextField(
                       controller: videoCtrl,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
-                        labelText: 'Link do Vídeo YouTube PT-BR / MP4 (opcional)',
+                      decoration: campoDecoracao(
+                        hintText: 'https://www.youtube.com/watch?v=...',
+                        prefixIcon: const Icon(Icons.ondemand_video_rounded, color: AppTheme.neonGreen, size: 18),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                      activeColor: AppTheme.neonGreen,
-                      checkColor: Colors.black,
-                      value: salvarNaBiblioteca,
-                      title: const Text(
-                        'Salvar também na Minha Biblioteca para usar em outros alunos',
-                        style: TextStyle(fontSize: 12.5),
+                    const SizedBox(height: 8),
+
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.02),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      onChanged: (v) => setModalState(() => salvarNaBiblioteca = v ?? false),
+                      child: CheckboxListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                        dense: true,
+                        activeColor: AppTheme.neonGreen,
+                        checkColor: Colors.black,
+                        value: salvarNaBiblioteca,
+                        title: const Text(
+                          'Salvar também na Minha Biblioteca para usar em outros alunos',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        onChanged: (v) => setModalState(() => salvarNaBiblioteca = v ?? false),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-              ElevatedButton(
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar', style: TextStyle(color: Colors.white60)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.neonGreen,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.add_task_rounded, size: 18),
+                label: const Text(
+                  'Adicionar à Ficha',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                ),
                 onPressed: () async {
                   final nomeFinal = nomeCtrl.text.trim();
                   final grupoFinal = grupoCtrl.text.trim().isEmpty ? 'Geral' : grupoCtrl.text.trim();
@@ -1584,7 +1868,6 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                   Navigator.pop(ctx);
                   _carregarFichasDoAluno(_alunoSelecionadoTreinoId!);
                 },
-                child: const Text('Adicionar Exercício'),
               ),
             ],
           );
@@ -1664,7 +1947,9 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
     );
   }
 
-  void _abrirModalEditarPerfilPersonal() {
+  void _abrirModalEditarPerfilPersonal() => _abrirModalInformacoesEPerfilPersonal(abaInicial: 1);
+
+  void _abrirModalInformacoesEPerfilPersonal({int abaInicial = 0}) {
     final nomeCtrl = TextEditingController(
       text: _personal['nomeProfissional']?.toString() ?? widget.session['nome']?.toString() ?? '',
     );
@@ -1679,226 +1964,767 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
           final isLight = AppTheme.isLight;
-          return AlertDialog(
-            backgroundColor: AppTheme.surfaceCard,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                color: isLight
-                    ? const Color(0xFF0F172A).withValues(alpha: 0.10)
-                    : Colors.white.withValues(alpha: 0.10),
+          final screenHeight = MediaQuery.of(ctx).size.height;
+          final isSmallMobile = MediaQuery.of(ctx).size.width < 500;
+          final dialogHeight = (screenHeight * 0.88).clamp(520.0, 720.0);
+          final rawCref = (_personal['cref']?.toString() ?? 'Ativo').trim();
+          final crefLimpo = rawCref.replaceAll(RegExp(r'^cref:?\s*', caseSensitive: false), '');
+          final emailPersonal = _personal['email']?.toString() ?? widget.session['email']?.toString() ?? 'treinador@coachcenter.com.br';
+          final planoPersonal = _personal['plano']?.toString() ?? 'PRO';
+          final alunosAtivos = _metricas['totalAlunosAtivos'] ?? _alunos.where((a) => a['status'] == true).length;
+          final totalAlunos = _alunos.length;
+          final treinosSemana = _metricas['treinosSemana'] ?? 0;
+          final receitaRecebida = (_metricas['receitaRecebidaMes'] is num)
+              ? (_metricas['receitaRecebidaMes'] as num).toDouble()
+              : 0.0;
+
+          Widget rotuloCampo(String texto, {IconData? icone}) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  if (icone != null) ...[
+                    Icon(icone, size: 14, color: AppTheme.neonGreen),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    texto.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: isLight ? const Color(0xFF334155) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.neonGreen.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+            );
+          }
+
+          InputDecoration campoDecoracao({required String hintText, IconData? prefixIcon}) {
+            return InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                color: isLight ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                fontSize: 13,
+              ),
+              prefixIcon: prefixIcon != null
+                  ? Icon(prefixIcon, color: AppTheme.neonGreen, size: 19)
+                  : null,
+              filled: true,
+              fillColor: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF090D16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.neonGreen, width: 1.5),
+              ),
+            );
+          }
+
+          return DefaultTabController(
+            length: 2,
+            initialIndex: abaInicial,
+            child: Builder(
+              builder: (tabContext) {
+                return Dialog(
+                  backgroundColor: AppTheme.surfaceCard,
+                  insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isLight
+                          ? const Color(0xFF0F172A).withValues(alpha: 0.10)
+                          : const Color(0xFF00F59B).withValues(alpha: 0.22),
+                      width: 1,
+                    ),
                   ),
-                  child: const Icon(Icons.person, color: AppTheme.neonGreen, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Editar Meus Dados',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Personal Trainer • Perfil e Foto',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-            content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Center(
-                      child: Column(
-                        children: [
-                          Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              ImageHelper.renderAvatarOrImage(
-                                fotoAtual,
-                                radius: 46,
-                                fallbackIcon: Icons.fitness_center,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 580,
+                      maxHeight: dialogHeight,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // CABEÇALHO DO MODAL
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(18, 14, 10, 10),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: isLight
+                                    ? const Color(0xFFE2E8F0)
+                                    : Colors.white.withValues(alpha: 0.08),
                               ),
-                              Material(
-                                color: AppTheme.neonGreen,
-                                shape: const CircleBorder(),
-                                elevation: 3,
-                                child: InkWell(
-                                  customBorder: const CircleBorder(),
-                                  onTap: () async {
-                                    final nova = await ImageHelper.selecionarImagemBase64();
-                                    if (nova != null) {
-                                      setModalState(() => fotoAtual = nova);
-                                    }
-                                  },
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(7),
-                                    child: Icon(Icons.photo_camera, size: 16, color: Color(0xFF0A0E12)),
-                                  ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.badge_outlined,
+                                  color: AppTheme.neonGreen,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Perfil do Treinador',
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Coach Center • Informações & Gestão',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 20),
+                                onPressed: () => Navigator.pop(ctx),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // BARRA DE ABAS
+                        Container(
+                          color: isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0A0E17),
+                          child: TabBar(
+                            indicatorColor: AppTheme.neonGreen,
+                            indicatorWeight: 3,
+                            labelColor: AppTheme.neonGreen,
+                            unselectedLabelColor: AppTheme.textSecondary,
+                            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            tabs: const [
+                              Tab(
+                                icon: Icon(Icons.info_outline_rounded, size: 18),
+                                text: 'Informações',
+                              ),
+                              Tab(
+                                icon: Icon(Icons.edit_note_rounded, size: 18),
+                                text: 'Editar Perfil',
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // CONTEÚDO DAS ABAS
+                        Expanded(
+                          child: TabBarView(
+                            children: [
+                              // ─── ABA 1: INFORMAÇÕES E MÉTRICAS ("MAIS COISAS") ─────────────
+                              SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // BANNER DO COACH
+                                    Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF0C1322),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: AppTheme.neonGreen.withValues(alpha: 0.25),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: AppTheme.neonGreen, width: 2),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppTheme.neonGreen.withValues(alpha: 0.25),
+                                                  blurRadius: 10,
+                                                ),
+                                              ],
+                                            ),
+                                            child: ImageHelper.renderAvatarOrImage(
+                                              _personal['logoUrl']?.toString() ?? _personal['fotoUrl']?.toString(),
+                                              radius: 30,
+                                              fallbackIcon: Icons.fitness_center,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _personal['nomeProfissional']?.toString() ?? widget.session['nome']?.toString() ?? 'Personal Trainer',
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 5),
+                                                Wrap(
+                                                  spacing: 6,
+                                                  runSpacing: 6,
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                      decoration: BoxDecoration(
+                                                        color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: Border.all(color: AppTheme.neonGreen.withValues(alpha: 0.4)),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(Icons.verified, size: 12, color: AppTheme.neonGreen),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            'CREF: $crefLimpo',
+                                                            style: const TextStyle(
+                                                              fontSize: 10.5,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: AppTheme.neonGreen,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.blueAccent.withValues(alpha: 0.15),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.4)),
+                                                      ),
+                                                      child: Text(
+                                                        'PLANO $planoPersonal',
+                                                        style: const TextStyle(
+                                                          fontSize: 10.5,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.blueAccent,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 14),
+
+                                    // MÉTRICAS EM CARDS (MAIS COISAS)
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'Alunos Ativos',
+                                            valor: '$alunosAtivos',
+                                            subtitulo: 'de $totalAlunos cadastrados',
+                                            icone: Icons.people_alt_outlined,
+                                            cor: AppTheme.neonGreen,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'Treinos Semana',
+                                            valor: '$treinosSemana',
+                                            subtitulo: 'concluídos no app',
+                                            icone: Icons.fitness_center_outlined,
+                                            cor: Colors.cyanAccent,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'Faturamento Mês',
+                                            valor: 'R\$ ${receitaRecebida.toStringAsFixed(2)}',
+                                            subtitulo: 'recebido via PIX',
+                                            icone: Icons.payments_outlined,
+                                            cor: Colors.amberAccent,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'Taxa Intermediação',
+                                            valor: '0%',
+                                            subtitulo: '100% repasse direto',
+                                            icone: Icons.pix,
+                                            cor: AppTheme.neonGreen,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 18),
+
+                                    // DADOS CADASTRAIS & CONTATO
+                                    Text(
+                                      'DADOS DE ACESSO & NEGÓCIO',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.8,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    _buildItemDadoPerfil(
+                                      icone: Icons.email_outlined,
+                                      rotulo: 'E-mail de Login',
+                                      valor: emailPersonal,
+                                      isLight: isLight,
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    _buildItemDadoPerfil(
+                                      icone: Icons.phone_outlined,
+                                      rotulo: 'WhatsApp / Telefone',
+                                      valor: (_personal['telefone']?.toString() ?? '').trim().isNotEmpty
+                                          ? _personal['telefone']!.toString()
+                                          : 'Não informado',
+                                      acao: (_personal['telefone']?.toString() ?? '').trim().isNotEmpty
+                                          ? InkWell(
+                                              onTap: () => WhatsAppService.abrirMensagem(
+                                                _personal['telefone']!.toString(),
+                                                'Olá Coach!',
+                                              ),
+                                              child: const Padding(
+                                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                child: Text(
+                                                  'Conversar',
+                                                  style: TextStyle(
+                                                    color: AppTheme.neonGreen,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : null,
+                                      isLight: isLight,
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    _buildItemDadoPerfil(
+                                      icone: Icons.pix,
+                                      rotulo: 'Chave PIX de Recebimento',
+                                      valor: (_personal['chavePix']?.toString() ?? '').trim().isNotEmpty
+                                          ? _personal['chavePix']!.toString()
+                                          : 'Não cadastrada',
+                                      acao: (_personal['chavePix']?.toString() ?? '').trim().isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.copy, size: 16, color: AppTheme.neonGreen),
+                                              tooltip: 'Copiar Chave PIX',
+                                              onPressed: () {
+                                                Clipboard.setData(ClipboardData(text: _personal['chavePix'].toString()));
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text('Chave PIX copiada para a área de transferência!'),
+                                                    backgroundColor: AppTheme.neonGreen,
+                                                    duration: Duration(seconds: 2),
+                                                  ),
+                                                );
+                                              },
+                                            )
+                                          : null,
+                                      isLight: isLight,
+                                    ),
+
+                                    const SizedBox(height: 20),
+
+                                    // BOTÃO PARA IR PARA A ABA DE EDIÇÃO
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppTheme.neonGreen,
+                                          side: const BorderSide(color: AppTheme.neonGreen, width: 1.5),
+                                          padding: const EdgeInsets.symmetric(vertical: 13),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        icon: const Icon(Icons.edit_note_rounded),
+                                        label: const Text(
+                                          'Ir para a Aba: Editar Perfil',
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                        ),
+                                        onPressed: () {
+                                          DefaultTabController.of(tabContext).animateTo(1);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // ─── ABA 2: EDITAR PERFIL (DEDICADA À EDIÇÃO) ───────────────────
+                              SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // SEÇÃO FOTO DE PERFIL
+                                    Center(
+                                      child: Column(
+                                        children: [
+                                          Stack(
+                                            alignment: Alignment.bottomRight,
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(color: AppTheme.neonGreen, width: 2),
+                                                ),
+                                                child: ImageHelper.renderAvatarOrImage(
+                                                  fotoAtual,
+                                                  radius: isSmallMobile ? 38 : 44,
+                                                  fallbackIcon: Icons.fitness_center,
+                                                ),
+                                              ),
+                                              Material(
+                                                color: AppTheme.neonGreen,
+                                                shape: const CircleBorder(),
+                                                elevation: 3,
+                                                child: InkWell(
+                                                  customBorder: const CircleBorder(),
+                                                  onTap: () async {
+                                                    final nova = await ImageHelper.selecionarImagemBase64();
+                                                    if (nova != null) {
+                                                      setModalState(() => fotoAtual = nova);
+                                                    }
+                                                  },
+                                                  child: const Padding(
+                                                    padding: EdgeInsets.all(7),
+                                                    child: Icon(Icons.photo_camera, size: 16, color: Color(0xFF0A0E12)),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              TextButton.icon(
+                                                onPressed: () async {
+                                                  final nova = await ImageHelper.selecionarImagemBase64();
+                                                  if (nova != null) {
+                                                    setModalState(() => fotoAtual = nova);
+                                                  }
+                                                },
+                                                icon: const Icon(Icons.image_outlined, size: 16, color: AppTheme.neonGreen),
+                                                label: Text(
+                                                  (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
+                                                      ? 'Alterar Foto'
+                                                      : 'Adicionar Foto',
+                                                  style: const TextStyle(
+                                                    color: AppTheme.neonGreen,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (fotoAtual != null && fotoAtual!.trim().isNotEmpty) ...[
+                                                const SizedBox(width: 8),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    setModalState(() => fotoAtual = '');
+                                                  },
+                                                  child: const Text(
+                                                    'Remover Foto',
+                                                    style: TextStyle(color: AppTheme.performanceRed, fontSize: 12),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 16),
+
+                                    rotuloCampo('Nome Profissional / Coach', icone: Icons.badge_outlined),
+                                    TextField(
+                                      controller: nomeCtrl,
+                                      decoration: campoDecoracao(
+                                        hintText: 'Ex: Ronald Silva - Coach',
+                                        prefixIcon: Icons.person_outline,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 14),
+
+                                    rotuloCampo('Registro Profissional (CREF)', icone: Icons.verified_outlined),
+                                    TextField(
+                                      controller: crefCtrl,
+                                      decoration: campoDecoracao(
+                                        hintText: 'Ex: 000000-G/SP',
+                                        prefixIcon: Icons.verified_outlined,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 14),
+
+                                    rotuloCampo('WhatsApp / Telefone', icone: Icons.phone_outlined),
+                                    TextField(
+                                      controller: telefoneCtrl,
+                                      keyboardType: TextInputType.phone,
+                                      decoration: campoDecoracao(
+                                        hintText: 'Ex: (11) 99999-0000',
+                                        prefixIcon: Icons.phone_outlined,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 14),
+
+                                    rotuloCampo('Chave PIX (para cobranças automáticas)', icone: Icons.pix),
+                                    TextField(
+                                      controller: chavePixCtrl,
+                                      decoration: campoDecoracao(
+                                        hintText: 'Ex: CPF, Telefone, E-mail ou Chave Aleatória',
+                                        prefixIcon: Icons.pix,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 22),
+
+                                    // BOTÃO SALVAR
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        TextButton(
+                                          onPressed: salvando ? null : () => Navigator.pop(ctx),
+                                          child: const Text('Cancelar'),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppTheme.neonGreen,
+                                            foregroundColor: const Color(0xFF0A0E12),
+                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          onPressed: salvando
+                                              ? null
+                                              : () async {
+                                                  setModalState(() => salvando = true);
+                                                  try {
+                                                    await ApiService().dio.put('/api/personal/meu-perfil', data: {
+                                                      'nomeProfissional': nomeCtrl.text.trim(),
+                                                      'cref': crefCtrl.text.trim(),
+                                                      'telefone': telefoneCtrl.text.trim(),
+                                                      'chavePix': chavePixCtrl.text.trim(),
+                                                      'logoUrl': fotoAtual ?? '',
+                                                      'fotoUrl': fotoAtual ?? '',
+                                                    });
+                                                    if (!ctx.mounted) return;
+                                                    Navigator.pop(ctx);
+                                                    if (!mounted) return;
+                                                    setState(() {
+                                                      _personal['nomeProfissional'] = nomeCtrl.text.trim();
+                                                      _personal['cref'] = crefCtrl.text.trim();
+                                                      _personal['telefone'] = telefoneCtrl.text.trim();
+                                                      _personal['chavePix'] = chavePixCtrl.text.trim();
+                                                      _personal['logoUrl'] = fotoAtual;
+                                                      _personal['fotoUrl'] = fotoAtual;
+                                                      widget.session['nome'] = nomeCtrl.text.trim();
+                                                    });
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        backgroundColor: AppTheme.neonGreen,
+                                                        content: Text(
+                                                          'Dados do perfil atualizados com sucesso!',
+                                                          style: TextStyle(color: Color(0xFF0A0E12), fontWeight: FontWeight.bold),
+                                                        ),
+                                                      ),
+                                                    );
+                                                    _carregarTudo();
+                                                  } catch (e) {
+                                                    setModalState(() => salvando = false);
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        backgroundColor: AppTheme.performanceRed,
+                                                        content: Text('Falha ao salvar dados do perfil.'),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                          icon: salvando
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A0E12)),
+                                                )
+                                              : const Icon(Icons.check, size: 18),
+                                          label: Text(
+                                            salvando ? 'Salvando...' : 'Salvar Alterações',
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          TextButton.icon(
-                            onPressed: () async {
-                              final nova = await ImageHelper.selecionarImagemBase64();
-                              if (nova != null) {
-                                setModalState(() => fotoAtual = nova);
-                              }
-                            },
-                            icon: const Icon(Icons.image_outlined, size: 16, color: AppTheme.neonGreen),
-                            label: Text(
-                              (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
-                                  ? 'Alterar Foto de Perfil'
-                                  : 'Adicionar Foto de Perfil',
-                              style: const TextStyle(
-                                color: AppTheme.neonGreen,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          if (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
-                            TextButton(
-                              onPressed: () {
-                                setModalState(() => fotoAtual = '');
-                              },
-                              child: const Text(
-                                'Remover foto (usar halter padrão)',
-                                style: TextStyle(color: AppTheme.performanceRed, fontSize: 11),
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: nomeCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Nome Profissional / Coach',
-                        prefixIcon: Icon(Icons.badge_outlined, color: AppTheme.neonGreen, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: telefoneCtrl,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: 'WhatsApp / Telefone',
-                        prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.neonGreen, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: crefCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Registro Profissional (CREF)',
-                        prefixIcon: Icon(Icons.verified_outlined, color: AppTheme.neonGreen, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: chavePixCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Chave PIX (para cobranças)',
-                        prefixIcon: Icon(Icons.pix, color: AppTheme.neonGreen, size: 20),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
-            actions: [
-              TextButton(
-                onPressed: salvando ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.neonGreen,
-                  foregroundColor: const Color(0xFF0A0E12),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-                onPressed: salvando
-                    ? null
-                    : () async {
-                        setModalState(() => salvando = true);
-                        try {
-                          await ApiService().dio.put('/api/personal/meu-perfil', data: {
-                            'nomeProfissional': nomeCtrl.text.trim(),
-                            'cref': crefCtrl.text.trim(),
-                            'telefone': telefoneCtrl.text.trim(),
-                            'chavePix': chavePixCtrl.text.trim(),
-                            'logoUrl': fotoAtual ?? '',
-                            'fotoUrl': fotoAtual ?? '',
-                          });
-                          if (!ctx.mounted) return;
-                          Navigator.pop(ctx);
-                          if (!mounted) return;
-                          setState(() {
-                            _personal['nomeProfissional'] = nomeCtrl.text.trim();
-                            _personal['cref'] = crefCtrl.text.trim();
-                            _personal['telefone'] = telefoneCtrl.text.trim();
-                            _personal['chavePix'] = chavePixCtrl.text.trim();
-                            _personal['logoUrl'] = fotoAtual;
-                            _personal['fotoUrl'] = fotoAtual;
-                            widget.session['nome'] = nomeCtrl.text.trim();
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              backgroundColor: AppTheme.neonGreen,
-                              content: Text(
-                                'Dados do perfil salvos com sucesso!',
-                                style: TextStyle(color: Color(0xFF0A0E12), fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          );
-                          _carregarTudo();
-                        } catch (e) {
-                          setModalState(() => salvando = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              backgroundColor: AppTheme.performanceRed,
-                              content: Text('Falha ao salvar dados do perfil.'),
-                            ),
-                          );
-                        }
-                      },
-                icon: salvando
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A0E12)),
-                      )
-                    : const Icon(Icons.check, size: 18),
-                label: Text(
-                  salvando ? 'Salvando...' : 'Salvar Alterações',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCardMetricaPerfil({
+    required String titulo,
+    required String valor,
+    required String subtitulo,
+    required IconData icone,
+    required Color cor,
+    required bool isLight,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF090E18),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isLight ? const Color(0xFFCBD5E1) : Colors.white.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                titulo,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Icon(icone, size: 15, color: cor),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            valor,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: cor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitulo,
+            style: TextStyle(
+              fontSize: 9.5,
+              color: AppTheme.textSecondary.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemDadoPerfil({
+    required IconData icone,
+    required String rotulo,
+    required String valor,
+    Widget? acao,
+    required bool isLight,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF090E18),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isLight ? const Color(0xFFE2E8F0) : Colors.white.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icone, size: 16, color: AppTheme.neonGreen),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  rotulo,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  valor,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ?acao,
+        ],
       ),
     );
   }
@@ -1932,9 +2758,11 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           children: [
             InkWell(
               borderRadius: BorderRadius.circular(24),
-              onTap: _abrirModalEditarPerfilPersonal,
+              onTap: () {
+                setState(() => _abaAtual = 0);
+              },
               child: Tooltip(
-                message: 'Toque para alterar foto ou dados',
+                message: 'Página Inicial (Início)',
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -1954,7 +2782,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                           border: Border.all(color: AppTheme.surfaceCard, width: 1.5),
                         ),
                         child: const Icon(
-                          Icons.photo_camera,
+                          Icons.home,
                           size: 9,
                           color: Color(0xFF0A0E12),
                         ),
@@ -1968,9 +2796,9 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
             Expanded(
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: _abrirModalEditarPerfilPersonal,
+                onTap: () => _abrirModalInformacoesEPerfilPersonal(abaInicial: 0),
                 child: Tooltip(
-                  message: 'Toque para editar seus dados',
+                  message: 'Toque para ver informações e perfil',
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                     child: Column(
@@ -1993,10 +2821,20 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Icon(
-                              Icons.edit_outlined,
-                              size: 14,
-                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                            InkWell(
+                              onTap: _abrirModalEditarPerfilPersonal,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: Tooltip(
+                                  message: 'Editar Perfil',
+                                  child: Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                    color: AppTheme.neonGreen,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -2005,7 +2843,7 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                             final rawCref = (_personal['cref']?.toString() ?? 'Ativo').trim();
                             final crefLimpo = rawCref.replaceAll(RegExp(r'^cref:?\s*', caseSensitive: false), '');
                             return Text(
-                              'CREF: $crefLimpo • Plano ${_personal['plano'] ?? 'ELITE'}',
+                              'CREF: $crefLimpo • Plano ${_personal['plano'] ?? 'PRO'}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
@@ -2033,8 +2871,23 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
           ),
           IconButton(
             tooltip: 'Notificações',
-            icon: const Icon(Icons.notifications_active_outlined, color: AppTheme.neonGreen),
-            onPressed: () => NotificacoesSheet.abrir(context),
+            icon: Badge(
+              isLabelVisible: _notificacoesNaoLidas > 0,
+              label: Text(
+                '$_notificacoesNaoLidas',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0A0E12),
+                ),
+              ),
+              backgroundColor: AppTheme.neonGreen,
+              child: const Icon(Icons.notifications_active_outlined, color: AppTheme.neonGreen),
+            ),
+            onPressed: () async {
+              await NotificacoesSheet.abrir(context);
+              if (mounted) setState(() => _notificacoesNaoLidas = 0);
+            },
           ),
           IconButton(
             tooltip: 'Sair',
@@ -2071,9 +2924,9 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                       label: Text('Alunos'),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.ondemand_video_outlined),
-                      selectedIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
-                      label: Text('Treinos (Vídeo)'),
+                      icon: Icon(Icons.fitness_center_outlined),
+                      selectedIcon: Icon(Icons.fitness_center, color: AppTheme.neonGreen),
+                      label: Text('Treinos'),
                     ),
                     NavigationRailDestination(
                       icon: Icon(Icons.restaurant_menu_outlined),
@@ -2128,8 +2981,8 @@ class _PersonalDashboardScreenState extends State<PersonalDashboardScreen> {
                     label: 'Alunos',
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.ondemand_video_outlined),
-                    selectedIcon: Icon(Icons.ondemand_video, color: AppTheme.neonGreen),
+                    icon: Icon(Icons.fitness_center_outlined),
+                    selectedIcon: Icon(Icons.fitness_center, color: AppTheme.neonGreen),
                     label: 'Treinos',
                   ),
                   NavigationDestination(
