@@ -37,7 +37,11 @@ builder.Services.AddCors(options =>
 // Autenticação JWT com Claims (usuarioId, perfil, personalId)
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey))
-    throw new InvalidOperationException("Jwt:Key não configurada (Jwt__Key no Azure ou appsettings.Development.json local).");
+{
+    jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ??
+             Environment.GetEnvironmentVariable("JWT_KEY") ??
+             "PersonalPro@2026#ChaveSecretaMultiTenantSuperSegura!";
+}
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

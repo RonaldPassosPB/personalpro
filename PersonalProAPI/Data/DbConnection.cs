@@ -9,11 +9,20 @@ namespace PersonalProAPI.Data
 
         public DbConnection(IConfiguration config)
         {
-            _connectionString = config.GetConnectionString("PersonalPro")
-                ?? throw new InvalidOperationException("Connection string 'PersonalPro' não configurada.");
+            var conn = config.GetConnectionString("PersonalPro");
+            if (string.IsNullOrWhiteSpace(conn))
+            {
+                conn = config["ConnectionStrings:PersonalPro"] ??
+                       Environment.GetEnvironmentVariable("ConnectionStrings__PersonalPro") ??
+                       Environment.GetEnvironmentVariable("SQLAZURECONNSTR_PersonalPro");
+            }
+            if (string.IsNullOrWhiteSpace(conn))
+            {
+                conn = "Server=tcp:coachcenter-srv-ronald.database.windows.net,1433;Initial Catalog=coachcenter-db;User Id=coachadmin;Password=Soore1020.;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;";
+            }
+            _connectionString = conn;
         }
 
         public IDbConnection CriarConexao() => new SqlConnection(_connectionString);
     }
 }
-
