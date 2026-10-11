@@ -558,7 +558,9 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     );
   }
 
-  void _abrirModalEditarPerfilAluno() {
+  void _abrirModalEditarPerfilAluno() => _abrirModalInformacoesEPerfilAluno(abaInicial: 1);
+
+  void _abrirModalInformacoesEPerfilAluno({int abaInicial = 0}) {
     final nomeCtrl = TextEditingController(
       text: _aluno['nome']?.toString() ?? widget.session['nome']?.toString() ?? '',
     );
@@ -567,10 +569,10 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     final objetivos = [
       'Hipertrofia',
       'Emagrecimento',
-      'Definição Muscular',
-      'Condicionamento Físico',
-      'Força & Performance',
-      'Saúde & Bem-Estar',
+      'DefiniÃ§Ã£o Muscular',
+      'Condicionamento FÃ­sico',
+      'ForÃ§a & Performance',
+      'SaÃºde & Bem-Estar',
     ];
     if (!objetivos.contains(objetivoSelecionado)) {
       objetivos.add(objetivoSelecionado);
@@ -583,223 +585,811 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
           final isLight = AppTheme.isLight;
-          return AlertDialog(
-            backgroundColor: AppTheme.surfaceCard,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                color: isLight
-                    ? const Color(0xFF0F172A).withValues(alpha: 0.10)
-                    : Colors.white.withValues(alpha: 0.10),
+          final screenHeight = MediaQuery.of(ctx).size.height;
+                    final dialogHeight = (screenHeight * 0.88).clamp(520.0, 720.0);
+          final emailAluno = _aluno['email']?.toString() ?? widget.session['email']?.toString() ?? 'aluno@coachcenter.com.br';
+          final nomePersonalResp = (_aluno['nomePersonal'] ?? _nomePersonal).toString();
+          final telefonePersonalResp = (_aluno['telefonePersonal'] ?? '').toString();
+
+          Widget rotuloCampo(String texto, {IconData? icone}) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  if (icone != null) ...[
+                    Icon(icone, size: 14, color: AppTheme.neonGreen),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    texto.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: isLight ? const Color(0xFF334155) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryAccent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+            );
+          }
+
+          InputDecoration campoDecoracao({required String hintText, IconData? prefixIcon}) {
+            return InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                color: isLight ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                fontSize: 13,
+              ),
+              prefixIcon: prefixIcon != null
+                  ? Icon(prefixIcon, color: AppTheme.neonGreen, size: 19)
+                  : null,
+              filled: true,
+              fillColor: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF090D16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isLight ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.neonGreen, width: 1.5),
+              ),
+            );
+          }
+
+          return DefaultTabController(
+            length: 2,
+            initialIndex: abaInicial,
+            child: Builder(
+              builder: (tabContext) {
+                return Dialog(
+                  backgroundColor: AppTheme.surfaceCard,
+                  insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isLight
+                          ? const Color(0xFF0F172A).withValues(alpha: 0.10)
+                          : const Color(0xFF00F59B).withValues(alpha: 0.22),
+                      width: 1,
+                    ),
                   ),
-                  child: Icon(Icons.person, color: AppTheme.primaryAccent, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Editar Meus Dados',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Informações do Aluno • Perfil e Foto',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-            content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Center(
-                      child: Column(
-                        children: [
-                          Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              ImageHelper.renderAvatarOrImage(
-                                fotoAtual,
-                                radius: 46,
-                                fallbackIcon: Icons.fitness_center,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 580,
+                      maxHeight: dialogHeight,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // CABEÃ‡ALHO DO MODAL
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(18, 14, 10, 10),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: isLight
+                                    ? const Color(0xFFE2E8F0)
+                                    : Colors.white.withValues(alpha: 0.08),
                               ),
-                              Material(
-                                color: AppTheme.primaryAccent,
-                                shape: const CircleBorder(),
-                                elevation: 3,
-                                child: InkWell(
-                                  customBorder: const CircleBorder(),
-                                  onTap: () async {
-                                    final nova = await ImageHelper.selecionarImagemBase64();
-                                    if (nova != null) {
-                                      setModalState(() => fotoAtual = nova);
-                                    }
-                                  },
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(7),
-                                    child: Icon(Icons.photo_camera, size: 16, color: Color(0xFF0A0E12)),
-                                  ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.badge_outlined,
+                                  color: AppTheme.neonGreen,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _aluno['nome']?.toString() ?? 'Meu Perfil',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Consultoria:  â€¢ MatrÃ­cula Ativa',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 20),
+                                onPressed: () => Navigator.pop(ctx),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // BARRA DE ABAS
+                        Container(
+                          color: isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0A0E17),
+                          child: TabBar(
+                            indicatorColor: AppTheme.neonGreen,
+                            indicatorWeight: 3,
+                            labelColor: AppTheme.neonGreen,
+                            unselectedLabelColor: AppTheme.textSecondary,
+                            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            tabs: const [
+                              Tab(
+                                icon: Icon(Icons.info_outline_rounded, size: 18),
+                                text: 'InformaÃ§Ãµes',
+                              ),
+                              Tab(
+                                icon: Icon(Icons.edit_note_rounded, size: 18),
+                                text: 'Editar Perfil',
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // CONTEÃšDO DAS ABAS
+                        Expanded(
+                          child: TabBarView(
+                            children: [
+                              // â”€â”€â”€ ABA 1: INFORMAÃ‡Ã•ES E MÃ‰TRICAS DO ALUNO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                              SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // BANNER DO ATLETA
+                                    Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF0C1322),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: AppTheme.neonGreen.withValues(alpha: 0.25),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Stack(
+                                            alignment: Alignment.bottomRight,
+                                            children: [
+                                              ImageHelper.renderAvatarOrImage(
+                                                _aluno['fotoUrl']?.toString(),
+                                                radius: 32,
+                                                fallbackIcon: Icons.fitness_center,
+                                              ),
+                                              Container(
+                                                padding: const EdgeInsets.all(3),
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.neonGreen,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: AppTheme.surfaceCard,
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.check,
+                                                  size: 8,
+                                                  color: Color(0xFF0A0E12),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _aluno['nome']?.toString() ?? widget.session['nome']?.toString() ?? 'Atleta',
+                                                  style: const TextStyle(
+                                                    fontSize: 16.5,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: AppTheme.neonGreen.withValues(alpha: 0.15),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: Border.all(
+                                                          color: AppTheme.neonGreen.withValues(alpha: 0.4),
+                                                        ),
+                                                      ),
+                                                      child: const Text(
+                                                        'ATLETA ATIVO',
+                                                        style: TextStyle(
+                                                          fontSize: 9.5,
+                                                          fontWeight: FontWeight.w900,
+                                                          color: AppTheme.neonGreen,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Flexible(
+                                                      child: Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.blueAccent.withValues(alpha: 0.15),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                          border: Border.all(
+                                                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          objetivoSelecionado.toUpperCase(),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: const TextStyle(
+                                                            fontSize: 9.5,
+                                                            fontWeight: FontWeight.w900,
+                                                            color: Colors.blueAccent,
+                                                            letterSpacing: 0.5,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    // 4 MÃ‰TRICAS EM GRID 2x2
+                                    Text(
+                                      'RESUMO DA SUA JORNADA',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.8,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'Treinos no MÃªs',
+                                            valor: '',
+                                            subtitulo: 'ConcluÃ­dos',
+                                            icone: Icons.calendar_month_outlined,
+                                            cor: AppTheme.neonGreen,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'Total ConcluÃ­do',
+                                            valor: '',
+                                            subtitulo: 'Treinos na conta',
+                                            icone: Icons.fitness_center,
+                                            cor: Colors.blueAccent,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'EvoluÃ§Ã£o & Check-in',
+                                            valor: '',
+                                            subtitulo: 'AvaliaÃ§Ãµes registradas',
+                                            icone: Icons.show_chart_rounded,
+                                            cor: Colors.amberAccent,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _buildCardMetricaPerfil(
+                                            titulo: 'Fichas Ativas',
+                                            valor: '',
+                                            subtitulo: 'Rotinas prescritas',
+                                            icone: Icons.fact_check_outlined,
+                                            cor: Colors.purpleAccent,
+                                            isLight: isLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    // DADOS CADASTRAIS
+                                    Text(
+                                      'DADOS CADASTRAIS E CONTATO',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.8,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    _buildItemDadoPerfil(
+                                      icone: Icons.email_outlined,
+                                      rotulo: 'E-mail de Login',
+                                      valor: emailAluno,
+                                      isLight: isLight,
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    _buildItemDadoPerfil(
+                                      icone: Icons.phone_outlined,
+                                      rotulo: 'WhatsApp / Telefone',
+                                      valor: (_aluno['telefone']?.toString() ?? '').trim().isNotEmpty
+                                          ? _aluno['telefone']!.toString()
+                                          : 'NÃ£o informado',
+                                      acao: InkWell(
+                                        onTap: () {
+                                          DefaultTabController.of(tabContext).animateTo(1);
+                                        },
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          child: Text(
+                                            'Editar',
+                                            style: TextStyle(
+                                              color: AppTheme.neonGreen,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      isLight: isLight,
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    _buildItemDadoPerfil(
+                                      icone: Icons.flag_outlined,
+                                      rotulo: 'Objetivo Principal',
+                                      valor: objetivoSelecionado,
+                                      isLight: isLight,
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    _buildItemDadoPerfil(
+                                      icone: Icons.person_outline,
+                                      rotulo: 'Treinador ResponsÃ¡vel',
+                                      valor: nomePersonalResp,
+                                      acao: (telefonePersonalResp.trim().isNotEmpty)
+                                          ? InkWell(
+                                              onTap: () => WhatsAppService.abrirMensagem(
+                                                telefonePersonalResp,
+                                                'OlÃ¡ Coach! Gostaria de tirar uma dÃºvida sobre meus treinos.',
+                                              ),
+                                              child: const Padding(
+                                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                child: Text(
+                                                  'Conversar',
+                                                  style: TextStyle(
+                                                    color: AppTheme.neonGreen,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : null,
+                                      isLight: isLight,
+                                    ),
+                                    if (_chavePixPersonal.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      _buildItemDadoPerfil(
+                                        icone: Icons.pix_rounded,
+                                        rotulo: 'Chave PIX da Consultoria',
+                                        valor: _chavePixPersonal,
+                                        acao: InkWell(
+                                          onTap: () {
+                                            Clipboard.setData(ClipboardData(text: _chavePixPersonal));
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                backgroundColor: AppTheme.neonGreen,
+                                                content: Text(
+                                                  'Chave PIX copiada!',
+                                                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: const Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            child: Text(
+                                              'Copiar',
+                                              style: TextStyle(
+                                                color: AppTheme.neonGreen,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        isLight: isLight,
+                                      ),
+                                    ],
+                                    const SizedBox(height: 18),
+
+                                    // BOTÃƒO ATALHO PARA EDITAR PERFIL
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppTheme.neonGreen,
+                                          side: const BorderSide(color: AppTheme.neonGreen, width: 1.5),
+                                          padding: const EdgeInsets.symmetric(vertical: 13),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        icon: const Icon(Icons.edit_note_rounded),
+                                        label: const Text(
+                                          'Ir para a Aba: Editar Perfil',
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                        ),
+                                        onPressed: () {
+                                          DefaultTabController.of(tabContext).animateTo(1);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // â”€â”€â”€ ABA 2: EDITAR PERFIL (DEDICADA Ã€ EDIÃ‡ÃƒO) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                              SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // SEÃ‡ÃƒO FOTO DE PERFIL
+                                    Center(
+                                      child: Column(
+                                        children: [
+                                          Stack(
+                                            alignment: Alignment.bottomRight,
+                                            children: [
+                                              ImageHelper.renderAvatarOrImage(
+                                                fotoAtual,
+                                                radius: 46,
+                                                fallbackIcon: Icons.fitness_center,
+                                              ),
+                                              Material(
+                                                color: AppTheme.neonGreen,
+                                                shape: const CircleBorder(),
+                                                elevation: 3,
+                                                child: InkWell(
+                                                  customBorder: const CircleBorder(),
+                                                  onTap: () async {
+                                                    final nova = await ImageHelper.selecionarImagemBase64();
+                                                    if (nova != null) {
+                                                      setModalState(() => fotoAtual = nova);
+                                                    }
+                                                  },
+                                                  child: const Padding(
+                                                    padding: EdgeInsets.all(7),
+                                                    child: Icon(Icons.photo_camera, size: 16, color: Color(0xFF0A0E12)),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextButton.icon(
+                                            onPressed: () async {
+                                              final nova = await ImageHelper.selecionarImagemBase64();
+                                              if (nova != null) {
+                                                setModalState(() => fotoAtual = nova);
+                                              }
+                                            },
+                                            icon: const Icon(Icons.image_outlined, size: 16, color: AppTheme.neonGreen),
+                                            label: Text(
+                                              (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
+                                                  ? 'Alterar Foto de Perfil'
+                                                  : 'Adicionar Foto de Perfil',
+                                              style: const TextStyle(
+                                                color: AppTheme.neonGreen,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                          if (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
+                                            TextButton(
+                                              onPressed: () {
+                                                setModalState(() => fotoAtual = '');
+                                              },
+                                              child: const Text(
+                                                'Remover foto (usar halter padrÃ£o)',
+                                                style: TextStyle(color: AppTheme.performanceRed, fontSize: 11),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    rotuloCampo('Meu Nome Completo', icone: Icons.person_outline),
+                                    TextField(
+                                      controller: nomeCtrl,
+                                      style: const TextStyle(fontSize: 14),
+                                      decoration: campoDecoracao(
+                                        hintText: 'Ex: Ronald Silva',
+                                        prefixIcon: Icons.badge_outlined,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+
+                                    rotuloCampo('WhatsApp / Telefone', icone: Icons.phone_outlined),
+                                    TextField(
+                                      controller: telefoneCtrl,
+                                      keyboardType: TextInputType.phone,
+                                      style: const TextStyle(fontSize: 14),
+                                      decoration: campoDecoracao(
+                                        hintText: 'Ex: (27) 99999-9999',
+                                        prefixIcon: Icons.phone_android_rounded,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+
+                                    rotuloCampo('Objetivo Principal', icone: Icons.flag_outlined),
+                                    DropdownButtonFormField<String>(
+                                      initialValue: objetivoSelecionado,
+                                      dropdownColor: isLight ? Colors.white : const Color(0xFF131D2E),
+                                      style: TextStyle(
+                                        color: isLight ? Colors.black87 : Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                      decoration: campoDecoracao(
+                                        hintText: 'Selecione seu objetivo',
+                                        prefixIcon: Icons.flag_outlined,
+                                      ),
+                                      items: objetivos
+                                          .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                                          .toList(),
+                                      onChanged: (val) {
+                                        if (val != null) setModalState(() => objetivoSelecionado = val);
+                                      },
+                                    ),
+                                    const SizedBox(height: 22),
+
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        TextButton(
+                                          onPressed: salvando ? null : () => Navigator.pop(ctx),
+                                          child: Text(
+                                            'Cancelar',
+                                            style: TextStyle(
+                                              color: isLight ? const Color(0xFF64748B) : Colors.white60,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppTheme.neonGreen,
+                                            foregroundColor: const Color(0xFF0A0E12),
+                                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          onPressed: salvando
+                                              ? null
+                                              : () async {
+                                                  setModalState(() => salvando = true);
+                                                  try {
+                                                    await ApiService().dio.put('/api/aluno/meu-perfil', data: {
+                                                      'nome': nomeCtrl.text.trim(),
+                                                      'telefone': telefoneCtrl.text.trim(),
+                                                      'objetivo': objetivoSelecionado,
+                                                      'fotoUrl': fotoAtual ?? '',
+                                                    });
+                                                    if (!ctx.mounted) return;
+                                                    Navigator.pop(ctx);
+                                                    if (!mounted) return;
+                                                    setState(() {
+                                                      _aluno['nome'] = nomeCtrl.text.trim();
+                                                      _aluno['telefone'] = telefoneCtrl.text.trim();
+                                                      _aluno['objetivo'] = objetivoSelecionado;
+                                                      _aluno['fotoUrl'] = fotoAtual;
+                                                      widget.session['nome'] = nomeCtrl.text.trim();
+                                                    });
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        backgroundColor: AppTheme.neonGreen,
+                                                        content: Text(
+                                                          'Dados do perfil atualizados com sucesso!',
+                                                          style: TextStyle(color: Color(0xFF0A0E12), fontWeight: FontWeight.bold),
+                                                        ),
+                                                      ),
+                                                    );
+                                                    _carregarDadosAluno();
+                                                  } catch (e) {
+                                                    setModalState(() => salvando = false);
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        backgroundColor: AppTheme.performanceRed,
+                                                        content: Text('Falha ao salvar dados do perfil.'),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                          icon: salvando
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A0E12)),
+                                                )
+                                              : const Icon(Icons.check, size: 18),
+                                          label: Text(
+                                            salvando ? 'Salvando...' : 'Salvar AlteraÃ§Ãµes',
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          TextButton.icon(
-                            onPressed: () async {
-                              final nova = await ImageHelper.selecionarImagemBase64();
-                              if (nova != null) {
-                                setModalState(() => fotoAtual = nova);
-                              }
-                            },
-                            icon: Icon(Icons.image_outlined, size: 16, color: AppTheme.primaryAccent),
-                            label: Text(
-                              (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
-                                  ? 'Alterar Foto de Perfil'
-                                  : 'Adicionar Foto de Perfil',
-                              style: TextStyle(
-                                color: AppTheme.primaryAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          if (fotoAtual != null && fotoAtual!.trim().isNotEmpty)
-                            TextButton(
-                              onPressed: () {
-                                setModalState(() => fotoAtual = '');
-                              },
-                              child: const Text(
-                                'Remover foto (usar halter padrão)',
-                                style: TextStyle(color: AppTheme.performanceRed, fontSize: 11),
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: nomeCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Meu Nome Completo',
-                        prefixIcon: Icon(Icons.badge_outlined, color: AppTheme.primaryAccent, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: telefoneCtrl,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'WhatsApp / Telefone',
-                        prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.primaryAccent, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      initialValue: objetivoSelecionado,
-                      decoration: InputDecoration(
-                        labelText: 'Objetivo Principal',
-                        prefixIcon: Icon(Icons.flag_outlined, color: AppTheme.primaryAccent, size: 20),
-                      ),
-                      items: objetivos.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => objetivoSelecionado = val);
-                      },
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
-            actions: [
-              TextButton(
-                onPressed: salvando ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryAccent,
-                  foregroundColor: const Color(0xFF0A0E12),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-                onPressed: salvando
-                    ? null
-                    : () async {
-                        setModalState(() => salvando = true);
-                        try {
-                          await ApiService().dio.put('/api/aluno/meu-perfil', data: {
-                            'nome': nomeCtrl.text.trim(),
-                            'telefone': telefoneCtrl.text.trim(),
-                            'objetivo': objetivoSelecionado,
-                            'fotoUrl': fotoAtual ?? '',
-                          });
-                          if (!ctx.mounted) return;
-                          Navigator.pop(ctx);
-                          if (!mounted) return;
-                          setState(() {
-                            _aluno['nome'] = nomeCtrl.text.trim();
-                            _aluno['telefone'] = telefoneCtrl.text.trim();
-                            _aluno['objetivo'] = objetivoSelecionado;
-                            _aluno['fotoUrl'] = fotoAtual;
-                            widget.session['nome'] = nomeCtrl.text.trim();
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: AppTheme.primaryAccent,
-                              content: const Text(
-                                'Dados do aluno salvos com sucesso!',
-                                style: TextStyle(color: Color(0xFF0A0E12), fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          );
-                          _carregarDadosAluno();
-                        } catch (e) {
-                          setModalState(() => salvando = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              backgroundColor: AppTheme.performanceRed,
-                              content: Text('Falha ao salvar dados do perfil.'),
-                            ),
-                          );
-                        }
-                      },
-                icon: salvando
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0A0E12)),
-                      )
-                    : const Icon(Icons.check, size: 18),
-                label: Text(
-                  salvando ? 'Salvando...' : 'Salvar Alterações',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
           );
         },
       ),
     );
   }
 
-  @override
+  Widget _buildCardMetricaPerfil({
+    required String titulo,
+    required String valor,
+    required String subtitulo,
+    required IconData icone,
+    required Color cor,
+    required bool isLight,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF090E18),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isLight ? const Color(0xFFCBD5E1) : Colors.white.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                titulo,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Icon(icone, size: 15, color: cor),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            valor,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: cor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitulo,
+            style: TextStyle(
+              fontSize: 9.5,
+              color: AppTheme.textSecondary.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemDadoPerfil({
+    required IconData icone,
+    required String rotulo,
+    required String valor,
+    Widget? acao,
+    required bool isLight,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF090E18),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isLight ? const Color(0xFFE2E8F0) : Colors.white.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icone, size: 16, color: AppTheme.neonGreen),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  rotulo,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  valor,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ?acao,
+        ],
+      ),
+    );
+  }
+
+    @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 920;
     final isLight = AppTheme.isLight;
@@ -836,7 +1426,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                 children: [
                   InkWell(
                     borderRadius: BorderRadius.circular(24),
-                    onTap: _abrirModalEditarPerfilAluno,
+                    onTap: () => setState(() => _abaAtual = 0),
                     child: Tooltip(
                       message: 'Toque para alterar foto ou dados',
                       child: Stack(
@@ -858,7 +1448,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                 border: Border.all(color: AppTheme.surfaceCard, width: 1.5),
                               ),
                               child: const Icon(
-                                Icons.photo_camera,
+                                Icons.home,
                                 size: 9,
                                 color: Color(0xFF0A0E12),
                               ),
@@ -872,7 +1462,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                   Expanded(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: _abrirModalEditarPerfilAluno,
+                      onTap: () => _abrirModalInformacoesEPerfilAluno(abaInicial: 0),
                       child: Tooltip(
                         message: 'Toque para editar seus dados',
                         child: Padding(
@@ -908,10 +1498,20 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.edit_outlined,
-                                    size: 14,
-                                    color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                  InkWell(
+                                    onTap: _abrirModalEditarPerfilAluno,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: const Padding(
+                                      padding: EdgeInsets.all(2),
+                                      child: Tooltip(
+                                        message: 'Editar Perfil',
+                                        child: Icon(
+                                          Icons.edit_outlined,
+                                          size: 14,
+                                          color: AppTheme.neonGreen,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),

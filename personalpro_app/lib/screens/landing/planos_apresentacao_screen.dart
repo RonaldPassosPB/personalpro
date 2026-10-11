@@ -12,11 +12,11 @@ class PlanosApresentacaoScreen extends StatefulWidget {
 }
 
 class _PlanosApresentacaoScreenState extends State<PlanosApresentacaoScreen> {
-  static const String whatsappRonald = '27996234460';
+  static const String whatsappSuporte = '27996234460';
   bool _planoAnual = false;
 
   void _abrirWhatsApp(String mensagem) {
-    WhatsAppService.abrirMensagem(whatsappRonald, mensagem);
+    WhatsAppService.abrirMensagem(whatsappSuporte, mensagem);
   }
 
   void _abrirSiteWeb() async {
@@ -24,7 +24,7 @@ class _PlanosApresentacaoScreenState extends State<PlanosApresentacaoScreen> {
       final uri = Uri.parse('/site/index.html');
       await launchUrl(uri, mode: LaunchMode.platformDefault);
     } else {
-      _abrirWhatsApp('Olá Ronald! Gostaria de receber o link do site do Coach Center para conhecer todos os recursos.');
+      _abrirWhatsApp('Olá! Gostaria de receber o link do site do Coach Center para conhecer todos os recursos.');
     }
   }
 
@@ -66,13 +66,10 @@ class _PlanosApresentacaoScreenState extends State<PlanosApresentacaoScreen> {
           ],
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () => _abrirWhatsApp('Olá Ronald! Quero falar com você sobre a plataforma Coach Center.'),
-            icon: const Icon(Icons.chat, size: 16, color: Color(0xFF25D366)),
-            label: Text(
-              isMobile ? 'WhatsApp' : 'Falar no WhatsApp: (27) 99623-4460',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF25D366)),
-            ),
+          IconButton(
+            tooltip: 'WhatsApp',
+            onPressed: () => _abrirWhatsApp('Olá! Quero tirar dúvidas sobre a plataforma Coach Center.'),
+            icon: const Icon(Icons.chat_rounded, size: 22, color: Color(0xFF25D366)),
           ),
           const SizedBox(width: 8),
         ],
@@ -153,7 +150,7 @@ class _PlanosApresentacaoScreenState extends State<PlanosApresentacaoScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: () => _abrirWhatsApp('Olá Ronald! Quero começar um teste grátis do Coach Center na minha consultoria.'),
+                      onPressed: () => _abrirWhatsApp('Olá! Quero começar um teste grátis do Coach Center na minha consultoria.'),
                       icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
                       label: const Text(
                         'Testar Grátis no WhatsApp',
@@ -251,87 +248,91 @@ class _PlanosApresentacaoScreenState extends State<PlanosApresentacaoScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // 3. CARDS DE PLANOS
+                // 3. CARDS DE PLANOS RESPONSIVOS E SEGUROS
                 LayoutBuilder(
                   builder: (ctx, constraints) {
-                    final useColumn = constraints.maxWidth < 850;
-                    return Flex(
-                      direction: useColumn ? Axis.vertical : Axis.horizontal,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // PLANO START
-                        Expanded(
-                          flex: useColumn ? 0 : 1,
-                          child: _buildCardPlano(
-                            titulo: 'Plano START',
-                            badge: 'INICIANTE',
-                            preco: _planoAnual ? 'R\$ 20,75' : 'R\$ 29,90',
-                            periodo: _planoAnual ? '/mês (R\$ 249/ano)' : '/mês',
-                            descricao: 'Para quem está começando a consultoria e tem até 5 alunos.',
-                            itens: [
-                              'Até 5 alunos ativos',
-                              'Fichas de Treino Ilimitadas (A, B, C, D, E)',
-                              'Biblioteca de Exercícios com GIFs e Vídeos',
-                              'Prescrição de Dieta Inteligente c/ Macros',
-                              'Cobrança PIX Direta (0% de Taxa)',
-                            ],
-                            destaque: false,
-                            onAssinar: () => _abrirWhatsApp('Olá Ronald! Quero assinar o Plano START (Até 5 alunos).'),
-                          ),
-                        ),
-                        if (useColumn) const SizedBox(height: 20) else const SizedBox(width: 16),
-
-                        // PLANO PRO (DESTAQUE)
-                        Expanded(
-                          flex: useColumn ? 0 : 1,
-                          child: _buildCardPlano(
-                            titulo: 'Plano PRO',
-                            badge: '⭐ MAIS ESCOLHIDO',
-                            preco: _planoAnual ? 'R\$ 41,50' : 'R\$ 59,90',
-                            periodo: _planoAnual ? '/mês (R\$ 499/ano)' : '/mês',
-                            descricao: 'Para personais que vivem de consultoria e querem máxima escala.',
-                            itens: [
-                              'Até 30 alunos ativos',
-                              'Tudo do Plano Start incluso',
-                              'Fotos Antes x Depois c/ Slider Interativo',
-                              'Histórico de Progressão de Carga',
-                              'Envio de Recibos no WhatsApp c/ 1 Toque',
-                              'Suporte VIP no WhatsApp c/ o Ronald',
-                            ],
-                            destaque: true,
-                            onAssinar: () => _abrirWhatsApp('Olá Ronald! Quero assinar o Plano PRO (Até 30 alunos).'),
-                          ),
-                        ),
-                        if (useColumn) const SizedBox(height: 20) else const SizedBox(width: 16),
-
-                        // PLANO ELITE
-                        Expanded(
-                          flex: useColumn ? 0 : 1,
-                          child: _buildCardPlano(
-                            titulo: 'Plano ELITE',
-                            badge: 'ILIMITADO',
-                            preco: _planoAnual ? 'R\$ 66,50' : 'R\$ 89,90',
-                            periodo: _planoAnual ? '/mês (R\$ 799/ano)' : '/mês',
-                            descricao: 'Para grandes consultorias, academias e estúdios sem limites.',
-                            itens: [
-                              'Alunos ILIMITADOS (Sem travas)',
-                              'Todas as ferramentas desbloqueadas',
-                              'Radar de alunos inativos em risco',
-                              'Onboarding dedicado na migração de alunos',
-                              'Canal direto de suporte 24h',
-                            ],
-                            destaque: false,
-                            onAssinar: () => _abrirWhatsApp('Olá Ronald! Quero assinar o Plano ELITE (Alunos Ilimitados).'),
-                          ),
-                        ),
+                    final isNarrow = constraints.maxWidth < 850;
+                    final cardStart = _buildCardPlano(
+                      titulo: 'Plano START',
+                      badge: 'INICIANTE',
+                      preco: _planoAnual ? 'R\$ 20,75' : 'R\$ 29,90',
+                      periodo: _planoAnual ? '/mês (R\$ 249/ano)' : '/mês',
+                      descricao: 'Para quem está começando a consultoria e tem até 5 alunos.',
+                      itens: const [
+                        'Até 5 alunos ativos',
+                        'Fichas de Treino Ilimitadas (A, B, C, D, E)',
+                        'Biblioteca de Exercícios com GIFs e Vídeos',
+                        'Prescrição de Dieta Inteligente c/ Macros',
+                        'Cobrança PIX Direta (0% de Taxa)',
                       ],
+                      destaque: false,
+                      onAssinar: () => _abrirWhatsApp('Olá! Quero assinar o Plano START (Até 5 alunos).'),
+                    );
+
+                    final cardPro = _buildCardPlano(
+                      titulo: 'Plano PRO',
+                      badge: '⭐ MAIS ESCOLHIDO',
+                      preco: _planoAnual ? 'R\$ 41,50' : 'R\$ 59,90',
+                      periodo: _planoAnual ? '/mês (R\$ 499/ano)' : '/mês',
+                      descricao: 'Para personais que vivem de consultoria e querem máxima escala.',
+                      itens: const [
+                        'Até 30 alunos ativos',
+                        'Tudo do Plano Start incluso',
+                        'Fotos Antes x Depois c/ Slider Interativo',
+                        'Histórico de Progressão de Carga',
+                        'Envio de Recibos no WhatsApp c/ 1 Toque',
+                        'Suporte VIP no WhatsApp',
+                      ],
+                      destaque: true,
+                      onAssinar: () => _abrirWhatsApp('Olá! Quero assinar o Plano PRO (Até 30 alunos).'),
+                    );
+
+                    final cardElite = _buildCardPlano(
+                      titulo: 'Plano ELITE',
+                      badge: 'ILIMITADO',
+                      preco: _planoAnual ? 'R\$ 66,50' : 'R\$ 89,90',
+                      periodo: _planoAnual ? '/mês (R\$ 799/ano)' : '/mês',
+                      descricao: 'Para grandes consultorias, academias e estúdios sem limites.',
+                      itens: const [
+                        'Alunos ILIMITADOS (Sem travas)',
+                        'Todas as ferramentas desbloqueadas',
+                        'Radar de alunos inativos em risco',
+                        'Onboarding dedicado na migração de alunos',
+                        'Canal direto de suporte prioritário',
+                      ],
+                      destaque: false,
+                      onAssinar: () => _abrirWhatsApp('Olá! Quero assinar o Plano ELITE (Alunos Ilimitados).'),
+                    );
+
+                    if (isNarrow) {
+                      return Column(
+                        children: [
+                          cardStart,
+                          const SizedBox(height: 20),
+                          cardPro,
+                          const SizedBox(height: 20),
+                          cardElite,
+                        ],
+                      );
+                    }
+
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: cardStart),
+                          const SizedBox(width: 16),
+                          Expanded(child: cardPro),
+                          const SizedBox(width: 16),
+                          Expanded(child: cardElite),
+                        ],
+                      ),
                     );
                   },
                 ),
                 const SizedBox(height: 40),
 
-                // 4. BOX DE CONTATO DIRETO COM O RONALD
+                // 4. BOX DE CONTATO DIRETO VIA WHATSAPP (SEM EXIBIR NÚMERO PESSOAL NA TELA)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -358,7 +359,7 @@ class _PlanosApresentacaoScreenState extends State<PlanosApresentacaoScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Fale diretamente com Ronald Passos pelo WhatsApp: (27) 99623-4460.\nAtendimento ágil para tirar dúvidas técnicas e liberar seu teste gratuito na hora.',
+                        'Fale diretamente com nossa equipe pelo WhatsApp.\nAtendimento ágil para tirar dúvidas técnicas e liberar seu teste gratuito na hora.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
                       ),
@@ -370,10 +371,10 @@ class _PlanosApresentacaoScreenState extends State<PlanosApresentacaoScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        onPressed: () => _abrirWhatsApp('Olá Ronald! Estou na tela de planos do Coach Center e gostaria de falar com você.'),
-                        icon: const Icon(Icons.chat, size: 20),
+                        onPressed: () => _abrirWhatsApp('Olá! Estou na tela de planos do Coach Center e gostaria de falar com o suporte.'),
+                        icon: const Icon(Icons.chat_rounded, size: 20),
                         label: const Text(
-                          'Chamar no WhatsApp: (27) 99623-4460',
+                          'Chamar no WhatsApp',
                           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                         ),
                       ),

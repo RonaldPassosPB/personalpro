@@ -157,12 +157,16 @@ namespace PersonalProAPI.Controllers
                 UPDATE ALUNOS 
                 SET TELEFONE = @Telefone,
                     OBJETIVO = @Objetivo,
-                    FOTO_URL = CASE WHEN @FotoUrl IS NOT NULL AND @FotoUrl <> '' THEN @FotoUrl ELSE FOTO_URL END
+                    FOTO_URL = CASE 
+                        WHEN @FotoUrl = '__REMOVER__' OR @FotoUrl = '' THEN NULL 
+                        WHEN @FotoUrl IS NOT NULL THEN @FotoUrl 
+                        ELSE FOTO_URL 
+                    END
                 WHERE USUARIO_ID = @UsuarioId",
                 new { 
                     dto.Telefone, 
                     dto.Objetivo, 
-                    FotoUrl = string.IsNullOrWhiteSpace(dto.FotoUrl) ? null : dto.FotoUrl, 
+                    FotoUrl = dto.FotoUrl, 
                     UsuarioId = usuarioId 
                 }
             );
