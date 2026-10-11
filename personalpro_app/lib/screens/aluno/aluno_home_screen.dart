@@ -569,10 +569,10 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
     final objetivos = [
       'Hipertrofia',
       'Emagrecimento',
-      'DefiniÃ§Ã£o Muscular',
-      'Condicionamento FÃ­sico',
-      'ForÃ§a & Performance',
-      'SaÃºde & Bem-Estar',
+      'Definição Muscular',
+      'Condicionamento Físico',
+      'Força & Performance',
+      'Saúde & Bem-Estar',
     ];
     if (!objetivos.contains(objetivoSelecionado)) {
       objetivos.add(objetivoSelecionado);
@@ -671,7 +671,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // CABEÃ‡ALHO DO MODAL
+                        // CABEÇALHO DO MODAL
                         Container(
                           padding: const EdgeInsets.fromLTRB(18, 14, 10, 10),
                           decoration: BoxDecoration(
@@ -712,7 +712,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                       ),
                                     ),
                                     Text(
-                                      'Consultoria:  â€¢ MatrÃ­cula Ativa',
+                                      'Consultoria: • Matrícula Ativa',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -743,7 +743,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                             tabs: const [
                               Tab(
                                 icon: Icon(Icons.info_outline_rounded, size: 18),
-                                text: 'InformaÃ§Ãµes',
+                                text: 'Informações',
                               ),
                               Tab(
                                 icon: Icon(Icons.edit_note_rounded, size: 18),
@@ -753,11 +753,11 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                           ),
                         ),
 
-                        // CONTEÃšDO DAS ABAS
+                        // CONTEÚDO DAS ABAS
                         Expanded(
                           child: TabBarView(
                             children: [
-                              // â”€â”€â”€ ABA 1: INFORMAÃ‡Ã•ES E MÃ‰TRICAS DO ALUNO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                              // â”€â”€â”€ ABA 1: INFORMAÇÕES E MÉTRICAS DO ALUNO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                               SingleChildScrollView(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
@@ -869,7 +869,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // 4 MÃ‰TRICAS EM GRID 2x2
+                                    // 4 MÉTRICAS EM GRID 2x2
                                     Text(
                                       'RESUMO DA SUA JORNADA',
                                       style: TextStyle(
@@ -885,9 +885,9 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                       children: [
                                         Expanded(
                                           child: _buildCardMetricaPerfil(
-                                            titulo: 'Treinos no MÃªs',
+                                            titulo: 'Treinos no Mês',
                                             valor: '',
-                                            subtitulo: 'ConcluÃ­dos',
+                                            subtitulo: 'Concluídos',
                                             icone: Icons.calendar_month_outlined,
                                             cor: AppTheme.neonGreen,
                                             isLight: isLight,
@@ -896,7 +896,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: _buildCardMetricaPerfil(
-                                            titulo: 'Total ConcluÃ­do',
+                                            titulo: 'Total Concluído',
                                             valor: '',
                                             subtitulo: 'Treinos na conta',
                                             icone: Icons.fitness_center,
@@ -912,9 +912,9 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                       children: [
                                         Expanded(
                                           child: _buildCardMetricaPerfil(
-                                            titulo: 'EvoluÃ§Ã£o & Check-in',
+                                            titulo: 'Evolução & Check-in',
                                             valor: '',
-                                            subtitulo: 'AvaliaÃ§Ãµes registradas',
+                                            subtitulo: 'Avaliações registradas',
                                             icone: Icons.show_chart_rounded,
                                             cor: Colors.amberAccent,
                                             isLight: isLight,
@@ -960,7 +960,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                       rotulo: 'WhatsApp / Telefone',
                                       valor: (_aluno['telefone']?.toString() ?? '').trim().isNotEmpty
                                           ? _aluno['telefone']!.toString()
-                                          : 'NÃ£o informado',
+                                          : 'Não informado',
                                       acao: InkWell(
                                         onTap: () {
                                           DefaultTabController.of(tabContext).animateTo(1);
@@ -991,13 +991,13 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
 
                                     _buildItemDadoPerfil(
                                       icone: Icons.person_outline,
-                                      rotulo: 'Treinador ResponsÃ¡vel',
+                                      rotulo: 'Treinador Responsável',
                                       valor: nomePersonalResp,
                                       acao: (telefonePersonalResp.trim().isNotEmpty)
                                           ? InkWell(
                                               onTap: () => WhatsAppService.abrirMensagem(
                                                 telefonePersonalResp,
-                                                'OlÃ¡ Coach! Gostaria de tirar uma dÃºvida sobre meus treinos.',
+                                                'Olá Coach! Gostaria de tirar uma dúvida sobre meus treinos.',
                                               ),
                                               child: const Padding(
                                                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1050,7 +1050,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                     ],
                                     const SizedBox(height: 18),
 
-                                    // BOTÃƒO ATALHO PARA EDITAR PERFIL
+                                    // BOTÃO ATALHO PARA EDITAR PERFIL
                                     SizedBox(
                                       width: double.infinity,
                                       child: OutlinedButton.icon(
@@ -1074,13 +1074,13 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                 ),
                               ),
 
-                              // â”€â”€â”€ ABA 2: EDITAR PERFIL (DEDICADA Ã€ EDIÃ‡ÃƒO) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                              // â”€â”€â”€ ABA 2: EDITAR PERFIL (DEDICADA À EDIÇÃO) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                               SingleChildScrollView(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // SEÃ‡ÃƒO FOTO DE PERFIL
+                                    // SEÇÃO FOTO DE PERFIL
                                     Center(
                                       child: Column(
                                         children: [
@@ -1138,7 +1138,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                                 setModalState(() => fotoAtual = '');
                                               },
                                               child: const Text(
-                                                'Remover foto (usar halter padrÃ£o)',
+                                                'Remover foto (usar halter padrão)',
                                                 style: TextStyle(color: AppTheme.performanceRed, fontSize: 11),
                                               ),
                                             ),
@@ -1260,7 +1260,7 @@ class _AlunoHomeScreenState extends State<AlunoHomeScreen> {
                                                 )
                                               : const Icon(Icons.check, size: 18),
                                           label: Text(
-                                            salvando ? 'Salvando...' : 'Salvar AlteraÃ§Ãµes',
+                                            salvando ? 'Salvando...' : 'Salvar Alterações',
                                             style: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                         ),
