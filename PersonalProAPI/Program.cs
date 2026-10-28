@@ -39,9 +39,18 @@ var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
     jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ??
-             Environment.GetEnvironmentVariable("JWT_KEY") ??
-             "PersonalPro@2026#ChaveSecretaMultiTenantSuperSegura!";
+             Environment.GetEnvironmentVariable("JWT_KEY");
 }
+// Sem chave no código: em produção vem do application setting "Jwt__Key" do App Service,
+// localmente do appsettings.Development.json (fora do git)
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException(
+        "Chave JWT não configurada. No Azure: Variáveis de ambiente → Configurações de aplicativo → Jwt__Key. " +
+        "Localmente: Jwt:Key no PersonalProAPI/appsettings.Development.json.");
+}
+// O AuthController assina os tokens lendo Jwt:Key: garante que ele use a mesma chave da validação
+builder.Configuration["Jwt:Key"] = jwtKey;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

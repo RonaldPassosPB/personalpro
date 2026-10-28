@@ -16,9 +16,13 @@ namespace PersonalProAPI.Data
                        Environment.GetEnvironmentVariable("ConnectionStrings__PersonalPro") ??
                        Environment.GetEnvironmentVariable("SQLAZURECONNSTR_PersonalPro");
             }
+            // Sem senha no código: em produção vem da cadeia de conexão "PersonalPro" do App Service,
+            // localmente do appsettings.Development.json (fora do git)
             if (string.IsNullOrWhiteSpace(conn))
             {
-                conn = "Server=tcp:coachcenter-srv-ronald.database.windows.net,1433;Initial Catalog=coachcenter-db;User Id=coachadmin;Password=Soore1020.;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;";
+                throw new InvalidOperationException(
+                    "Connection string 'PersonalPro' não configurada. No Azure: Variáveis de ambiente → Cadeias de conexão. " +
+                    "Localmente: PersonalProAPI/appsettings.Development.json.");
             }
             _connectionString = conn;
         }
